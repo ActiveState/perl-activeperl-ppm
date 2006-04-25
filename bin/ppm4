@@ -1,0 +1,262 @@
+#!/usr/bin/perl -w
+
+use strict;
+use ActivePerl::PPM::Client;
+use ActivePerl::PPM::Web qw(web_ua);
+use File::Path qw(mkpath rmtree);
+
+my $CMD = shift || gui();
+$CMD = "version" if $CMD eq "--version";
+
+my $do_cmd = "do_$CMD";
+usage("Unrecognized ppm command '$CMD'") unless defined &$do_cmd;
+
+my $ppm = ActivePerl::PPM::Client->new;
+
+eval {
+    no strict 'refs';
+    &$do_cmd;
+};
+if ($@) {
+    #$@ =~ s/ at .*//;
+    print STDERR "ppm $CMD failed: $@";
+    exit 1;
+}
+else {
+    exit;
+}
+
+my $USAGE;
+sub usage {
+    my $msg = shift;
+    if ($msg) {
+	$msg .= "\n" unless $msg =~ /\n$/;
+	print STDERR $msg;
+    }
+    (my $progname = $0) =~ s,.*[\\/],,;
+    $USAGE ||= "<cmd> args...";
+    print STDERR "Usage: $progname $USAGE\n";
+    exit 1;
+}
+
+sub gui {
+    die "GUI NYI";
+}
+
+sub do_dump {
+    require Data::Dump;
+    push(@ARGV, "client") unless @ARGV;
+    for my $what (@ARGV) {
+	if ($what eq "client") {
+	    Data::Dump::dump($ppm);
+	}
+	elsif (grep $_ eq $what,$ppm->idirs) {
+	    Data::Dump::dump($ppm->idirs($what));
+	}
+	elsif (grep $_ eq $what, $ppm->repos) {
+	    Data::Dump::dump($ppm->repo($what));
+	}
+	elsif (my $pkg = $ppm->current_idirs->package($what)) {
+	    Data::Dump::dump($pkg);
+	}
+	else {
+	    warn "No idirs/repo/package called $what\n";
+	}
+    }
+}
+
+sub do_version {
+    if (@ARGV) {
+	$USAGE = "version";
+	usage("The $CMD command does not take arguments.");
+    }
+    require ActivePerl::PPM;
+    print "ppm $ActivePerl::PPM::VERSION\n";
+    print "Copyright (C) 2006 ActiveState Software Inc.  All rights reserved.\n";
+}
+
+sub do_idirs {
+    my $current = $ppm->current_idirs_name;
+    if (@ARGV) {
+	my $new_current;
+	my $sync;
+	$USAGE = "idirs [--current [<name>]] [--sync]";
+	require Getopt::Long;
+	Getopt::Long::GetOptions(
+           'current:s' => \$new_current,
+	   'sync' => \$sync,
+        ) || usage();
+	usage() if @ARGV;
+	if (defined $new_current) {
+	    $ppm->current_idirs_name($new_current) if length($new_current);
+	    $ppm->current_idirs->sync_db if $sync;
+	    print "$current\n";
+	    return;
+	}
+	$ppm->current_idirs->sync_db if $sync;
+    }
+    for my $idir ($ppm->idirs) {
+	print "$idir";
+	print " (current)" if $current eq $idir;
+	print "\n";
+    }
+}
+
+sub do_list {
+    if (@ARGV) {
+	$USAGE = "list";
+	usage("The $CMD command does not take arguments.");
+    }
+    my $idir = $ppm->current_idirs;
+    for my $pkg ($idir->packages) {
+	print "$pkg\n";
+    }
+}
+
+sub do_verify {
+    my %opt;
+    if (@ARGV) {
+	$USAGE = "verify [--verbose] [<package>]";
+	require Getopt::Long;
+	Getopt::Long::GetOptions(\%opt,
+           'verbose',
+        ) || usage();
+	$opt{package} = shift(@ARGV) if @ARGV;
+	usage() if @ARGV;
+    }
+    my $idir = $ppm->current_idirs;
+    my %status = $idir->verify(%opt);
+    for my $v (qw(verified missing modified)) {
+	next if $v ne "verified" && !$status{$v};
+	my $s = $status{$v} == 1 ? "" : "s";
+	print "$status{$v} file$s $v.\n";
+    }
+}
+
+sub do_repos {
+    for my $repo_id ($ppm->repos) {
+	my $repo = $ppm->repo($repo_id);
+	print "$repo_id: ", $repo->name, "\n";
+	print "    ", $repo->url, "\n";
+    }
+}
+
+sub do_search {
+    $USAGE = "search <pattern>";
+    usage() unless @ARGV == 1;
+    my $pattern = shift(@ARGV);
+    my @repos = $ppm->repos;
+    die "No repos to search" unless @repos;
+    for my $repo_id (@repos) {
+	my $repo = $ppm->repo($repo_id);
+	print "Searching ", $repo->name, "...\n";
+	my @res = $repo->search($pattern);
+	if (@res) {
+	    print " - $_\n" for @res;
+	}
+	else {
+	    print " no packages found\n";
+	}
+    }
+}
+
+sub do_install {
+    $USAGE = "install <module>";
+    usage() unless @ARGV == 1;
+    my $feature = shift(@ARGV);
+    _install($ppm->packages_to_install_for($feature, 0));
+}
+
+sub do_upgrade {
+    $USAGE = "upgrade <module>";
+    usage() unless @ARGV == 1;
+    my $feature = shift(@ARGV);
+    _install($ppm->packages_to_install_for($feature, undef));
+}
+
+sub _install {
+    unless (@_) {
+	print "Nothing to install\n";
+	return;
+    }
+
+    $| = 1;
+    my $verbose = 1;
+    my $ua = web_ua();
+
+    my $tmpdir = "/tmp/ppm-$$";
+    mkpath($tmpdir, $verbose) || die "Can't mkpath('$tmpdir'): $!";
+    eval {
+	for my $pkg (@_) {
+	    my $name = $pkg->name_version;
+	    print "Downloading $name...";
+	    my $codebase = $pkg->codebase;
+	    die "No codebase for $name" unless $codebase;
+
+	    my $codebase_type;
+	    if ($codebase =~ /\.(tgz|tar\.gz)$/) {
+		$codebase_type = "tgz";
+	    }
+	    die "Don't know how to unpack $codebase" unless $codebase_type;
+
+	    my $save = "$tmpdir/$name.$codebase_type";
+	    #print "\n    $codebase ==> $save...";
+	    my $res = $ua->get($codebase, ":content_file" => $save);
+	    die $res->status_line unless $res->is_success;
+	    if (my $len = $res->content_length) {
+		my $save_len = -s $save;
+		if ($save_len != $len) {
+		    die "Aborted download ($len bytes expected, got $save_len).\n";
+		}
+	    }
+	    # XXX An MD5 checksum for the tarball would be a good thing
+	    print "done\n";
+
+	    $pkg->{codebase_type} = $codebase_type;
+	    $pkg->{codebase_file} = $save;
+	}
+
+	for my $pkg (@_) {
+	    my $pname = $pkg->name_version;
+	    print "Unpacking $pname...";
+	    my $codebase_file = $pkg->{codebase_file};
+	    if ($pkg->{codebase_type} eq "tgz") {
+		require Archive::Tar;
+		my $tar = Archive::Tar->new($codebase_file, 1);
+		for my $file ($tar->get_files) {
+		    next unless $file->is_file;  # don't extract links and other crap
+		    my $fname = $file->name;
+		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
+		    next if $fname =~ m,/html/site/lib/,;  # will always regenerate these
+		    my $extract = $fname;
+		    next unless $extract =~ s,^blib/,$pname/,;
+		    $extract = "$tmpdir/$extract";
+		    $tar->extract_file($fname, $extract)
+			|| die "Can't extract to $extract";
+		}
+		$pkg->{blib} = "$tmpdir/$pname";
+	    }
+	    else {
+		die "Don't know how to unpack $pkg->{codebase_type} files";
+	    }
+	    print "done\n";
+	}
+
+	# XXX install scripts
+	# XXX regenerate HTML
+
+	# do the install
+	$ppm->current_idirs->install(@_);
+
+	# XXX post install scripts
+    };
+    if ($@) {
+	print "\nFAIL: $@";
+    }
+    rmtree($tmpdir, $verbose);
+}
+
+BEGIN {
+    # aliases
+    *do_query = \&do_list;
+}

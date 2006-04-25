@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOFTPKG NAME="Acme-Bleach" VERSION="1,12,0,0">
+  <IMPLEMENTATION>
+    <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Bleach.tar.gz" />
+    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+    <OS NAME="linux" />
+  </IMPLEMENTATION>
+  <ABSTRACT>For *really* clean programs</ABSTRACT>
+  <AUTHOR>Damian Conway (damian@conway.org)</AUTHOR>
+  <TITLE>Acme-Bleach</TITLE>
+</SOFTPKG>

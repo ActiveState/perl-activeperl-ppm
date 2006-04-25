@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOFTPKG NAME="Acme-Buffy" VERSION="1,3,0,0">
+  <IMPLEMENTATION>
+    <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Buffy.tar.gz" />
+    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+  </IMPLEMENTATION>
+  <REQUIRES NAME="Blood" VERSION="3.0"/>
+  <PROVIDES NAME="Acme::Buffy" VERSION="1.3"/>
+  <ABSTRACT>An encoding scheme for Buffy the Vampire Slayer fans</ABSTRACT>
+  <AUTHOR>Leon Brocard (leon@astray.com)</AUTHOR>
+</SOFTPKG>

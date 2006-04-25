@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SOFTPKG NAME="AI-NeuralNet-Simple" VERSION="0,03,0,0">
+  <ABSTRACT>A simple learning module for building neural nets.</ABSTRACT>
+  <AUTHOR>Curtis &quot;Ovid&quot; Poe ()</AUTHOR>
+  <IMPLEMENTATION>
+    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+    <CODEBASE HREF="i686-linux-thread-multi-5.8/AI-NeuralNet-Simple-0.03.tar.gz" />
+    <DEPENDENCY NAME="Inline" VERSION="0,0,0,0" />
+    <DEPENDENCY NAME="Sub-Uplevel" VERSION="0,0,0,0" />
+    <DEPENDENCY NAME="Test-Exception" VERSION="0,15,0,0" />
+  </IMPLEMENTATION>
+  <PROVIDES NAME="AI::NeuralNet::Simple" VERSION="0.03"/>
+</SOFTPKG>

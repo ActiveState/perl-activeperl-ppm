@@ -1,0 +1,33 @@
+class IDirs
+-----------
+
+   - update .packlist files on install
+   - frozen/enabled attributes
+   - track unknown files not found in .packlists
+   - track installdate/updatedate for packages
+
+class Repo
+----------
+   - improve search interface
+   - intelligent sync
+
+class Package
+-------------
+   - modules method (filtered and prettified 'provides').
+
+class Client
+------------
+   - packages_missing_for($ppd)
+   - home idirs
+
+ppm4
+----
+   - query should take search pattern as argument
+   - missing commands
+      - repos
+      - install
+      - update
+      - remove
+      - belong
+      - files
+      - help
