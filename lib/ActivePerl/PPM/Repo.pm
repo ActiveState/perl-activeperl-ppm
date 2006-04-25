@@ -66,6 +66,25 @@ sub sync {
     for my $create (ActivePerl::PPM::RepoPackage->sql_create_tables()) {
 	$dbh->do($create);
     }
+    $dbh->do(<<'EOT');
+CREATE TABLE IF NOT EXISTS config (
+    last_sync integer
+)
+EOT
+
+    my $last_sync = $dbh->selectrow_array("SELECT last_sync FROM config");
+    if ($last_sync) {
+	$last_sync = time - $last_sync;
+	if ($last_sync < 60*60) {
+	    use ActiveState::Duration qw(ago_eng);
+	    warn "Skipping sync, last synced " . ago_eng($last_sync) . "\n";
+	    return;
+	}
+    }
+    else {
+	# initialize config
+	$dbh->do("INSERT INTO config (last_sync) VALUES (NULL)");
+    }
 
     # determine repo type
     my $ua = web_ua();
@@ -119,6 +138,7 @@ sub sync {
 	$dbh->do("DELETE FROM package WHERE id IN (SELECT id FROM tmp_delete_packages)");
 	$dbh->do("DELETE FROM feature WHERE package_id in (SELECT id FROM tmp_delete_packages)");
 	$dbh->do("DROP TABLE tmp_delete_packages");
+	$dbh->do("UPDATE config SET last_sync = ?", undef, time);
 	$dbh->commit;
     }
     else {
