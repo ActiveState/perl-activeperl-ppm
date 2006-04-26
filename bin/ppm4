@@ -250,7 +250,9 @@ sub _install {
 	# XXX regenerate HTML
 
 	# do the install
+	print "Installing...";
 	$ppm->current_idirs->install(@_);
+	print "done\n";
 
 	# XXX post install scripts
     };
