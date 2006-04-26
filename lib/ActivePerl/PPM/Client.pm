@@ -6,6 +6,7 @@ use Config qw(%Config);
 use ActivePerl ();
 use ActivePerl::PPM::IDirs ();
 use ActivePerl::PPM::Package ();
+use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
 use XML::Simple ();
 
 sub new {
@@ -30,7 +31,7 @@ sub new {
     my $etc = "$dir/etc";
     my $conf_file = "$etc/ppm-conf.xml";
     unless (-f $conf_file) {
-	warn "Creating $conf_file\n";
+	ppm_log("WARN", "Creating $conf_file");
 	require File::Path;
 	File::Path::mkpath($etc, 0, 0755);
 	open(my $f, ">", $conf_file) || die "Can't create $conf_file: $!";
@@ -44,7 +45,7 @@ EOT
 	my $repo = "$etc/ppm-repo/as";
 	my $prop = "$repo/prop.xml";
 	unless (-f $prop) {
-	    warn "Creating $prop\n";
+	    ppm_log("WARN", "Creating $prop\n");
 	    File::Path::mkpath($repo, 0, 0755);
 	    open($f, ">", $prop) || die "Can't create $prop: $!";
 	    print $f <<EOT;
@@ -63,7 +64,7 @@ EOT
 	$conf = XML::Simple::XMLin($conf_file);
     };
     if ($@) {
-	warn $@;
+	ppm_log("ERR", $@);
 	$conf = {};
     }
 
@@ -79,6 +80,7 @@ EOT
 sub _write_conf {
     my $self = shift;
     XML::Simple::XMLout($self->{conf}, OutputFile => $self->{conf_file}, RootName => "ppm-configuration");
+    ppm_log("INFO", "Wrote $self->{conf_file}");
 }
 
 sub current_idirs {
@@ -94,6 +96,7 @@ sub current_idirs_name {
 	die "Unrecognized idirs '$new'" unless grep $_ eq $new, $self->idirs;
 	$self->{conf}{"current-idirs"} = $new;
 	$self->_write_conf;
+	ppm_log("NOTICE", "$new is current idirs");
     }
     return $old;
 }
@@ -124,6 +127,7 @@ sub _init_repos {
 	    next if $id =~ /^\./;
 	    if (my $repo = ActivePerl::PPM::Repo->new("$repo_dir/$id")) {
 		$repo{$id} = $repo;
+		ppm_debug("Repo $id initialized");
 	    }
 	}
 	closedir($dh);
@@ -162,7 +166,6 @@ sub feature_best {
 
 sub package_best {
     my($self, $feature, $version) = @_;
-    #warn "PKG_BEST($feature, $version)";
     $self->_init_repos unless $self->{repo};
 
     my @pkg;
@@ -174,12 +177,13 @@ sub package_best {
 
 sub feature_have {
     my($self, $feature) = @_;
-    #print "CLIENT_FEATURE_HAVE($feature)\n";
     for my $idirs_name ($self->idirs) {
 	my $idirs = $self->idirs($idirs_name);
 	if (defined(my $have = $idirs->feature_have($feature))) {
+	    ppm_debug("Feature $feature found in $idirs_name");
 	    return $have;
 	}
+	ppm_debug("Feature $feature not found in $idirs_name");
     }
 
     if ($feature =~ /::/) {
@@ -188,6 +192,7 @@ sub feature_have {
 	if (my $path = ActiveState::ModInfo::find_module($feature)) {
 	    return MM->parse_version($path) || 0;
 	}
+	ppm_debug("Module $feature found in \@INC");
     }
 
     return undef;
@@ -204,11 +209,11 @@ sub packages_to_install_for {
     my @todo;
     push(@todo, [$feature, $version]);
     while (@todo) {
-	#use Data::Dump; Data::Dump::dump(\@todo);
         my($feature, $want, $needed_by) = @{shift @todo};
+	ppm_debug("Want $feature >= $want");
 
         my $have = $self->feature_have($feature); # XXX also consider the @pkg provide
-	#print "HAVE($feature) => $have\n";
+	ppm_debug("Have $feature $have") if defined($have);
 
         if (!$have || $have < $want) {
             if (my $pkg = $self->package_best($feature, $want)) {
