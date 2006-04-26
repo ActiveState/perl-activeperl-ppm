@@ -261,6 +261,12 @@ sub _install {
     die $err if $err;
 }
 
+sub do_remove {
+    $USAGE = "remove <package>";
+    usage() unless @ARGV == 1;
+    $ppm->current_idirs->remove($ARGV[0]);
+}
+
 BEGIN {
     # aliases
     *do_query = \&do_list;

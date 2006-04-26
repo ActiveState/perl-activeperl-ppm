@@ -435,6 +435,38 @@ sub _copy_dir {
     }
 }
 
+sub remove {
+    my $self = shift;
+    my $pkg = shift;
+    my $pkg_id = $self->package_id($pkg);
+    unless (defined $pkg_id) {
+	die "Package $pkg isn't installed";
+    }
+
+    # XXX check if removing this package would break any dependencies
+
+    # Delete the files
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare("SELECT path FROM file WHERE package_id = ?");
+    $sth->execute($pkg_id);
+    while (my($path) = $sth->fetchrow_array) {
+	$path = $self->_expand_path($path);
+	if (unlink($path)) {
+	    ppm_log("NOTICE", "rm $path");
+	    # XXX if parent directory is empty now remove it as well?
+	}
+	else {
+	    ppm_log("WARN", "Can't remove $path: $!");
+	}
+    }
+ 
+   # Prune the database
+    $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $pkg_id);
+    $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $pkg_id);
+    $dbh->do("DELETE FROM package WHERE id = ?", undef, $pkg_id);
+    $dbh->commit;
+}
+
 sub init_db {
     my $self = shift;
     my $etc = $self->etc;
