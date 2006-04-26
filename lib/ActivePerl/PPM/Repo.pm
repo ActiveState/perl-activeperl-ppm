@@ -8,6 +8,8 @@ use HTML::Parser ();
 use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::Web qw(web_ua);
+use ActivePerl::PPM::Logger qw(ppm_log);
+
 use DBI ();
 
 sub new {
@@ -77,7 +79,7 @@ EOT
 	$last_sync = time - $last_sync;
 	if ($last_sync < 60*60) {
 	    use ActiveState::Duration qw(ago_eng);
-	    warn "Skipping sync, last synced " . ago_eng($last_sync) . "\n";
+	    ppm_log("INFO", "Skipping sync, last synced " . ago_eng($last_sync));
 	    return;
 	}
     }
