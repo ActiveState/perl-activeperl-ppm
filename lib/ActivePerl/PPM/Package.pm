@@ -214,8 +214,6 @@ sub dbi_store {
 	}
     }
 
-    $dbh->commit;
-
     return $id;
 }
 
