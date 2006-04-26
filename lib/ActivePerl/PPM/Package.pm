@@ -197,7 +197,7 @@ sub dbi_store {
     shift(@fields); # get rid of id
 
     if (defined $id) {
-	$dbh->do("UPDATE package SET " . join(", ", map "$_ = ?", @fields), undef, @{$self}{@fields});
+	$dbh->do("UPDATE package SET " . join(", ", map "$_ = ?", @fields) . " WHERE id = ?", undef, @{$self}{@fields}, $id);
 	$dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $id);
     }
     else {
