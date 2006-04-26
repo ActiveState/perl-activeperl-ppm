@@ -185,7 +185,7 @@ sub _install {
     }
 
     $| = 1;
-    my $verbose = 1;
+    my $verbose = 0;
     my $ua = web_ua();
 
     my $tmpdir = "/tmp/ppm-$$";
