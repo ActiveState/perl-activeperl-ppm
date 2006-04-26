@@ -170,7 +170,9 @@ sub package_best {
 
     my @pkg;
     for my $repo (values %{$self->{repo}}) {
-	push(@pkg, $repo->package_best($feature, $version));
+	if (my $best = $repo->package_best($feature, $version)) {
+	    push(@pkg, $best);
+	}
     }
     return ActivePerl::PPM::Package::best(@pkg);
 }
