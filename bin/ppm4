@@ -251,10 +251,15 @@ sub _install {
 
 	# do the install
 	print "Installing...";
-	$ppm->current_idirs->install(@_);
-	print "done\n";
+	if ($ppm->current_idirs->install(@_)) {
+	    print "done\n";
+	    # XXX post install scripts
+	}
+	else {
+	    print "\n";
+	    die;
+	}
 
-	# XXX post install scripts
     };
     my $err = $@;
     rmtree($tmpdir, $verbose);
