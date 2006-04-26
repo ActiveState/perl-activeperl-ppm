@@ -3,7 +3,10 @@
 use strict;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
+use ActivePerl::PPM::Logger qw(ppm_log);
 use File::Path qw(mkpath rmtree);
+
+(my $PROGNAME = $0) =~ s,.*[\\/],,;
 
 my $CMD = shift || gui();
 $CMD = "version" if $CMD eq "--version";
@@ -15,11 +18,13 @@ my $ppm = ActivePerl::PPM::Client->new;
 
 eval {
     no strict 'refs';
+    ppm_log("INFO", "$PROGNAME $CMD" . (@ARGV ? " @ARGV" : ""));
     &$do_cmd;
 };
 if ($@) {
+    ppm_log("ERR", "$PROGNAME $CMD: $@");
     #$@ =~ s/ at .*//;
-    print STDERR "ppm $CMD failed: $@";
+    print STDERR "$PROGNAME $CMD failed: $@";
     exit 1;
 }
 else {
@@ -33,9 +38,8 @@ sub usage {
 	$msg .= "\n" unless $msg =~ /\n$/;
 	print STDERR $msg;
     }
-    (my $progname = $0) =~ s,.*[\\/],,;
     $USAGE ||= "<cmd> args...";
-    print STDERR "Usage: $progname $USAGE\n";
+    print STDERR "Usage: $PROGNAME $USAGE\n";
     exit 1;
 }
 
@@ -250,10 +254,9 @@ sub _install {
 
 	# XXX post install scripts
     };
-    if ($@) {
-	print "\nFAIL: $@";
-    }
+    my $err = $@;
     rmtree($tmpdir, $verbose);
+    die $err if $err;
 }
 
 BEGIN {
