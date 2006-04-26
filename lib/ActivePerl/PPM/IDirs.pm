@@ -10,6 +10,7 @@ use File::Path ();
 use File::Basename ();
 
 use ActivePerl::PPM::Package ();
+use ActivePerl::PPM::Logger qw(ppm_log ppm_status ppm_debug);
 
 
 sub new {
@@ -216,7 +217,6 @@ sub package {
 sub feature_have {
     my($self, $feature) = @_;
     my $vers = $self->dbh->selectrow_array("SELECT max(version) FROM feature WHERE name = ? AND role = 'p'", undef, $feature);
-    #print "FEATURE_HAVE($feature) ==> $vers\n";
     return $vers;
 }
 
@@ -265,14 +265,14 @@ sub install {
 	    }
 	    $state{pkg_id} = $pkg_id;
 
-	    print "INSTALL $pkg_id [$pkg->{name}]\n";
+	    ppm_log("NOTICE", "Intalling $pkg->{name} with id $pkg_id");
 
 	    my $files = $pkg->{files};
 	    next unless $files;
 	    for my $from (sort keys %$files) {
 		die "There is no '$from' to install from" unless -l $from || -e _;
 		my $to = $self->_expand_path($files->{$from});
-		print "I $from ---> $to\n";
+		ppm_debug("Copy $from --> $to");
 		if (-d _) {
 		    die "Can't install a directory on top of $to"
 			if -e $to && !-d _;
@@ -295,13 +295,13 @@ sub install {
     };
 
     if ($@) {
-	print "Rollback [$@]\n";
+	ppm_log("ERR", "Rollback $@");
 	$dbh->rollback;
 	_do_action(reverse @{$state{rollback}});
 	return 0;
     }
     else {
-	print "Commit install\n";
+	ppm_log("NOTICE", "Commit install");
 	$dbh->commit;
 	_do_action(@{$state{commit}});
 	return 1;
@@ -311,20 +311,20 @@ sub install {
 sub _do_action {
     for my $action (@_) {
 	my($op, @args) = @$action;
-	print ">>> $op @args\n";
+	ppm_debug("$op @args");
 	if ($op eq "rmdir") {
 	    for my $d (@args) {
-		rmdir($d) || warn "warning: Can't rmdir($d): $!";
+		rmdir($d) || ppm_log("WARN", "Can't rmdir($d): $!");
 	    }
 	}
 	elsif ($op eq "unlink") {
 	    # Some platforms (HP-UX) cannot delete in-use executables
 	    # and will produce "Text file busy" (ETXTBSY) warnings
 	    # here.  So make it clear this is "just" a warning.
-	    unlink(@args) || warn "warning: Can't unlink(@args): $!";
+	    unlink(@args) || ppm_log("WARN", "Can't unlink(@args): $!");
 	}
 	elsif ($op eq "rename") {
-	    rename($args[0], $args[1]) || warn "warning: Can't rename(@args): $!";
+	    rename($args[0], $args[1]) || ppm_log("WARN", "Can't rename(@args): $!");
 	}
 	else {
 	    # programmer error
@@ -350,6 +350,7 @@ sub _copy_file {
     if (-e $to) {
 	if (-f _ && File::Compare::compare($from, $to) == 0) {
 	    $copy_to = undef;
+	    ppm_log("INFO", "$to already present");
 	}
 	else {
 	    my $bak = "$to.ppmbak";
@@ -392,6 +393,7 @@ sub _copy_file {
 
 	close($in);
 	close($out) || die "Write failed for file $copy_to";
+	ppm_log("INFO", "$copy_to written");
     }
 
     my $path = $state->{self}->_relative_path($to);
@@ -474,7 +476,7 @@ EOT
 sub sync_db {
     my $self = shift;
     my $dbh = $self->dbh;
-    warn "Sync PPM database with .packlists...\n";
+    ppm_status("Syncing PPM database with .packlists");
     require ExtUtils::Packlist;
     my $pkglists = $self->packlists;
     for my $pkg (sort keys %$pkglists) {
@@ -483,15 +485,15 @@ sub sync_db {
 	    my($md5) = $dbh->selectrow_array("SELECT md5 FROM file WHERE package_id = ? AND path LIKE '%/.packlist'", undef, $id);
 	    if ($md5 && $md5 eq _file_info($pkglists->{$pkg})->{md5}) {
 		# packlist unchanged, assume unchanges package
-		warn "$pkg seems to be up-to-date\n";
+		ppm_log("NOTICE", "$pkg seems to be up-to-date");
 		next;
 	    }
-	    warn "Updating PPM entry for $pkg\n";
+	    ppm_log("INFO", "Updating PPM entry for $pkg");
 	}
 	else {
 	    $dbh->do("INSERT INTO package (name) VALUES (?)", undef, $pkg);
 	    $id = $dbh->func('last_insert_rowid'); #$dbh->last_insert_id;
-	    warn "Created PPM entry for $pkg\n";
+	    ppm_log("INFO", "Created PPM entry for $pkg");
 	}
 
 	my $pkglist = ExtUtils::Packlist->new($pkglists->{$pkg});
@@ -524,18 +526,17 @@ sub sync_db {
 	if ($info{verified} && $info{verified} == ($info{missing} || 0)) {
 	    # all files has been deleted, nuke package
 	    die "Assert" unless $info{id};
-	    warn "The $pkg package is gone.\n";
+	    ppm_log("NOTICE", "The $pkg package is gone");
 	    $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM package WHERE id = ?", undef, $info{id});
 	    $dbh->commit;
 	}
 	else {
-	    warn "The $pkg package is missing a .packlist\n";
+	    ppm_log("WARN", "The $pkg package is missing its .packlist");
 	}
     }
-
-    warn "sync done.\n\n";
+    ppm_status("");
 }
 
 sub _relative_path {
