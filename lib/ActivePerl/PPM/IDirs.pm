@@ -249,21 +249,18 @@ sub install {
 	old_files => {},
     );
     eval {
+	$dbh->{RaiseError} = 1;
 	for my $pkg (@packages) {
+	    $pkg = ActivePerl::PPM::Package->new($pkg);
 	    my $pkg_id = $self->package_id($pkg->{name});
 	    if (defined $pkg_id) {
-		# XXX update version, author, abstract
-	        $dbh->do("DELETE FROM feature WHERE package_id = $pkg_id");
 		for (@{$dbh->selectcol_arrayref("SELECT path FROM file where package_id = $pkg_id")}) {
 		    $state{old_files}{$_}++;
 		}
 	        $dbh->do("DELETE FROM file WHERE package_id = $pkg_id");
+		$pkg->{id} = $pkg_id;
             }
-	    else {
-		$dbh->do("INSERT INTO package (name, version, author, abstract) VALUES (?, ?, ?, ?)", undef, @{$pkg}{qw(name version author abstract)});
-		$pkg_id = $dbh->func('last_insert_rowid'); #$dbh->last_insert_id;
-	    }
-	    $state{pkg_id} = $pkg_id;
+	    $state{pkg_id} = $pkg_id = $pkg->dbi_store($dbh);
 
 	    ppm_log("NOTICE", "Intalling $pkg->{name} with id $pkg_id");
 
@@ -306,6 +303,7 @@ sub install {
 	_do_action(@{$state{commit}});
 	return 1;
     }
+    $dbh->{RaiseError} = 0;
 }
 
 sub _do_action {
