@@ -30,20 +30,51 @@ sub ppm_logger {
 }
 
 sub ppm_log {
-    my $prio = shift;
-    my $msg = shift;
+    ($logger || ppm_logger())->log(@_);
+}
 
-    unless ($prio =~ /^\d+$/) {
-	no strict 'refs';
-	if (defined &{"LOG_$prio"}) {
-	    $prio = &{"LOG_$prio"};
-	}
-	else {
-	    croak("Unrecognized log priority argument of '$prio'");
-	}
+sub ppm_debug {
+    ppm_log(LOG_DEBUG, @_);
+}
+
+sub ppm_status {
+    ($logger || ppm_logger())->status(@_);
+}
+
+#
+#  Objects
+#
+
+sub new {
+    my($class, %opt) = shift;
+
+    my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} || "$ENV{HOME}/ppm4.log";
+    my $fh;
+    if (open($fh, ">>", $logfile)) {
+	require IO::Handle;  # adds methods to $fh
+	$fh->autoflush;
+    }
+    else {
+	warn "Can't log to '$logfile': $!";
+	$opt{cons}++;
     }
 
-    if (1) {
+    return bless {
+        level => _num_prio($opt{level} || $ENV{ACTIVEPERL_PPM_LOG_LEVEL} || LOG_DEBUG()),
+        cons => ($opt{cons} || $ENV{ACTIVEPERL_PPM_LOG_CONS}),
+        callinfo => 1, #($opt{callinfo} || $ENV{ACTIVEPERL_PPM_LOG_CALLINFO}),
+	fh => $fh,
+    }, $class;
+}
+
+sub log {
+    my $self = shift;
+    my $prio = _num_prio(shift);
+    my $msg = shift;
+
+    return if $prio > ($self->{level} || LOG_INFO);
+
+    if ($self->{callinfo}) {
 	# fill in caller info
 	my $i = 0;
 	CALLER: {
@@ -54,35 +85,38 @@ sub ppm_log {
 	};
     }
 
-    my @t = (localtime)[reverse 0..5];
-    $t[0] += 1900; # year
-    $t[1] ++;      # month
-    warn sprintf "%04d-%02d-%02dT%02d:%02d:%02d <%d> %s\n", @t, $prio, $msg;
+    $msg .= "\n" unless $msg =~ /\n\z/;
+
+    if ($self->{cons}) {
+	warn $msg;
+    }
+
+    if (my $fh = $self->{fh}) {
+	my @t = (localtime)[reverse 0..5];
+	$t[0] += 1900; # year
+	$t[1] ++;      # month
+	$fh->print(sprintf "%04d-%02d-%02dT%02d:%02d:%02d <%d> %s", @t, $prio, $msg);
+    }
 }
 
-sub ppm_debug {
-    ppm_log(LOG_DEBUG, @_);
-}
-
-sub ppm_status {
-    # update status bar
-    my $msg = shift;
+sub status {
+    my($self, $msg) = @_;
     $msg = "done" unless $msg;
-    ppm_log(LOG_INFO, $msg);
+    $self->log(LOG_INFO, $msg);
 }
 
-#
-#  Objects
-#
-
-sub new {
-    my $class = shift;
-    return bless {}, $class;
-}
-
-sub log {
-    my $self = shift;
-    ppm_log(@_);  # :)
+sub _num_prio {
+    my $prio = shift;
+    unless ($prio =~ /^\d+$/) {
+	no strict 'refs';
+	if (defined &{"LOG_$prio"}) {
+	    $prio = &{"LOG_$prio"};
+	}
+	else {
+	    croak("Unrecognized log priority '$prio'");
+	}
+    }
+    return $prio;
 }
 
 1;
