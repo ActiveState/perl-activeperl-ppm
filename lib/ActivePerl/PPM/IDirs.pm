@@ -260,6 +260,9 @@ sub install {
 	        $dbh->do("DELETE FROM file WHERE package_id = $pkg_id");
 		$pkg->{id} = $pkg_id;
             }
+	    else {
+		delete $pkg->{id};  # might be left over from the RepoPackage
+	    }
 	    $state{pkg_id} = $pkg_id = $pkg->dbi_store($dbh);
 
 	    ppm_log("NOTICE", "Intalling $pkg->{name} with id $pkg_id");
