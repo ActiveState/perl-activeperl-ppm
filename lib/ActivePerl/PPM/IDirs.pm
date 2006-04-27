@@ -238,6 +238,7 @@ sub install {
     }
 
     my $dbh = $self->dbh;
+    require ExtUtils::Packlist;
 
     # do install
     my %state = (
@@ -265,6 +266,7 @@ sub install {
 		delete $pkg->{id};  # might be left over from the RepoPackage
 	    }
 	    $state{pkg_id} = $pkg_id = $pkg->dbi_store($dbh);
+	    $state{packlist} = ExtUtils::Packlist->new;
 
 	    ppm_log("NOTICE", "Intalling $pkg->{name} with id $pkg_id");
 
@@ -289,6 +291,18 @@ sub install {
 		    die "Can't install $from since it's neither a regular file nor a directory";
 		}
 	    }
+
+	    # write .packlist
+	    (my $packlist_pkg = $pkg->{name}) =~ s,-,/,g;
+	    my $packlist_file = $self->_expand_path("archlib:auto/$packlist_pkg/.packlist");
+	    my $packlist_dir = File::Basename::dirname($packlist_file);
+	    unless (-d $packlist_dir) {
+		File::Path::mkpath($packlist_dir) || die "Can't mkpath '$packlist_dir': $!";
+		# XXX rollback
+	    }
+	    $state{packlist}->write($packlist_file) || die "Can't write '$packlist_file': $!";
+	    _on_rollback(\%state, "unlink", $packlist_file);
+	    _save_file_info(\%state, $packlist_file);
 	}
 	for (keys %{$state{old_files}}) {
 	    _on_commit(\%state, "unlink", $self->_expand_path($_));
@@ -404,11 +418,17 @@ sub _copy_file {
 	ppm_log("INFO", "$copy_to written");
     }
 
-    my $path = $state->{self}->_relative_path($to);
-    my $info = _file_info($to);
+    $state->{packlist}{$to}++;
+    _save_file_info($state, $to);
+}
 
-    delete $state->{old_files}{$path};
-    $state->{dbh}->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $path, $info->{md5}, $info->{mode});
+sub _save_file_info {
+    my($state, $path) = @_;
+    my $rpath = $state->{self}->_relative_path($path);
+    my $info = _file_info($path);
+
+    delete $state->{old_files}{$rpath};
+    $state->{dbh}->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $rpath, $info->{md5}, $info->{mode});
 }
 
 sub _copy_dir {
