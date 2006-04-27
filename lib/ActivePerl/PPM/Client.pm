@@ -200,7 +200,7 @@ sub feature_have {
     return undef;
 }
 
-sub packages_to_install_for {
+sub packages_missing_for {
     my($self, $feature, $version) = @_;
     unless (defined $version) {
 	$version = $self->feature_best($feature);
@@ -320,7 +320,7 @@ than the given version.
 Returns the installed version number of the given feature.  Returns
 C<undef> if none of the installed pacakges provide this feature.
 
-=item $client->packages_to_install_for( $feature, $version )
+=item $client->packages_missing_for( $feature, $version )
 
 Returns the list of missing packages to install in order to obtain the
 requested feature at or better than the given version.  The list

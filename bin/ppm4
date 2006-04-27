@@ -168,14 +168,14 @@ sub do_install {
     $USAGE = "install <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install($ppm->packages_to_install_for($feature, 0));
+    _install($ppm->packages_missing_for($feature, 0));
 }
 
 sub do_upgrade {
     $USAGE = "upgrade <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install($ppm->packages_to_install_for($feature, undef));
+    _install($ppm->packages_missing_for($feature, undef));
 }
 
 sub _install {
