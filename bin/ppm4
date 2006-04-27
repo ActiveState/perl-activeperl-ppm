@@ -267,8 +267,12 @@ sub _install {
 
 	# do the install
 	print "Installing...";
-	if ($ppm->current_idirs->install(@_)) {
+	if (my $summary = $ppm->current_idirs->install(@_)) {
 	    print "done\n";
+	    for my $what (sort keys %$summary) {
+		my $n = $summary->{$what} || 0;
+		printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
+	    }
 	    # XXX post install scripts
 	}
 	else {

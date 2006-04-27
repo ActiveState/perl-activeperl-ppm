@@ -247,6 +247,7 @@ sub install {
         commit => [],
         rollback => [],
 	old_files => {},
+	summary => {},
     );
     eval {
 	$dbh->{RaiseError} = 1;
@@ -291,6 +292,7 @@ sub install {
 	}
 	for (keys %{$state{old_files}}) {
 	    _on_commit(\%state, "unlink", $self->_expand_path($_));
+	    $state{summary}{deleted}++;
 	}
     };
 
@@ -298,13 +300,13 @@ sub install {
 	ppm_log("ERR", "Rollback $@");
 	$dbh->rollback;
 	_do_action(reverse @{$state{rollback}});
-	return 0;
+	return undef;
     }
     else {
 	ppm_log("NOTICE", "Commit install");
 	$dbh->commit;
 	_do_action(@{$state{commit}});
-	return 1;
+	return $state{summary} || {};
     }
     $dbh->{RaiseError} = 0;
 }
@@ -351,6 +353,7 @@ sub _copy_file {
     if (-e $to) {
 	if (-f _ && File::Compare::compare($from, $to) == 0) {
 	    $copy_to = undef;
+	    $state->{summary}{unchanged}++;
 	    ppm_log("INFO", "$to already present");
 	}
 	else {
@@ -359,7 +362,11 @@ sub _copy_file {
 	    rename($to, $bak) || die "Can't rename as $bak: $!";
 	    _on_rollback($state, "rename", $bak, $to);
 	    _on_commit($state, "unlink", $bak);
+	    $state->{summary}{updated}++;
 	}
+    }
+    else {
+	$state->{summary}{installed}++;
     }
 
     if ($copy_to) {
@@ -460,7 +467,7 @@ sub remove {
 	    ppm_log("WARN", "Can't remove $path: $!");
 	}
     }
- 
+
    # Prune the database
     $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $pkg_id);
     $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $pkg_id);
