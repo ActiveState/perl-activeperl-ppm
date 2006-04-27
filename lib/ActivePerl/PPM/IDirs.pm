@@ -489,7 +489,7 @@ sub init_db {
 sub _init_ppm_schema {
     my $self = shift;
     my $dbh = $self->{dbh};
-    for my $create (ActivePerl::PPM::Package->sql_create_tables()) {
+    for my $create (ActivePerl::PPM::Package->sql_create_tables(name_unique => 1)) {
 	$dbh->do($create);
     }
     $dbh->do(<<'EOT');
