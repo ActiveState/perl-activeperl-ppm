@@ -286,4 +286,5 @@ sub do_remove {
 BEGIN {
     # aliases
     *do_query = \&do_list;
+    *do_update = \&do_upgrade;
 }
