@@ -201,7 +201,7 @@ sub feature_have {
 }
 
 sub packages_missing_for {
-    my($self, $feature, $version) = @_;
+    my($self, $feature, $version, %opt) = @_;
     unless (defined $version) {
 	$version = $self->feature_best($feature);
 	die "No $feature available\n" unless defined($version);
@@ -217,9 +217,9 @@ sub packages_missing_for {
         my $have = $self->feature_have($feature); # XXX also consider the @pkg provide
 	ppm_debug("Have $feature $have") if defined($have);
 
-        if (!defined($have) || $have < $want) {
+        if ($opt{force} || !defined($have) || $have < $want) {
             if (my $pkg = $self->package_best($feature, $want)) {
-		$self->check_downgrade($pkg, $feature);
+		$self->check_downgrade($pkg, $feature) unless $opt{force};
 		push(@pkg, $pkg);
 
 		if (my $dep = $pkg->{require}) {
@@ -241,6 +241,7 @@ sub check_downgrade {
     my($self, $pkg, $because) = @_;
     my @downgrade;
     for my $feature (sort keys %{$pkg->{provide}}) {
+	next if $feature eq $pkg->{name};
 	my $have = $self->feature_have($feature);
         push(@downgrade, $feature) if $have && $have > $pkg->{provide}{$feature};
     }
@@ -320,7 +321,7 @@ than the given version.
 Returns the installed version number of the given feature.  Returns
 C<undef> if none of the installed pacakges provide this feature.
 
-=item $client->packages_missing_for( $feature, $version )
+=item $client->packages_missing_for( $feature, $version, %opt )
 
 Returns the list of missing packages to install in order to obtain the
 requested feature at or better than the given version.  The list
