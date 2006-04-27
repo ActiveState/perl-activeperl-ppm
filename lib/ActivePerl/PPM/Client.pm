@@ -217,7 +217,7 @@ sub packages_to_install_for {
         my $have = $self->feature_have($feature); # XXX also consider the @pkg provide
 	ppm_debug("Have $feature $have") if defined($have);
 
-        if (!$have || $have < $want) {
+        if (!defined($have) || $have < $want) {
             if (my $pkg = $self->package_best($feature, $want)) {
 		$self->check_downgrade($pkg, $feature);
 		push(@pkg, $pkg);
