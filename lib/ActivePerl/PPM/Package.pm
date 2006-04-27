@@ -138,16 +138,26 @@ sub best {
 #
 
 sub sql_create_tables {
-    my $class = shift;
+    my($class, %opt) = @_;
+    my @fields = $class->BASE_FIELDS;
+    my @index;
+    if ($opt{name_unique}) {
+	my($name) = grep $_->[0] eq "name", @fields;
+	$name->[1] .= " unique";
+    }
+    else {
+	push(@index, "CREATE UNIQUE INDEX IF NOT EXISTS package_idx ON package(name, version)");
+    }
     return
 "CREATE TABLE IF NOT EXISTS package (\n    " .
-    join(",\n    ", map join(" ", @$_), $class->BASE_FIELDS) .
+    join(",\n    ", map join(" ", @$_), @fields) .
 "
 )",
+    @index,
 "CREATE TABLE IF NOT EXISTS feature (
      package_id integer not null,
      name text not null,
-     version double,
+     version double not null,
      role char(1) not null
 )"
 }
@@ -202,7 +212,7 @@ sub dbi_store {
     }
     else {
 	$dbh->do("INSERT INTO package (" . join(", ", @fields) . ") VALUES(" . join(", ", map "?", @fields) . ")",
-		 undef, @{$self}{@fields});
+		 undef, @{$self}{@fields}) || return undef;
 	$id = $dbh->func('last_insert_rowid');
     }
 
@@ -268,6 +278,8 @@ package with the given key is found.
 Writes the current package to a database.  If $pkg was constructed by
 C<new_dbi> then this updates the package, otherwise this creates a new
 package object in the database.
+
+Returns the $id of the object stored if successful, otherwise C<undef>.
 
 =back
 
