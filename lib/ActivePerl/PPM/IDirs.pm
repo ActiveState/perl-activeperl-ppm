@@ -122,8 +122,10 @@ sub etc {
 sub packages {
     my $self = shift;
     my $dbh = $self->dbh;
-    my $aref = $dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name");
-    return @$aref;
+    return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")}
+	unless @_;
+    return @{$dbh->selectall_arrayref("SELECT " . join(",", "name", @_) .
+				      " FROM package ORDER BY name")};
 }
 
 sub dbh {
@@ -755,10 +757,16 @@ Returns the name.  This returns the empty string for nameless I<IDirs>.
 
 Returns the corresponding path.
 
-=item $dir->packages
+=item $dir->packages( @fields )
 
-Returns the list of packages currently installed.  In scalar context
-returns the number of packages installed.
+Without arguments returns the sorted list of names of packages
+currently installed.  In scalar context returns the number of packages
+installed.
+
+With arguments return a list of array references each one representing
+an installed package.  The elements of each array are the fields
+requested plus the package name which is always the first element.
+The list will be sorted by package name.
 
 =item $dir->packlists
 
