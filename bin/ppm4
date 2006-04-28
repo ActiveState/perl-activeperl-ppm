@@ -149,6 +149,12 @@ sub do_list {
     }
 }
 
+sub do_files {
+    $USAGE = "files <pkg>";
+    usage() unless @ARGV == 1;
+    print "$_\n" for $ppm->current_idirs->package_files($ARGV[0]);
+}
+
 sub do_verify {
     my %opt;
     if (@ARGV) {

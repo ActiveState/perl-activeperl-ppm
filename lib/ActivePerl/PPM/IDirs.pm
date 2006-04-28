@@ -210,10 +210,21 @@ sub package_id {
 
 sub package {
     my($self, $id) = @_;
-    return undef unless defined($id);
-    $id = $self->package_id($id) unless $id =~ /^\d+$/;
-    return undef unless defined($id);
+    unless ($id =~ /^\d+$/) {
+	$id = $self->package_id($id);
+	return undef unless defined($id);
+    }
     return ActivePerl::PPM::Package->new_dbi($self->dbh, $id);
+}
+
+sub package_files {
+    my($self, $id) = @_;
+    unless ($id =~ /^\d+$/) {
+	my $name = $id;
+	$id = $self->package_id($name);
+	die "Package $name isn't installed" unless defined($id);
+    }
+    return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = $id ORDER BY path")}
 }
 
 sub feature_have {

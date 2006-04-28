@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 43;
+plan tests => 44;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -62,6 +62,7 @@ ok(-f "$prefix/lib/idirs.t");
 ok(file_eq("t/idirs.t", "$prefix/lib/idirs.t"));
 ok(-f "$prefix/lib/repo.t");
 ok(file_eq("t/repo.t", "$prefix/lib/repo.t"));
+ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/idirs.t|$prefix/lib/repo.t");
 ok($dir->verify);
 
 ok($dir->install({
