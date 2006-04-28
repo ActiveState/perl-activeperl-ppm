@@ -684,23 +684,25 @@ I<IDirs> is divided into the following areas:
 
 =over 8
 
-=item archlib
-
-This is where architecture specific modules go.  Packages that are
-implemented using XS code are installed here.
-
 =item lib
 
 This is where architecture neutral modules go.  Packages that
 implemented in pure perl can be installed here.
 
-=item bin
+=item archlib
 
-This is where architecture specific programs go.
+This is where architecture specific modules go.  Packages that are
+implemented using XS code are installed here.  For ActivePerl this
+will normally be the same as C<lib>.
 
 =item script
 
 This is where architecture neutral programs go.
+
+=item bin
+
+This is where architecture specific programs go.  For ActivePerl this
+will normally be the same as C<script>.
 
 =item etc
 
@@ -768,47 +770,10 @@ Returns the name.  This returns the empty string for nameless I<IDirs>.
 
 Returns the corresponding path.
 
-=item $dir->packages( @fields )
-
-Without arguments returns the sorted list of names of packages
-currently installed.  In scalar context returns the number of packages
-installed.
-
-With arguments return a list of array references each one representing
-an installed package.  The elements of each array are the fields
-requested.  The list will be sorted by package name.
-
-=item $dir->packlists
-
-Returns the list of packages that have F<.packlist> files installed.
-In scalar context return a hash reference; the keys are package names
-and the values are full paths to the corresponding F<.packlist> file.
-
 =item $dir->inc
 
 Returns the list of directories to be pushed onto perl's @INC for the
 current installdirs.
-
-=item $dir->verify( %opts )
-
-Verify that the files of the installed packages are still present and
-unmodified.  Prints messages to STDOUT about files that are missing or modified.
-
-In scalar context returns TRUE if all files where still found good.
-In array context return key/value pairs suitable for assignment to a
-hash.  The C<verified> value is the number of files checked.  The
-C<missing>, C<modified>, C<wrong_mode> tally the files found to be
-missing, modified or chmoded.
-
-The following options are recognized:
-
-=over
-
-=item package => $name
-
-Only verify the given package.
-
-=back
 
 =item $dir->install( \%pkg1, \%pkg2, ... )
 
@@ -816,8 +781,8 @@ Install the given list of packages as one atomic operation.  The
 function returns TRUE if all packages installed or FALSE if
 installation failed.
 
-Each package to be installed is described by a hash reference with the
-following elements:
+Each package to be installed is described by a hash reference (or an
+L<ActivePerl::PPM::Package> object) with the following elements:
 
 =over
 
@@ -843,7 +808,7 @@ A short sentence describing the purpose of the package.
 =item blib => $path
 
 Pick up files to install from the given I<blib> style directory.  The
-codebase directory of PPM packages is usually a tarball of this stuff.
+codebase directory of PPD packages is usually a tarball of this stuff.
 
 =item files => \%hash
 
@@ -869,7 +834,87 @@ package was installed in the first place.  Uninstalling a package
 might break other packages that depended on features this package
 provided.
 
+=item $dir->verify( %opts )
+
+Verify that the files of the installed packages are still present and
+unmodified.  Prints messages to STDOUT about files that are missing or modified.
+
+In scalar context returns TRUE if all files where still found good.
+In array context return key/value pairs suitable for assignment to a
+hash.  The C<verified> value is the number of files checked.  The
+C<missing>, C<modified>, C<wrong_mode> tally the files found to be
+missing, modified or chmoded.
+
+The following options are recognized:
+
+=over
+
+=item package => $name
+
+Only verify the given package.
+
 =back
+
+=item $dir->packages( @fields )
+
+Without arguments returns the sorted list of names of packages
+currently installed.  In scalar context returns the number of packages
+installed.
+
+With arguments return a list of array references each one representing
+an installed package.  The elements of each array are the fields
+requested.  The list will be sorted by package name.  See
+L<ActivePerl::PPM::Package> for what field names are available.
+
+=item $dir->package( $id )
+
+=item $dir->package( $name )
+
+Return an package object (see L<ActivePerl::PPM::Package>) for the
+given package.  Returns C<undef> if no such package is installed.
+
+=item $dir->package_id( $name )
+
+Returns the internal identifier for the given package.  Returns
+C<undef> if no such package is installed.  This is also the cheapest
+way to check if a package is installed.
+
+=item $dir->feature_have( $feature )
+
+If one of the installed packages provide the given feature, then the
+feature version number is returned.  The method returns C<undef> if no
+package provide the given feature.
+
+=item $dir->package_files( $id )
+
+=item $dir->package_files( $name )
+
+Returns the list of names for the files that belong to the given
+package.  If a package name is provided, then this method will croak
+if the given package is not installed.
+
+=item $dir->packlists
+
+Returns the list of packages that have F<.packlist> files installed.
+In scalar context return a hash reference; the keys are package names
+and the values are full paths to the corresponding F<.packlist> file.
+This will also pick up packages installed by other means that by PPM.
+See L<ExtUtils::Packlist> for more information about these files.  PPM
+does not use F<.packlist> files to track the files installed by the
+packages it manage, but it keeps them in sync for other tools that
+manage modules.
+
+=item $dir->sync_db
+
+Synchronize the state of the PPM database with what modules seems to
+be installed in the directories of the current I<IDirs>.  Packages
+where all files are gone will also be deleted from the PPM database.
+
+=back
+
+=head1 SEE ALSO
+
+L<ActivePerl::PPM::Package>, L<ExtUtils::Packlist>.
 
 =head1 BUGS
 
