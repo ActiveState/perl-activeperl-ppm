@@ -239,6 +239,8 @@ sub install {
 
     my $dbh = $self->dbh;
     require ExtUtils::Packlist;
+    die "Can't install into read-only area"
+	if $self->{readonly};
 
     # do install
     my %state = (
@@ -475,6 +477,9 @@ sub uninstall {
 
     # Delete the files
     my $dbh = $self->dbh;
+    die "Can't uninstall from read-only area"
+	if $self->{readonly};
+
     my $sth = $dbh->prepare("SELECT path FROM file WHERE package_id = ?");
     $sth->execute($pkg_id);
     while (my($path) = $sth->fetchrow_array) {
@@ -511,16 +516,28 @@ sub init_db {
     die unless $dbh;
     $self->{dbh} = $dbh;
 
-    my $count = $dbh->selectrow_array("SELECT count(*) FROM package");
-    $self->_init_ppm_schema unless defined $count;
-    $self->sync_db unless $count;
+    my $v = $dbh->selectrow_array("PRAGMA user_version");
+    die "Assert" unless defined $v;
+    if ($v == 0) {
+	ppm_log("WARN", "Setting up schema for $etc/$db_file");
+	_init_ppm_schema($dbh);
+	$dbh->do("PRAGMA user_version = 1");
+	$dbh->commit;
+	$self->sync_db;
+    }
+    elsif ($v != 1) {
+	die "Unrecognized database scheme $v for $etc/$db_file";
+    }
+
+    # check if we have opened a readonly database based on technique
+    # suggested in http://article.gmane.org/gmane.comp.db.sqlite.general/5171
+    $self->{readonly}++ unless $dbh->do("UPDATE package SET rowid=0 WHERE 0");
 }
 
 sub _init_ppm_schema {
-    my $self = shift;
-    my $dbh = $self->{dbh};
+    my $dbh = shift;
     for my $create (ActivePerl::PPM::Package->sql_create_tables(name_unique => 1)) {
-	$dbh->do($create);
+	$dbh->do($create) || die "Can't create database table";
     }
     $dbh->do(<<'EOT');
 CREATE TABLE IF NOT EXISTS file (
@@ -530,7 +547,6 @@ CREATE TABLE IF NOT EXISTS file (
     mode integer
 )
 EOT
-    $dbh->commit;
 }
 
 sub sync_db {
