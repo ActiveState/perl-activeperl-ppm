@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 16;
+plan tests => 39;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -12,6 +12,7 @@ if (-e $prefix) {
 }
 
 sub j { join("|", @_) }
+sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 
 use ActivePerl::PPM::IDirs;
 
@@ -47,6 +48,14 @@ ok($dir->install({
         "t/repo.t" => "archlib:repo.t",
     },
 }));
+ok($dir->packages, 2);
+ok(j($dir->packages), "Foo|Foo2");
+
+ok(-f "$prefix/lib/idirs.t");
+ok(file_eq("t/idirs.t", "$prefix/lib/idirs.t"));
+ok(-f "$prefix/lib/repo.t");
+ok(file_eq("t/repo.t", "$prefix/lib/repo.t"));
+ok($dir->verify);
 
 ok($dir->install({
     name => "Foo2",
@@ -55,7 +64,28 @@ ok($dir->install({
 	"t/repo" => "bin:",
     },
 }));
+ok($dir->packages, 2);
+ok(j($dir->packages), "Foo|Foo2");
+ok(-f "$prefix/lib/idirs.t");
+ok(file_eq("t/repo.t", "$prefix/lib/idirs.t"));
+ok(!-f "$prefix/lib/repo.t");
+ok(-f "$prefix/bin/test1/Acme-Buffy.ppd");
+ok(file_eq("t/repo/test1/Acme-Buffy.ppd", "$prefix/bin/test1/Acme-Buffy.ppd"));
+ok($dir->verify);
 
+$dir->uninstall("Foo2");
+ok($dir->packages, 1);
+ok(j($dir->packages), "Foo");
+ok(!-f "$prefix/lib/idirs.t");
+ok(!-f "$prefix/bin/test1/Acme-Buffy.ppd");
+ok($dir->verify);
+
+eval { $dir->uninstall("Foo2") };
+ok($@, qr/^Package Foo2 isn't installed/);
+
+$dir->uninstall("Foo");
+ok($dir->packages, 0);
+ok(j($dir->packages), "");
 ok($dir->verify);
 
 END {
