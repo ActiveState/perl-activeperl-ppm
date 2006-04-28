@@ -289,11 +289,12 @@ sub _install {
 sub do_remove {
     $USAGE = "remove <package>";
     usage() unless @ARGV == 1;
-    $ppm->current_idirs->remove($ARGV[0]);
+    $ppm->current_idirs->uninstall($ARGV[0]);
 }
 
 BEGIN {
     # aliases
     *do_query = \&do_list;
     *do_update = \&do_upgrade;
+    *do_uninstall = \&do_remove;
 }

@@ -463,7 +463,7 @@ sub _copy_dir {
     }
 }
 
-sub remove {
+sub uninstall {
     my $self = shift;
     my $pkg = shift;
     my $pkg_id = $self->package_id($pkg);
@@ -826,6 +826,13 @@ This will install the "Foo" directory into the archlib area and the
 "Bar.pm" module into the lib area.
 
 =back
+
+=item $dir->uninstall( $pkg )
+
+Removes the given package and its installed files.  Croaks if no such
+package was installed in the first place.  Uninstalling a package
+might break other packages that depended on features this package
+provided.
 
 =back
 
