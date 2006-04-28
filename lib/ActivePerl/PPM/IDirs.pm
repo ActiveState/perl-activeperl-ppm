@@ -230,6 +230,7 @@ sub package_files {
 sub feature_have {
     my($self, $feature) = @_;
     my $vers = $self->dbh->selectrow_array("SELECT max(version) FROM feature WHERE name = ? AND role = 'p'", undef, $feature);
+    $vers = "0E0" if defined($vers) && !$vers;  # ensure a TRUE value
     return $vers;
 }
 
