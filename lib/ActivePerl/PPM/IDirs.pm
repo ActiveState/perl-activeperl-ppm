@@ -526,11 +526,12 @@ sub init_db {
 	$self->sync_db;
     }
     elsif ($v != 1) {
-	die "Unrecognized database scheme $v for $etc/$db_file";
+	die "Unrecognized database schema $v for $etc/$db_file";
     }
 
     # check if we have opened a readonly database based on technique
     # suggested in http://article.gmane.org/gmane.comp.db.sqlite.general/5171
+    local $dbh->{PrintError} = 0;
     $self->{readonly}++ unless $dbh->do("UPDATE package SET rowid=0 WHERE 0");
 }
 
