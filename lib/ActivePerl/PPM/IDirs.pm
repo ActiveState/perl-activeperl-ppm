@@ -124,7 +124,7 @@ sub packages {
     my $dbh = $self->dbh;
     return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")}
 	unless @_;
-    return @{$dbh->selectall_arrayref("SELECT " . join(",", "name", @_) .
+    return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
 				      " FROM package ORDER BY name")};
 }
 
@@ -765,8 +765,7 @@ installed.
 
 With arguments return a list of array references each one representing
 an installed package.  The elements of each array are the fields
-requested plus the package name which is always the first element.
-The list will be sorted by package name.
+requested.  The list will be sorted by package name.
 
 =item $dir->packlists
 
