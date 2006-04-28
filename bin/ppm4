@@ -107,13 +107,45 @@ sub do_idirs {
 }
 
 sub do_list {
+    my %opt;
     if (@ARGV) {
-	$USAGE = "list";
-	usage("The $CMD command does not take arguments.");
+	$USAGE = "list [--name] [--version] [--abstract] [--author]";
+	require Getopt::Long;
+	Getopt::Long::GetOptions(\%opt,
+           'id',
+           'name',
+           'version',
+           'abstract',
+           'author',
+        ) || usage();
+	usage() if @ARGV;
     }
+    else {
+	$opt{version}++;
+	$opt{abstract}++;
+    }
+    $opt{name}++;
+
     my $idir = $ppm->current_idirs;
-    for my $pkg ($idir->packages) {
-	print "$pkg\n";
+    if (keys %opt == 1) {
+	# just list the names
+	for my $pkg ($idir->packages) {
+	    print "$pkg\n";
+	}
+    }
+    else {
+	my @fields;
+	push(@fields, "name");
+	push(@fields, "version") if $opt{version};
+	push(@fields, "abstract") if $opt{abstract};
+	push(@fields, "author") if $opt{author};
+	require ActiveState::Table;
+	my $tab = ActiveState::Table->new;
+	$tab->add_field($_) for @fields;
+	for my $pkg ($idir->packages(@fields)) {
+	    $tab->add_row({ map {$_ => shift(@$pkg)} @fields });
+	}
+	print $tab->as_box(null => "", show_trailer => 0);
     }
 }
 
