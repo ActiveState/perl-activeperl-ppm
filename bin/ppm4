@@ -239,7 +239,8 @@ sub _install_uri {
 	die $res->status_line;
     }
     require ActivePerl::PPM::PPD;
-    my $pkg = ActivePerl::PPM::Package->new_ppd($res->content);
+    my $cref = $res->content_ref;
+    my $pkg = ($$cref =~ /</ && $$cref =~ />/) ? ActivePerl::PPM::Package->new_ppd($$cref) : undef;
     unless ($pkg) {
 	die "No PPD found at $uri";
     }
