@@ -30,10 +30,6 @@ class Package
    - modules method (filtered and prettified 'provides').
    - Unicode fields (author, abstract)
 
-class Client
-------------
-   - home idirs
-
 ppm4
 ----
    - query should take search pattern as argument?

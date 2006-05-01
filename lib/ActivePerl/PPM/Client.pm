@@ -68,11 +68,21 @@ EOT
 	$conf = {};
     }
 
+    my @idirs = ("site", "perl");
+    my %idirs;
+    if (-d "$dir/lib") {
+	unshift(@idirs, "home");
+	require ActivePerl::PPM::IDirs;
+	$idirs{home} = ActivePerl::PPM::IDirs->new(prefix => $dir);
+    }
+
     my $self = bless {
 	dir => $dir,
 	etc => $etc,
 	conf => $conf,
         conf_file => $conf_file,
+	idirs => \%idirs,
+        idirs_seq => \@idirs,
     }, $class;
     return $self;
 }
@@ -104,11 +114,14 @@ sub current_idirs_name {
 sub idirs {
     my $self = shift;
     if (@_) {
-	require ActivePerl::PPM::IDirs;
-	return  ActivePerl::PPM::IDirs->new(@_);
+	my $name = shift;
+	return $self->{idirs}{$name} ||= do {
+	    require ActivePerl::PPM::IDirs;
+	    return  ActivePerl::PPM::IDirs->new($name);
+	}
     }
     else {
-	return ("site", "perl");
+	return @{$self->{idirs_seq}};
     }
 }
 
