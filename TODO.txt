@@ -1,33 +1,60 @@
+Databases
+---------
+   - use 'pragma user_version' to determine if tables need to be set up.
+     can also be used to check if schema needs to be upgraded.
+   - check for readonly tables; http://article.gmane.org/gmane.comp.db.sqlite.general/5171
+     
+
 class IDirs
 -----------
 
-   - update .packlist files on install
-   - frozen/enabled attributes
-   - track unknown files not found in .packlists
+   - implement frozen/enabled attributes
+   - make behaviour robust for readonly idirs (files not owned by you)
+   - sync_db should spend more effort on determining metadata for packages
+     it discovers via .packlist files (repo, search.cpan.org,...)
+   - track unknown files not found in .packlists (create PPM-Orphans package)
    - track installdate/updatedate for packages
+   - more tests
 
 class Repo
 ----------
    - improve search interface
-   - intelligent sync
+   - intelligent sync (
+   - REST repo
+   - SOAP repo
+   - merge all repo databases with "ATTACH DATABASE" and views that put all
+     packages in a single table.
 
 class Package
 -------------
    - modules method (filtered and prettified 'provides').
+   - Unicode fields (author, abstract)
 
 class Client
 ------------
-   - packages_missing_for($ppd)
    - home idirs
 
 ppm4
 ----
-   - query should take search pattern as argument
+   - query should take search pattern as argument?
+   - query should list more attributes
+   - usage
    - missing commands
-      - repos
-      - install
-      - update
-      - remove
       - belong
-      - files
       - help
+   - create temp repo for 'ppm install http://example.com/Foo.ppd'.  If 'Foo.ppd'
+     contains package 'Foo' and depends on package 'Bar', then look for
+     'http://example.com/Bar.ppd' before looking in other repos.
+
+ppm4-gui
+--------
+   - design it
+   - implemnt it
+
+test suite
+----------
+   - more tests
+
+documentation
+-------------
+   - how to set up repo
