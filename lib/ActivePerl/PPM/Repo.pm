@@ -99,7 +99,7 @@ EOT
 	    report_tags => [qw(a)],
 	    start_h => [sub {
 	        my $href = shift->{href};
-		push(@ppd, URI->new($href,$base)->abs($base)->rel($url)) if $href =~ /\.ppd$/;
+		push(@ppd, URI->new_abs($href,$base)->rel($url)) if $href =~ /\.ppd$/;
             }, "attr"],
 	);
 	$p->parse($res->content)->eof;
@@ -130,7 +130,7 @@ EOT
 		my $ppd_base = $ppd_res->base;
 		for my $attr (qw(codebase)) {
 		    next unless exists $ppd->{$attr};
-		    my $url = URI->new($ppd->{$attr}, $ppd_base)->abs($ppd_base);
+		    my $url = URI->new_abs($ppd->{$attr}, $ppd_base);
 		    $ppd->{$attr} = $url->as_string;
 		}
 

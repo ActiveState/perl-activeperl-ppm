@@ -246,7 +246,7 @@ sub _install_uri {
     }
     if (my $codebase = $pkg->{codebase}) {
 	# make it absolute
-	$pkg->{codebase} = URI->new($codebase, $res->base)->abs($res->base)->as_string;
+	$pkg->{codebase} = URI->new_abs($codebase, $res->base)->as_string;
     }
     else {
 	die "The PPD does not provide code to install for this platform";
