@@ -1,7 +1,7 @@
 #!perl -w
 
 use Test qw(plan ok);
-plan tests => 10;
+plan tests => 16;
 
 use ActivePerl::PPM::PPD;
 
@@ -46,3 +46,11 @@ ok(exists $features{"Date::Calc"});
 %features = $ppd->requires;
 ok(exists $features{"Bit-Vector"});
 ok(exists $features{"Carp-Clan"});
+
+# Try some to parse some bad stuff
+ok(ActivePerl::PPM::Package->new_ppd("<foo>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd("<foo></foo><bar>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd("<HARDPKG/>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG/>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG NAME='Foo'/>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG NAME='Foo' VERSION='0.1'/>"));  # works

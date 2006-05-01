@@ -25,13 +25,13 @@ sub ActivePerl::PPM::Package::new_ppd {
     }
 
     if (!exists $xml->{SOFTPKG}) {
-	ppm_log("Root element isn't <SOFTPKG>");
+	ppm_log("ERR", "Root element isn't <SOFTPKG>");
 	return undef;
     }
     $xml = $xml->{SOFTPKG};  # discard root
 
     if (!(exists $xml->{NAME} && exists $xml->{VERSION})) {
-	ppm_log("Required SOFTPKG attribute NAME and VERSION missing");
+	ppm_log("ERR", "Required SOFTPKG attribute NAME and VERSION missing");
 	return undef;
     }
 
