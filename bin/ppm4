@@ -117,12 +117,16 @@ sub do_list {
            'version',
            'abstract',
            'author',
+	   'files',
+           'size',
         ) || usage();
 	usage() if @ARGV;
     }
     else {
 	$opt{version}++;
 	$opt{abstract}++;
+	$opt{files}++;
+	$opt{size}++;
     }
     $opt{name}++;
 
@@ -142,8 +146,22 @@ sub do_list {
 	require ActiveState::Table;
 	my $tab = ActiveState::Table->new;
 	$tab->add_field($_) for @fields;
+	$tab->add_field("files") if $opt{files};
+	$tab->add_field("size") if $opt{size};
 	for my $pkg ($idir->packages(@fields)) {
-	    $tab->add_row({ map {$_ => shift(@$pkg)} @fields });
+	    my %row = map {$_ => shift(@$pkg)} @fields;
+	    if ($opt{files} || $opt{size}) {
+		my @files = $idir->package_files($row{name});
+		$row{files} = @files if $opt{files};
+		$row{size} = do {
+		    require ActiveState::DiskUsage;
+		    require ActiveState::Bytes;
+		    my $size = 0;
+		    $size += ActiveState::DiskUsage::du($_) for @files;
+		    $size = ActiveState::Bytes::bytes_format($size);
+		} if $opt{size};
+	    }
+	    $tab->add_row(\%row);
 	}
 	print $tab->as_box(null => "", show_trailer => 0);
     }
