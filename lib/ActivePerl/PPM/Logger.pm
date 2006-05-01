@@ -85,7 +85,11 @@ sub log {
 	};
     }
 
-    $msg .= "\n" unless $msg =~ /\n\z/;
+    # clean up message
+    $msg =~ s/^\s+//;
+    $msg =~ s/\s+\z//;
+    $msg =~ s/\s+/ /g;
+    $msg .= "\n";
 
     if ($self->{cons}) {
 	warn $msg;
