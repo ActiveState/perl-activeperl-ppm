@@ -272,31 +272,35 @@ sub _install {
     eval {
 	for my $pkg (@_) {
 	    my $name = $pkg->name_version;
-	    print "Downloading $name...";
 	    my $codebase = $pkg->codebase;
 	    die "No codebase for $name" unless $codebase;
 
-	    my $codebase_type;
 	    if ($codebase =~ /\.(tgz|tar\.gz)$/) {
-		$codebase_type = "tgz";
+		$pkg->{codebase_type} = "tgz";
 	    }
-	    die "Don't know how to unpack $codebase" unless $codebase_type;
+	    die "Don't know how to unpack $codebase" unless $pkg->{codebase_type};
 
-	    my $save = "$tmpdir/$name.$codebase_type";
-	    #print "\n    $codebase ==> $save...";
-	    my $res = $ua->get($codebase, ":content_file" => $save);
-	    die $res->status_line unless $res->is_success;
-	    if (my $len = $res->content_length) {
-		my $save_len = -s $save;
-		if ($save_len != $len) {
-		    die "Aborted download ($len bytes expected, got $save_len).\n";
+	    if ($codebase =~ /^file:/) {
+		$pkg->{codebase_file} = URI->new($codebase)->file;
+		unless (-f $pkg->{codebase_file}) {
+		    die "No file at $pkg->{codebase_file}";
 		}
 	    }
-	    # XXX An MD5 checksum for the tarball would be a good thing
-	    print "done\n";
-
-	    $pkg->{codebase_type} = $codebase_type;
-	    $pkg->{codebase_file} = $save;
+	    else {
+		print "Downloading $name...";
+		my $save = $pkg->{codebase_file} = "$tmpdir/$name.$pkg->{codebase_type}";
+		#print "\n    $codebase ==> $save...";
+		my $res = $ua->get($codebase, ":content_file" => $save);
+		die $res->status_line unless $res->is_success;
+		if (my $len = $res->content_length) {
+		    my $save_len = -s $save;
+		    if ($save_len != $len) {
+			die "Aborted download ($len bytes expected, got $save_len).\n";
+		    }
+		}
+		# XXX An MD5 checksum for the tarball would be a good thing
+		print "done\n";
+	    }
 	}
 
 	for my $pkg (@_) {
@@ -307,6 +311,7 @@ sub _install {
 		require Archive::Tar;
 		require ExtUtils::MakeMaker;
 		require ActiveState::ModInfo;
+		ppm_log("DEBUG", "Unpacking $codebase_file");
 		my $tar = Archive::Tar->new($codebase_file, 1);
 		for my $file ($tar->get_files) {
 		    next unless $file->is_file;  # don't extract links and other crap
