@@ -244,6 +244,7 @@ sub install {
 	if (my $blib = $pkg->{blib}) {
 	    for my $d (qw(arch archlib lib bin script man1 man3 html)) {
 		next unless -d "$blib/$d";
+		next if $d =~ /^man/ && !$self->{dirs}{$d};
 		my $dd = $d;
 		$dd = "archlib" if $dd eq "arch";  # :-(
 		$pkg->{files}{"$blib/$d"} = "$dd:";
