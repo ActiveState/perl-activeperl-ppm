@@ -203,7 +203,7 @@ sub do_search {
 }
 
 sub do_install {
-    $USAGE = "install [--force] <module>";
+    $USAGE = "install [--force] <module> | <url> | <file>";
     my $force;
     require Getopt::Long;
     Getopt::Long::GetOptions(
@@ -211,7 +211,18 @@ sub do_install {
      ) || usage();
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install($ppm->packages_missing_for($feature, 0, force => $force));
+    if ($feature =~ m,^[a-z][+\w]+:[^:],) {
+	# looks like an absolute URL
+	_install_uri($feature);
+    }
+    elsif ($feature =~ /\.ppd$/) {
+	require URI::file;
+	_install_uri(URI::file->new_abs($feature));
+    }
+    else {
+	# seach for feature in repos
+	_install($ppm->packages_missing_for($feature, 0, force => $force));
+    }
 }
 
 sub do_upgrade {
@@ -219,6 +230,31 @@ sub do_upgrade {
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
     _install($ppm->packages_missing_for($feature, undef));
+}
+
+sub _install_uri {
+    my $uri = shift;
+    my $res = web_ua->get($uri);
+    unless ($res->is_success) {
+	die $res->status_line;
+    }
+    require ActivePerl::PPM::PPD;
+    my $pkg = ActivePerl::PPM::Package->new_ppd($res->content);
+    unless ($pkg) {
+	die "No PPD found at $uri";
+    }
+    if (my $codebase = $pkg->{codebase}) {
+	# make it absolute
+	$pkg->{codebase} = URI->new($codebase, $res->base)->abs($res->base)->as_string;
+    }
+    else {
+	die "The PPD does not provide code to install for this platform";
+    }
+    # XXX follow dependencies with the "directory" of $pkg $uri as the
+    # first repo to look for additional packages.  This only works for
+    # package features.
+
+    _install($pkg);
 }
 
 sub _install {
