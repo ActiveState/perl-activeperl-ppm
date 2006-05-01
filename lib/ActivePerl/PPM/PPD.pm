@@ -3,6 +3,7 @@ package ActivePerl::PPM::PPD;
 use strict;
 use XML::Simple ();
 use ActivePerl::PPM::Package ();
+use ActivePerl::PPM::Logger qw(ppm_log);
 
 sub ActivePerl::PPM::Package::new_ppd {
     my($class, $data, $arch) = @_;
@@ -13,14 +14,26 @@ sub ActivePerl::PPM::Package::new_ppd {
 	$tmp;
     };
 
-    my $xml = XML::Simple::XMLin($data,
+    my $xml = eval { XML::Simple::XMLin($data,
 	KeepRoot => 1,  # so that we can verify root
         ForceArray => [qw(IMPLEMENTATION DEPENDENCY PROVIDES REQUIRES)],
-    );
+    ) };
+    if ($@) {
+	# malformed XML
+	ppm_log("ERR", $@);
+	return undef;
+    }
 
-    return undef unless exists $xml->{SOFTPKG};
+    if (!exists $xml->{SOFTPKG}) {
+	ppm_log("Root element isn't <SOFTPKG>");
+	return undef;
+    }
     $xml = $xml->{SOFTPKG};  # discard root
-    return undef unless exists $xml->{NAME} && exists $xml->{VERSION};
+
+    if (!(exists $xml->{NAME} && exists $xml->{VERSION})) {
+	ppm_log("Required SOFTPKG attribute NAME and VERSION missing");
+	return undef;
+    }
 
     # Move relevant attributes for the matching implementation up
     for my $impl (@{$xml->{IMPLEMENTATION} || []}) {
