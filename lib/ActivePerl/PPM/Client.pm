@@ -144,8 +144,7 @@ EOT
 
     # initial values
     $dbh->do(qq(INSERT INTO config VALUES ("current-idirs", "site")));
-    #$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ppm.ActiveState.com/PPM/ppmserver-5.8-$^O.plex?urn:/PPM/Server/SQL")));
-    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ask/ppms/")));
+    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ppm.ActiveState.com/PPM/ppmserver-5.8-$^O.plex?urn:/PPM/Server/SQL")));
 }
 
 sub repos {
@@ -174,7 +173,6 @@ sub repo_sync {
 	    @check_ppd = (); # XXX should we still check them?
 	}
 	else {
-	    ppm_debug("Refreshing $repo->{packlist_uri}");
 	    my @h;
 	    push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
 	    push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
