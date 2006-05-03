@@ -45,7 +45,7 @@ ok($dir->install({
     abstract => "Abs",
     files => {
         "t/idirs.t" => "lib:idirs.t",
-        "t/repo.t" => "archlib:repo.t",
+        "t/logger.t" => "archlib:logger.t",
     },
 }));
 ok($dir->packages, 2);
@@ -59,23 +59,23 @@ ok($pkg[1][2], "Abs");
 
 ok(-f "$prefix/lib/idirs.t");
 ok(file_eq("t/idirs.t", "$prefix/lib/idirs.t"));
-ok(-f "$prefix/lib/repo.t");
-ok(file_eq("t/repo.t", "$prefix/lib/repo.t"));
-ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/idirs.t|$prefix/lib/repo.t");
+ok(-f "$prefix/lib/logger.t");
+ok(file_eq("t/logger.t", "$prefix/lib/logger.t"));
+ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/idirs.t|$prefix/lib/logger.t");
 ok($dir->verify);
 
 ok($dir->install({
     name => "Foo2",
     files => {
-        "t/repo.t" => "lib:idirs.t",
+        "t/logger.t" => "lib:idirs.t",
 	"t/repo" => "bin:",
     },
 }));
 ok($dir->packages, 2);
 ok(j($dir->packages), "Foo|Foo2");
 ok(-f "$prefix/lib/idirs.t");
-ok(file_eq("t/repo.t", "$prefix/lib/idirs.t"));
-ok(!-f "$prefix/lib/repo.t");
+ok(file_eq("t/logger.t", "$prefix/lib/idirs.t"));
+ok(!-f "$prefix/lib/logger.t");
 ok(-f "$prefix/bin/test1/Acme-Buffy.ppd");
 ok(file_eq("t/repo/test1/Acme-Buffy.ppd", "$prefix/bin/test1/Acme-Buffy.ppd"));
 ok($dir->verify);
