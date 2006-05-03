@@ -130,7 +130,7 @@ sub packages {
 
 sub dbh {
     my $self = shift;
-    $self->init_db unless $self->{dbh};
+    $self->_init_db unless $self->{dbh};
     $self->{dbh};
 }
 
@@ -515,7 +515,7 @@ sub uninstall {
     $dbh->commit;
 }
 
-sub init_db {
+sub _init_db {
     my $self = shift;
     my $etc = $self->etc;
     File::Path::mkpath($etc);

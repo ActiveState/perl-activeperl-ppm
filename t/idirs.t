@@ -27,7 +27,6 @@ ok(j($dir->packlists), "");
 ok($dir->verify);
 
 $dir = ActivePerl::PPM::IDirs->new(prefix => $prefix);
-$dir->init_db;
 
 eval { $dir->install(); };    ok($@, qr/^No packages to install/);
 eval { $dir->install({}); };  ok($@, qr/^Missing package name/);
