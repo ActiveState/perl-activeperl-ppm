@@ -14,7 +14,18 @@ use ActivePerl::PPM::Web qw(web_ua);
 sub new {
     my $class = shift;
 
-    my $home = "$ENV{HOME}/.ActivePerl";
+    my $home = do {
+	if ($^O eq "MSWin32") {
+	    require Win32;
+	    my $appdata = Win32::GetFolderPath(Win32::CSIDL_APPDATA()) ||
+		$ENV{APPDATA} || $ENV{HOME};
+	    die "No valid setting for APPDATA\n" unless $appdata;
+	    "$appdata/ActiveState/ActivePerl";
+	}
+	else {
+	    "$ENV{HOME}/.ActivePerl";
+	}
+    };
     my @dirs;
     my $v = ActivePerl::perl_version();
     push(@dirs, "$home/$v/$Config{archname}");
