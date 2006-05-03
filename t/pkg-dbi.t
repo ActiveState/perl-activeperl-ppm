@@ -64,7 +64,7 @@ ok($pkg->name_version, "Bar-1.1");
 ok($pkg->abstract, "Foo is better than bar");
 
 $pkg = ActivePerl::PPM::Package->new(name => "Foo", version => "1.1");
-ok($pkg->dbi_store($dbh), undef);  # fails because (name,version) not unique
+ok($pkg->dbi_store($dbh));
 
 $pkg->version("1.2");
 ok($pkg->dbi_store($dbh));
