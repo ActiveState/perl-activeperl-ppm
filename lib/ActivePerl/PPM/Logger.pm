@@ -49,7 +49,7 @@ sub new {
     my($class, %opt) = shift;
 
     my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} ||
-	($^O eq "MSWin32" ? "C:\\ppm4.log" : "$ENV{HOME}/ppm4.log");
+	($^O eq "MSWin32" ? "$ENV{TEMP}\\ppm4.log" : "$ENV{HOME}/ppm4.log");
     my $fh;
     if (open($fh, ">>", $logfile)) {
 	require IO::Handle;  # adds methods to $fh
