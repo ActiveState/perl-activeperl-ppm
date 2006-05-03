@@ -228,6 +228,15 @@ sub do_repo {
 	else {
 	    $name = eval { URI->new($url)->host } || $url;
 	}
+	unless ($url =~ /^[a-z][+\w]+:/) {
+	    if (-d $url) {
+		require URI::file;
+		$url = URI::file->new_abs($url);
+	    }
+	    else {
+		die "The repository URL must be absolute or a local directory";
+	    }
+	}
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
     }
