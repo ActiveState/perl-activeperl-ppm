@@ -81,28 +81,42 @@ sub do_version {
 
 sub do_idirs {
     my $current = $ppm->current_idirs_name;
+    my $show_header = 1;
     if (@ARGV) {
 	my $new_current;
 	my $sync;
-	$USAGE = "idirs [--current [<name>]] [--sync]";
+	$USAGE = "idirs [--current [<name>]] [--sync] [--no-header]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(
            'current:s' => \$new_current,
 	   'sync' => \$sync,
+           'header!' => \$show_header,
         ) || usage();
 	usage() if @ARGV;
 	if (defined $new_current) {
 	    $ppm->current_idirs_name($new_current) if length($new_current);
 	    $ppm->current_idirs->sync_db if $sync;
-	    print "$current\n";
+	    if (length($new_current)) {
+		print "Current idir is now $new_current.\n";
+	    }
+	    else {
+		print "$current\n";
+	    }
 	    return;
 	}
 	$ppm->current_idirs->sync_db if $sync;
     }
+    if ($show_header) {
+	print "cur name   pkg# lib\n";
+	print "--- ------ ---- ------------------------------------\n";
+    }
     for my $idir ($ppm->idirs) {
-	print "$idir";
-	print " (current)" if $current eq $idir;
-	print "\n";
+	my $o = $ppm->idirs($idir);
+	printf "%3s %-6s %4d %s\n",
+	    ($current eq $idir ? "->" : ""),
+	    $idir,
+	    scalar($o->packages),
+	    $o->lib;
     }
 }
 
