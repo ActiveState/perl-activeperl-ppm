@@ -140,20 +140,15 @@ sub best {
 sub sql_create_tables {
     my($class, %opt) = @_;
     my @fields = $class->BASE_FIELDS;
-    my @index;
     if ($opt{name_unique}) {
 	my($name) = grep $_->[0] eq "name", @fields;
 	$name->[1] .= " unique";
-    }
-    else {
-	push(@index, "CREATE UNIQUE INDEX IF NOT EXISTS package_idx ON package(name, version)");
     }
     return
 "CREATE TABLE IF NOT EXISTS package (\n    " .
     join(",\n    ", map join(" ", @$_), @fields) .
 "
 )",
-    @index,
 "CREATE TABLE IF NOT EXISTS feature (
      package_id integer not null,
      name text not null,
