@@ -214,6 +214,23 @@ sub do_repo {
 	    $ppm->repo_enable($ARGV[0], $cmd eq "on");
 	}
     }
+    elsif ($cmd eq "add") {
+	$USAGE = "repo add <url> [<name>]";
+	my $url = shift(@ARGV) || usage();
+	my $name;
+	if (@ARGV) {
+	    $name = shift(@ARGV);
+	    if ($url !~ /^[a-z][+\w]+:/ && $name =~ /^[a-z][+\w]+:/) {
+		# ppm3 had the arguments reversed, so try that
+		($url, $name) = ($name, $url);
+	    }
+	}
+	else {
+	    $name = eval { URI->new($url)->host } || $url;
+	}
+	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
+	print "Repo $id added.\n";
+    }
     else {
 	$USAGE = "repo <cmd> <args>";
 	usage("The repo command '$cmd' isn't recongized; try one of list; add; delete; on; off");

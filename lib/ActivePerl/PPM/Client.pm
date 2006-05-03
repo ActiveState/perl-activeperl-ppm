@@ -130,7 +130,7 @@ CREATE TABLE repo (
     name text not null,
     prio integer not null default 1,
     enabled bit not null default 1,
-    packlist_uri text not null,
+    packlist_uri text not null unique,
     packlist_version text,
     packlist_etag text,
     packlist_size integer,
@@ -172,6 +172,18 @@ sub repo_enable {
 	    $dbh->commit;
 	}
     }
+}
+
+sub repo_add {
+    my($self, %attr) = @_;
+    my $dbh = $self->dbh;
+    local $dbh->{RaiseError} = 1;
+    $dbh->do("INSERT INTO repo (name, packlist_uri, prio) VALUES (?, ?, ?)", undef,
+	     $attr{name}, $attr{packlist_uri}, ($attr{prio} || 0));
+    my $id = $dbh->func('last_insert_rowid');
+    $dbh->commit;
+    $self->repo_sync;
+    return $id;
 }
 
 sub repo_delete {
@@ -235,7 +247,7 @@ sub repo_sync {
 			}, "attr"],
 		    );
 		    $p->parse($res->content)->eof;
-		    ppm_log("WARN", "No ppds found in $repo->{packlist_url}") unless @check_ppd;
+		    ppm_log("WARN", "No ppds found in $repo->{packlist_uri}") unless @check_ppd;
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 		}
