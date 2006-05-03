@@ -21,22 +21,15 @@ class IDirs
      p4's rmdir option).
    - more tests
 
-class Repo
-----------
-   - use 'pragma user_version' to determine if tables need to be set up.
-     can also be used to check if schema needs to be upgraded.
-   - improve search interface
-   - intelligent sync (
-   - REST repo
-   - SOAP repo
-   - merge all repo databases with "ATTACH DATABASE" and views that put all
-     packages in a single table.
-
 class Client
 ------------
    - even more idirs?  Any need?
    - use something else than $ENV{HOME} on Windows/MacOS
    - move more of the install logic here (out of ppm)
+   - improve search interface
+   - incremental repo_sync
+   - REST repo
+   - SOAP repo
 
 class Package
 -------------
