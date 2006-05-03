@@ -6,8 +6,10 @@ use Config qw(%Config);
 use ActivePerl ();
 use ActivePerl::PPM::IDirs ();
 use ActivePerl::PPM::Package ();
+use ActivePerl::PPM::RepoPackage ();
+use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
-use XML::Simple ();
+use ActivePerl::PPM::Web qw(web_ua);
 
 sub new {
     my $class = shift;
@@ -28,69 +30,22 @@ sub new {
 	}
     }
 
-    my $etc = "$dir/etc";
-    my $conf_file = "$etc/ppm-conf.xml";
-    unless (-f $conf_file) {
-	ppm_log("WARN", "Creating $conf_file");
-	require File::Path;
-	File::Path::mkpath($etc, 0, 0755);
-	open(my $f, ">", $conf_file) || die "Can't create $conf_file: $!";
-	print $f <<EOT;
-<ppm-configuration>
-   <current-idirs>site</current-idirs>
-</ppm-configuration>
-EOT
-        close($f) || die "Can't write $conf_file: $!";
-
-	my $repo = "$etc/ppm-repo/as";
-	my $prop = "$repo/prop.xml";
-	unless (-f $prop) {
-	    ppm_log("WARN", "Creating $prop\n");
-	    File::Path::mkpath($repo, 0, 0755);
-	    open($f, ">", $prop) || die "Can't create $prop: $!";
-	    print $f <<EOT;
-<properties>
-   <url>http://ppm.ActiveState.com/PPM/ppmserver-5.8-$^O.plex?urn:/PPM/Server/SQL</url>
-   <prio>1</prio>
-   <name>ActiveState Package Repository</name>
-</properties>
-EOT
-	    close($f) || die "Can't write $prop: $!";
-	}
-    }
-
-    my $conf;
-    eval {
-	$conf = XML::Simple::XMLin($conf_file);
-    };
-    if ($@) {
-	ppm_log("ERR", $@);
-	$conf = {};
-    }
-
+    my $etc = $dir; # XXX or "$dir/etc";
     my @idirs = ("site", "perl");
     my %idirs;
     if (-d "$dir/lib") {
 	unshift(@idirs, "home");
 	require ActivePerl::PPM::IDirs;
-	$idirs{home} = ActivePerl::PPM::IDirs->new(prefix => $dir);
+	$idirs{home} = ActivePerl::PPM::IDirs->new(prefix => $dir, etc => $etc);
     }
 
     my $self = bless {
 	dir => $dir,
 	etc => $etc,
-	conf => $conf,
-        conf_file => $conf_file,
 	idirs => \%idirs,
         idirs_seq => \@idirs,
     }, $class;
     return $self;
-}
-
-sub _write_conf {
-    my $self = shift;
-    XML::Simple::XMLout($self->{conf}, OutputFile => $self->{conf_file}, RootName => "ppm-configuration");
-    ppm_log("INFO", "Wrote $self->{conf_file}");
 }
 
 sub current_idirs {
@@ -100,12 +55,16 @@ sub current_idirs {
 
 sub current_idirs_name {
     my $self = shift;
-    my $old = $self->{conf}{"current-idirs"} || "site";
+    my $old = $self->{'current-idirs'}
+        || $self->dbh->selectrow_array("SELECT value FROM config WHERE key = 'current-idirs'")
+        || "site";
     if (@_) {
 	my $new = shift;
 	die "Unrecognized idirs '$new'" unless grep $_ eq $new, $self->idirs;
-	$self->{conf}{"current-idirs"} = $new;
-	$self->_write_conf;
+	$self->{'current-idirs'} = $new;
+	my $dbh = $self->dbh;
+	$dbh->do("INSERT OR REPLACE INTO config (key, value) VALUES ('current-idirs', ?)", undef, $new);
+	$dbh->commit;
 	ppm_log("NOTICE", "$new is current idirs");
     }
     return $old;
@@ -125,68 +84,209 @@ sub idirs {
     }
 }
 
-sub _init_repos {
+sub dbh {
     my $self = shift;
-    return if $self->{repos};
+    $self->_init_db unless $self->{dbh};
+    $self->{dbh};
+}
 
-    require ActivePerl::PPM::Repo;
+sub _init_db {
+    my $self = shift;
+    my $etc = $self->{etc};
+    File::Path::mkpath($etc);
+    require DBI;
+    my $db_file = "ppm.db";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$etc/$db_file", "", "", {
+        AutoCommit => 0,
+        PrintError => 1,
+    });
+    die unless $dbh;
+    $self->{dbh} = $dbh;
 
-    my %repo;
-    $self->{repo} = \%repo;
-
-    my $repo_dir = "$self->{etc}/ppm-repo";
-    if (opendir(my $dh, $repo_dir)) {
-	while (my $id = readdir($dh)) {
-	    next if $id =~ /^\./;
-	    if (my $repo = ActivePerl::PPM::Repo->new("$repo_dir/$id")) {
-		$repo{$id} = $repo;
-		ppm_debug("Repo $id initialized");
-	    }
-	}
-	closedir($dh);
+    my $v = $dbh->selectrow_array("PRAGMA user_version");
+    die "Assert" unless defined $v;
+    if ($v == 0) {
+	ppm_log("WARN", "Setting up schema for $etc/$db_file");
+	_init_ppm_schema($dbh);
+	$dbh->do("PRAGMA user_version = 1");
+	$dbh->commit;
+    }
+    elsif ($v != 1) {
+	die "Unrecognized database schema $v for $etc/$db_file";
     }
 }
 
-sub repo {
-    my($self, $id) = @_;
-    $self->_init_repos unless $self->{repo};
-    return $self->{repo}{$id};
+sub _init_ppm_schema {
+    my $dbh = shift;
+    $dbh->do(<<'EOT');
+CREATE TABLE config (
+    key text primary key,
+    value text
+)
+EOT
+    $dbh->do(<<'EOT');
+CREATE TABLE repo (
+    id integer primary key,
+    name text not null,
+    prio integer not null default 1,
+    enabled bit not null default 1,
+    packlist_uri text not null,
+    packlist_version text,
+    packlist_etag text,
+    packlist_size integer,
+    packlist_lastmod text,
+    packlist_fresh_until integer
+)
+EOT
+    for my $create (ActivePerl::PPM::RepoPackage->sql_create_tables()) {
+	$dbh->do($create) || die "Can't create database table";
+    }
+
+    # initial values
+    $dbh->do(qq(INSERT INTO config VALUES ("current-idirs", "site")));
+    #$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ppm.ActiveState.com/PPM/ppmserver-5.8-$^O.plex?urn:/PPM/Server/SQL")));
+    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ask/ppms/")));
 }
 
 sub repos {
-    my($self, %opt) = @_;
-    $self->_init_repos unless $self->{repo};
-    my @repos = sort { $self->{repo}{$a}->prio <=> $self->{repo}{$b}->prio } keys %{$self->{repo}};
-    return @repos;
+    my $self = shift;
+    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo WHERE enabled == 1 ORDER BY prio, name")};}
+
+sub repo {
+    my($self, $id) = @_;
+    $self->dbh->selectrow_hashref("SELECT * FROM repo WHERE id = ?", undef, $id);
+}
+
+sub repo_sync {
+    my $self = shift;
+    my @repos;
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1 ORDER BY prio, name");
+    $sth->execute;
+    while (my $h = $sth->fetchrow_hashref) {
+	push(@repos, $h);
+    }
+
+    for my $repo (@repos) {
+	my @check_ppd;
+	my %delete_package;
+	if ($repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
+	    @check_ppd = (); # XXX should we still check them?
+	}
+	else {
+	    ppm_debug("Refreshing $repo->{packlist_uri}");
+	    my @h;
+	    push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
+	    push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
+	    my $res = web_ua()->get($repo->{packlist_uri}, @h);
+	    #print $res->status_line, "\n";
+	    if ($res->code == 304) {  # not modified
+		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE repo_id = ?", undef, $repo->{id})};
+	    }
+	    elsif ($res->is_success) {
+		$dbh->do("UPDATE repo SET packlist_etag=?, packlist_lastmod=?, packlist_size=?, packlist_fresh_until=? WHERE id=?", undef,
+			 scalar($res->header("ETag")),
+			 scalar($res->header("Last-Modified")),
+			 scalar($res->header("Content-Length")),
+			 $res->fresh_until,
+			 $repo->{id});
+
+		# parse document
+		if ($res->content_type eq "text/html") {
+		    my $base = $res->base;
+		    require HTML::Parser;
+		    my $p = HTML::Parser->new(
+	                report_tags => [qw(a)],
+	                start_h => [sub {
+			    my $href = shift->{href};
+			    push(@check_ppd, URI->new_abs($href,$base)->rel($repo->{packlist_uri})) if $href =~ /\.ppd$/;
+			}, "attr"],
+		    );
+		    $p->parse($res->content)->eof;
+		    ppm_log("WARN", "No ppds found in $repo->{packlist_url}") unless @check_ppd;
+
+		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
+		}
+		else {
+		    ppm_log("ERR", "Unrecognized repo type " . $res->content_type);
+		}
+	    }
+	}
+
+	for my $ppd (@check_ppd) {
+	    _check_ppd($ppd, $repo, $dbh, \%delete_package);
+	}
+
+	$dbh->do("DELETE FROM package WHERE id IN (" . join(",", sort keys %delete_package) . ")")
+	    if %delete_package;
+
+	$dbh->commit;
+    }
+    return;
+}
+
+
+sub _check_ppd {
+    my($rel_url, $repo, $dbh, $delete_package) = @_;
+
+    my $row = $dbh->selectrow_hashref("SELECT id, ppd_etag, ppd_lastmod, ppd_fresh_until FROM package WHERE repo_id = ? AND ppd_uri = ?", undef, $repo->{id}, $rel_url);
+
+    my @h;
+    if ($row) {
+	delete $delete_package->{$row->{id}} if $delete_package;
+	return if $row->{ppd_fresh_until} && $row->{ppd_fresh_until} > time;
+	push(@h, "If-None-Match", $row->{ppd_etag}) if $row->{ppd_etag};
+	push(@h, "If-Modified-Since", $row->{ppd_lastmod}) if $row->{ppd_lastmod};
+    }
+
+    my $abs_url = URI->new_abs($rel_url, $repo->{packlist_uri});
+    my $ppd_res = web_ua()->get($abs_url, @h);
+    print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
+    if ($ppd_res->is_success) {
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->content);
+	$ppd->{id} = $row->{id} if $row;
+	$ppd->{repo_id} = $repo->{id};
+	$ppd->{ppd_uri} = $rel_url;
+	$ppd->{ppd_etag} = $ppd_res->header("ETag");
+	$ppd->{ppd_size} = $ppd_res->header("Content-Length");
+	$ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
+	$ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
+
+	# make URL attributes absolute (XXX make them repo relative instead?)
+	my $ppd_base = $ppd_res->base;
+	for my $attr (qw(codebase)) {
+	    next unless exists $ppd->{$attr};
+	    my $url = URI->new_abs($ppd->{$attr}, $ppd_base);
+	    $ppd->{$attr} = $url->as_string;
+	}
+
+	$ppd->dbi_store($dbh);
+    }
+}
+
+
+sub search {
+    my($self, $pattern) = @_;
+    $self->repo_sync;
+    @{$self->dbh->selectcol_arrayref("SELECT name FROM package WHERE name like ?", undef, $pattern)};
 }
 
 sub feature_best {
     my($self, $feature) = @_;
-    $self->_init_repos unless $self->{repo};
-
-    my $best;
-    for my $repo (values %{$self->{repo}}) {
-	my $b = $repo->feature_best($feature);
-	if (defined($best)) {
-	    $best = $b if $b && $b > $best;
-	}
-	else {
-	    $best = $b;
-	}
-    }
-    return $best;
+    my $dbh = $self->dbh;
+    my($max) = $dbh->selectrow_array("SELECT max(version) FROM feature WHERE name = ? AND role = 'p'",
+ undef, $feature);
+    return $max;
 }
 
 sub package_best {
     my($self, $feature, $version) = @_;
-    $self->_init_repos unless $self->{repo};
+    my $dbh = $self->dbh;
 
-    my @pkg;
-    for my $repo (values %{$self->{repo}}) {
-	if (my $best = $repo->package_best($feature, $version)) {
-	    push(@pkg, $best);
-	}
-    }
+    my $ids = $dbh->selectcol_arrayref("SELECT package.id FROM package, feature WHERE package.id = feature.package_id AND feature.role = 'p' AND feature.name = ? AND feature.version >= ?", undef, $feature, $version);
+
+    my @pkg = map $self->package($_), @$ids;
+
     return ActivePerl::PPM::Package::best(@pkg);
 }
 
@@ -261,6 +361,11 @@ sub check_downgrade {
     if (@downgrade) {
         die "Installing $pkg because of $because would downgrade @downgrade\n";
     }
+}
+
+sub package {
+    my $self = shift;
+    return ActivePerl::PPM::RepoPackage->new_dbi($self->dbh, @_);
 }
 
 1;

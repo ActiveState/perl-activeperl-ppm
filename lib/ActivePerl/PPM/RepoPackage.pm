@@ -7,10 +7,12 @@ sub BASE_FIELDS {
     my $class = shift;
     return (
        $class->SUPER::BASE_FIELDS,
-       [ppd       => "text unique"],
-       [ppd_etag  => "text"],
-       [ppd_size  => "text"],
-       [ppd_mod   => "datetime"],
+       [repo_id         => "integer not null"],
+       [ppd_uri         => "text unique"],
+       [ppd_etag        => "text"],
+       [ppd_lastmod     => "text"],
+       [ppd_size        => "integer"],
+       [ppd_fresh_until => "integer"],
     );
 }
 
@@ -33,7 +35,11 @@ The following are the new attributes:
 
 =over
 
-=item $path = $pkg->ppd
+=item $id = $pkg->repo_id
+
+What repo does this package come from.
+
+=item $path = $pkg->ppd_uri
 
 This a relative URI for the PPD file itself.
 
@@ -41,15 +47,21 @@ This a relative URI for the PPD file itself.
 
 This is the C<ETag> that the server reported for the PPD last time.
 
-=item $str = $pkg->ppd_size
+=item $str = $pkg->ppd_lastmod
+
+This is the C<Last-Modified> date that the server reported for the PPD
+last time.
+
+=item $num = $pkg->ppd_size
 
 This is the C<Content-Length> that the server reported for the PPD
 last time.
 
-=item $str = $pkg->ppd_mod
+=item $num = $pkg->ppd_fresh_until
 
-This is the C<Last-Modified> date that the server reported for the PPD
-last time.
+At what time should the ppd information be refreshed from the repo.
+
+=item
 
 =back
 

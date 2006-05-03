@@ -196,8 +196,7 @@ sub do_verify {
 sub do_repos {
     for my $repo_id ($ppm->repos) {
 	my $repo = $ppm->repo($repo_id);
-	print "$repo_id: ", $repo->name, "\n";
-	print "    ", $repo->url, "\n";
+	print "$repo_id: $repo->{name} <$repo->{packlist_uri}>\n";
     }
 }
 
@@ -205,18 +204,12 @@ sub do_search {
     $USAGE = "search <pattern>";
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
-    my @repos = $ppm->repos;
-    die "No repos to search" unless @repos;
-    for my $repo_id (@repos) {
-	my $repo = $ppm->repo($repo_id);
-	print "Searching ", $repo->name, "...\n";
-	my @res = $repo->search($pattern);
-	if (@res) {
-	    print " - $_\n" for @res;
-	}
-	else {
-	    print " no packages found\n";
-	}
+    my @res = $ppm->search($pattern);
+    if (@res) {
+	print "$_\n" for @res;
+    }
+    else {
+	print "no packages found\n";
     }
 }
 
