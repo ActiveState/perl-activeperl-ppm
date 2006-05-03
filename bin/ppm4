@@ -218,11 +218,34 @@ sub do_repo {
 	    print "[$repo_id] $status$repo->{name} <$repo->{packlist_uri}>\n";
 	}
     }
-    elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete") {
+    elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";
 	usage() if @ARGV != 1;
+	my $repo = $ppm->repo($ARGV[0]);
+	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
 	if ($cmd eq "delete") {
 	    $ppm->repo_delete($ARGV[0]);
+	}
+	elsif ($cmd eq "describe") {
+	    require ActiveState::Duration;
+	    print "Id: $repo->{id}\n";
+	    print "Name: $repo->{name}\n";
+	    print "URL: $repo->{packlist_uri}\n";
+	    print "Prio: $repo->{prio}\n";
+	    print "Enabled: ", ($repo->{enabled} ? "yes" : "no"), "\n";
+	    if (my $fresh_until = $repo->{packlist_fresh_until}) {
+		my $refresh_in = $fresh_until - time;
+		if ($refresh_in >= 0) {
+		    print "Refresh-In: ", ActiveState::Duration::dur_format_eng($refresh_in), "\n";
+		}
+		else {
+		    print "Refresh-In: overdue\n";
+		}
+	    }
+	    if (my $lastmod = $repo->{packlist_lastmod}) {
+		require HTTP::Date;
+		print "Last-Modified: ", ActiveState::Duration::ago_eng(time - HTTP::Date::str2time($lastmod)), "\n";
+	    }
 	}
 	else {
 	    $ppm->repo_enable($ARGV[0], $cmd eq "on");
@@ -256,7 +279,7 @@ sub do_repo {
     }
     else {
 	$USAGE = "repo <cmd> <args>";
-	usage("The repo command '$cmd' isn't recongized; try one of list; add; delete; on; off");
+	usage("The repo command '$cmd' isn't recognized; try one of list, describe, add, delete, on, off");
     }
 }
 
