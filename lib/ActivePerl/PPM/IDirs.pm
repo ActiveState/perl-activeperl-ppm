@@ -61,6 +61,7 @@ sub new {
             man1 => $opt{man1},
             man3 => $opt{man3},
 	    html => $opt{html},
+	    etc => $opt{etc},
 	);
     }
 
