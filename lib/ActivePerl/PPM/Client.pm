@@ -149,11 +149,30 @@ EOT
 
 sub repos {
     my $self = shift;
-    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo WHERE enabled == 1 ORDER BY prio, name")};}
+    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo ORDER BY prio, name")};}
 
 sub repo {
     my($self, $id) = @_;
     $self->dbh->selectrow_hashref("SELECT * FROM repo WHERE id = ?", undef, $id);
+}
+
+sub repo_enable {
+    my $self = shift;
+    my $id = shift;
+    my $enabled = @_ ? (shift(@_) ? 1 : 0) : 1;
+
+    my $dbh = $self->dbh;
+    if ($self->dbh->do("UPDATE repo SET enabled = ?, packlist_etag = NULL, packlist_lastmod = NULL, packlist_size = NULL, packlist_fresh_until = NULL WHERE id = ?", undef, $enabled, $id)) {
+	if ($enabled) {
+	    $dbh->commit;
+	    $self->repo_sync;
+	}
+	else {
+	    $dbh->do("DELETE FROM feature WHERE package_id IN (SELECT id FROM package WHERE repo_id = ?)", undef, $id);
+	    $dbh->do("DELETE FROM package WHERE repo_id = ?", undef, $id);
+	    $dbh->commit;
+	}
+    }
 }
 
 sub repo_sync {

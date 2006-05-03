@@ -193,10 +193,25 @@ sub do_verify {
     }
 }
 
-sub do_repos {
-    for my $repo_id ($ppm->repos) {
-	my $repo = $ppm->repo($repo_id);
-	print "$repo_id: $repo->{name} <$repo->{packlist_uri}>\n";
+sub do_repo {
+    my $cmd = shift(@ARGV) || "list";
+    if ($cmd eq "list") {
+	$USAGE = "repo list";
+	usage() if @ARGV;
+	for my $repo_id ($ppm->repos) {
+	    my $repo = $ppm->repo($repo_id);
+	    my $status = $repo->{enabled} ? "" : "(OFF) ";
+	    print "[$repo_id] $status$repo->{name} <$repo->{packlist_uri}>\n";
+	}
+    }
+    elsif ($cmd eq "on" || $cmd eq "off") {
+	$USAGE = "repo $cmd <num>";
+	usage() if @ARGV != 1;
+	$ppm->repo_enable($ARGV[0], $cmd eq "on");
+    }
+    else {
+	$USAGE = "repo <cmd> <args>";
+	usage("The repo command '$cmd' isn't recongized; try one of list; add; delete; on; off");
     }
 }
 
@@ -384,8 +399,9 @@ sub do_remove {
 }
 
 BEGIN {
-    # aliases
+    # aliases for PPM3 compatibility (mostly)
     *do_query = \&do_list;
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
+    *do_rep = \&do_repo;
 }
