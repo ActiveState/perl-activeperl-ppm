@@ -520,7 +520,7 @@ sub init_db {
     my $etc = $self->etc;
     File::Path::mkpath($etc);
     require DBI;
-    my $db_file = "ppm.db";
+    my $db_file = "ppm-idirs.db";
     if (my $name = $self->name) {
 	$db_file = "ppm-$name.db";
     }
