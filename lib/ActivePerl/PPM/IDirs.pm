@@ -648,6 +648,7 @@ sub _expand_path {
 	my $d = $1;
 	die "No $d dirs configured" unless exists $self->{dirs}{$d};
 	$path = join_path($self->{dirs}{$d}, $path);
+	$path =~ s,\\,/,g if $^O eq "MSWin32";
     }
     return $path;
 }
