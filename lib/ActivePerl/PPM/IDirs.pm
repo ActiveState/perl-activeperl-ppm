@@ -123,10 +123,13 @@ sub etc {
 sub packages {
     my $self = shift;
     my $dbh = $self->dbh;
+    if (@_) {
+	return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
+					  " FROM package ORDER BY name")};
+    }
     return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")}
-	unless @_;
-    return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
-				      " FROM package ORDER BY name")};
+	if wantarray;
+    return $dbh->selectrow_array("SELECT count(*) FROM package");
 }
 
 sub dbh {
