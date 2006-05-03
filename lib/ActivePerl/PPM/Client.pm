@@ -168,12 +168,27 @@ sub repo_enable {
 	    $self->repo_sync;
 	}
 	else {
-	    $dbh->do("DELETE FROM feature WHERE package_id IN (SELECT id FROM package WHERE repo_id = ?)", undef, $id);
-	    $dbh->do("DELETE FROM package WHERE repo_id = ?", undef, $id);
+	    _repo_delete_packages($dbh, $id);
 	    $dbh->commit;
 	}
     }
 }
+
+sub repo_delete {
+    my($self, $id) = @_;
+    my $dbh = $self->dbh;
+    _repo_delete_packages($dbh, $id);
+    $dbh->do("DELETE FROM repo WHERE id = ?", undef, $id);
+    $dbh->commit;
+}
+
+sub _repo_delete_packages {
+    my($dbh, $id) = @_;
+    $dbh->do("DELETE FROM feature WHERE package_id IN (SELECT id FROM package WHERE repo_id = ?)", undef, $id);
+    $dbh->do("DELETE FROM package WHERE repo_id = ?", undef, $id);
+}
+
+
 
 sub repo_sync {
     my $self = shift;

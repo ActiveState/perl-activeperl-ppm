@@ -204,10 +204,15 @@ sub do_repo {
 	    print "[$repo_id] $status$repo->{name} <$repo->{packlist_uri}>\n";
 	}
     }
-    elsif ($cmd eq "on" || $cmd eq "off") {
+    elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete") {
 	$USAGE = "repo $cmd <num>";
 	usage() if @ARGV != 1;
-	$ppm->repo_enable($ARGV[0], $cmd eq "on");
+	if ($cmd eq "delete") {
+	    $ppm->repo_delete($ARGV[0]);
+	}
+	else {
+	    $ppm->repo_enable($ARGV[0], $cmd eq "on");
+	}
     }
     else {
 	$USAGE = "repo <cmd> <args>";
