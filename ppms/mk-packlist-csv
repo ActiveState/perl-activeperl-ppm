@@ -1,0 +1,25 @@
+#!/usr/bin/perl -w
+
+
+
+use strict;
+use lib "../lib";
+use ActivePerl::PPM::PPD;
+
+my $os = shift || $^O;
+
+opendir(my $dh, $os) || die;
+while (defined(my $f = readdir($dh))) {
+    next unless $f =~ /\.ppd$/;
+    my $p = ActivePerl::PPM::Package->new_ppd("$os/$f");
+    print join("|", @$p{"name", "version", "abstract", "author"});
+    if (my $h = $p->{require}) {
+	my @r;
+	for my $r (sort keys %$h) {
+	    push(@r, $r);
+	    $r[-1] .= "=$h->{$r}" if $h->{$r};
+	}
+	print "|" . join(",", @r);
+    }
+    print "\n";
+}
