@@ -218,6 +218,11 @@ sub do_repo {
 	    print "[$repo_id] $status$repo->{name} <$repo->{packlist_uri}>\n";
 	}
     }
+    elsif ($cmd eq "sync") {
+	$USAGE = "repo sync";
+	usage() if @ARGV;
+	$ppm->repo_sync;
+    }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";
 	usage() if @ARGV != 1;
