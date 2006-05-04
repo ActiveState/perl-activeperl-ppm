@@ -237,6 +237,7 @@ sub repo_sync {
 	    #print $res->status_line, "\n";
 	    if ($res->code == 304) {  # not modified
 		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE repo_id = ?", undef, $repo->{id})};
+		$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, $res->fresh_until, $repo->{id});
 	    }
 	    elsif ($res->is_success) {
 		$dbh->do("UPDATE repo SET packlist_etag=?, packlist_lastmod=?, packlist_size=?, packlist_fresh_until=? WHERE id=?", undef,
@@ -297,7 +298,10 @@ sub _check_ppd {
     my $abs_url = URI->new_abs($rel_url, $repo->{packlist_uri});
     my $ppd_res = web_ua()->get($abs_url, @h);
     print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
-    if ($ppd_res->is_success) {
+    if ($row && $ppd_res->code == 304) {  # not modified
+	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
+    }
+    elsif ($ppd_res->is_success) {
 	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->content);
 	$ppd->{id} = $row->{id} if $row;
 	$ppd->{repo_id} = $repo->{id};
