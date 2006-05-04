@@ -1,0 +1,23 @@
+#!/usr/bin/perl -w
+
+use strict;
+use ActiveState::Handy qw(cat);
+
+my $os = shift || $^O;
+
+print qq(<?xml version="1.0" encoding="UTF-8"?>
+<PACKLIST>
+);
+
+opendir(my $dh, $os) || die;
+while (defined(my $f = readdir($dh))) {
+    next unless $f =~ /\.ppd$/;
+    $_ = cat("$os/$f");
+    s/^\s*<\?xml\s[^>]*>\s*//;
+    s/^\s*<OS NAME="[^"]*"\s*\/>\n?//m;
+    s/^\s*<TITLE>[^<]+<\/TITLE>\n?//m;
+    s/>\s+</></g;  # kill space between elements
+    print;
+}
+
+print "</PACKLIST>\n";

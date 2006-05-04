@@ -1,0 +1,29 @@
+#!/usr/bin/perl -w
+
+$| = 1;
+
+my $os = shift || $^O;
+
+use strict;
+use LWP::UserAgent;
+my $ua = LWP::UserAgent->new(keep_alive => 1);
+
+my $res = $ua->get("http://ppm.activestate.com/PPMPackages/5.8-$os/");
+die $res->status_line unless $res->is_success;
+
+mkdir($os, 0755);
+
+my $base = $res->base;
+require HTML::Parser;
+my $p = HTML::Parser->new(
+    report_tags => [qw(a)],
+    start_h => [sub {
+        my $href = shift->{href};
+        return unless $href =~ /\.ppd$/;
+	die if $href =~ m,/,;
+        my $uri = URI->new_abs($href, $base);
+	print "$uri\n";
+        $ua->get($uri, ':content_file' => "$os/$href")->is_success || die;
+    }, "attr"],
+);
+$p->parse($res->content)->eof;
