@@ -217,7 +217,7 @@ sub _repo_delete_packages {
 
 
 sub repo_sync {
-    my $self = shift;
+    my($self, %opt) = @_;
     my @repos;
     my $dbh = $self->dbh;
     my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1 ORDER BY prio, name");
@@ -229,7 +229,7 @@ sub repo_sync {
     for my $repo (@repos) {
 	my @check_ppd;
 	my %delete_package;
-	if ($repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
+	if (!$opt{force} && $repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
 	    @check_ppd = (); # XXX should we still check them?
 	    ppm_log("DEBUG", "$repo->{packlist_uri} is still fresh");
 	}
@@ -238,7 +238,8 @@ sub repo_sync {
 	    my $res;
 	    if ($repo->{packlist_last_status_code}) {
 		# if we continue to get errors from repo, only hit it occasionally
-		if (HTTP::Status::is_error($repo->{packlist_last_status_code}) &&
+		if (!$opt{force} &&
+		    HTTP::Status::is_error($repo->{packlist_last_status_code}) &&
 		    (time - $repo->{packlist_last_access} < 5 * 60))
 		{
 		    ppm_log("WARN", "$repo->{packlist_uri} is known to err, skipping sync");
@@ -273,8 +274,10 @@ sub repo_sync {
 
 	    unless ($res) {
 		my @h;
-		push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
-		push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
+		if (!$opt{force}) {
+		    push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
+		    push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
+		}
 		$res = $ua->get($repo->{packlist_uri}, @h);
 	    }
 	    $dbh->do("UPDATE repo SET packlist_last_status_code = ?, packlist_last_access = ? WHERE id = ?", undef, $res->code, time, $repo->{id});

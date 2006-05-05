@@ -219,9 +219,16 @@ sub do_repo {
 	}
     }
     elsif ($cmd eq "sync") {
-	$USAGE = "repo sync";
-	usage() if @ARGV;
-	$ppm->repo_sync;
+	$USAGE = "repo sync [--force]";
+	my $force;
+	if (@ARGV) {
+	    require Getopt::Long;
+	    Getopt::Long::GetOptions(
+	        force => \$force,
+            ) || usage();
+	    usage() if @ARGV;
+	}
+	$ppm->repo_sync(force => $force);
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";
