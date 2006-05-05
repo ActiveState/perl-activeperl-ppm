@@ -141,8 +141,11 @@ CREATE TABLE repo (
     name text not null,
     prio integer not null default 1,
     enabled bit not null default 1,
+    userinfo text,
     packlist_uri text not null unique,
     packlist_version text,
+    packlist_last_status_code int,
+    packlist_last_access integer,
     packlist_etag text,
     packlist_size integer,
     packlist_lastmod text,
@@ -228,12 +231,53 @@ sub repo_sync {
 	my %delete_package;
 	if ($repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
 	    @check_ppd = (); # XXX should we still check them?
+	    ppm_log("DEBUG", "$repo->{packlist_uri} is still fresh");
 	}
 	else {
-	    my @h;
-	    push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
-	    push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
-	    my $res = web_ua()->get($repo->{packlist_uri}, @h);
+	    my $ua = web_ua();
+	    my $res;
+	    if ($repo->{packlist_last_status_code}) {
+		# if we continue to get errors from repo, only hit it occasionally
+		if (HTTP::Status::is_error($repo->{packlist_last_status_code}) &&
+		    (time - $repo->{packlist_last_access} < 5 * 60))
+		{
+		    ppm_log("WARN", "$repo->{packlist_uri} is known to err, skipping sync");
+		    next;
+		}
+	    }
+	    else {
+		# first time, try to find package.lst
+		my $uri = $repo->{packlist_uri};
+		unless ($uri =~ m,/package.lst$,) {
+		    $uri = URI->new($uri);
+		    my @try;
+		    unless ($uri->path =~ m,/$,) {
+			my $uri_slash = $uri->clone;
+			$uri_slash->path( $uri->path . "/");
+			push(@try, URI->new_abs("package.lst", $uri_slash));
+		    }
+		    push(@try, URI->new_abs("package.lst", $uri));
+		    my $try;
+		    for $try (@try) {
+			my $try_res = $ua->get($try);
+			if ($try_res->is_success && $try_res->content =~ /<REPOSITORYSUMMARY\b/) {
+			    $repo->{packlist_uri} = $try->as_string;
+			    $dbh->do("UPDATE repo SET packlist_uri = ? WHERE id = ?", undef, $repo->{packlist_uri}, $repo->{id});
+			    $res = $try_res;
+			    ppm_log("WARN", "Will use $repo->{packlist_uri} instead");
+			    last;
+			}
+		    }
+		}
+	    }
+
+	    unless ($res) {
+		my @h;
+		push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
+		push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
+		$res = $ua->get($repo->{packlist_uri}, @h);
+	    }
+	    $dbh->do("UPDATE repo SET packlist_last_status_code = ?, packlist_last_access = ? WHERE id = ?", undef, $res->code, time, $repo->{id});
 	    #print $res->status_line, "\n";
 	    if ($res->code == 304) {  # not modified
 		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE repo_id = ?", undef, $repo->{id})};

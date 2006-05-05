@@ -238,6 +238,15 @@ sub do_repo {
 	    print "URL: $repo->{packlist_uri}\n";
 	    print "Prio: $repo->{prio}\n";
 	    print "Enabled: ", ($repo->{enabled} ? "yes" : "no"), "\n";
+	    if (my $last_status = $repo->{packlist_last_status_code}) {
+		print "Last-Status: $last_status " . HTTP::Status::status_message($last_status) . "\n";
+	    }
+	    else {
+		print "Last-Status: - (never accessed)\n";
+	    }
+	    if (my $last_access = $repo->{packlist_last_access}) {
+		print "Last-Access: ", ActiveState::Duration::ago_eng(time - $last_access), "\n";
+	    }
 	    if (my $fresh_until = $repo->{packlist_fresh_until}) {
 		my $refresh_in = $fresh_until - time;
 		if ($refresh_in >= 0) {
