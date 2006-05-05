@@ -209,7 +209,7 @@ sub do_verify {
 
 sub uri_hide_passwd {
     my $url = shift;
-    #return $url unless /\@/;
+    return $url unless /\@/;
     $url = URI->new($url);
     if (my $ui = $url->userinfo) {
 	if ($ui =~ s/:.*/:***/) {
