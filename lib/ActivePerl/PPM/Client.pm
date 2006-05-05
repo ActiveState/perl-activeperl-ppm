@@ -141,7 +141,6 @@ CREATE TABLE repo (
     name text not null,
     prio integer not null default 1,
     enabled bit not null default 1,
-    userinfo text,
     packlist_uri text not null unique,
     packlist_version text,
     packlist_last_status_code int,

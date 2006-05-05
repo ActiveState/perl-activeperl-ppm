@@ -207,6 +207,18 @@ sub do_verify {
     }
 }
 
+sub uri_hide_passwd {
+    my $url = shift;
+    #return $url unless /\@/;
+    $url = URI->new($url);
+    if (my $ui = $url->userinfo) {
+	if ($ui =~ s/:.*/:***/) {
+	    $url->userinfo($ui);
+	}
+    }
+    return $url->as_string;
+}
+
 sub do_repo {
     my $cmd = shift(@ARGV) || "list";
     if ($cmd eq "list") {
@@ -215,7 +227,7 @@ sub do_repo {
 	for my $repo_id ($ppm->repos) {
 	    my $repo = $ppm->repo($repo_id);
 	    my $status = $repo->{enabled} ? "" : "(OFF) ";
-	    print "[$repo_id] $status$repo->{name} <$repo->{packlist_uri}>\n";
+	    print "[$repo_id] $status$repo->{name} <" . uri_hide_passwd($repo->{packlist_uri}) . ">\n";
 	}
     }
     elsif ($cmd eq "sync") {
@@ -242,7 +254,7 @@ sub do_repo {
 	    require ActiveState::Duration;
 	    print "Id: $repo->{id}\n";
 	    print "Name: $repo->{name}\n";
-	    print "URL: $repo->{packlist_uri}\n";
+	    print "URL: " . uri_hide_passwd($repo->{packlist_uri}) . "\n";
 	    print "Prio: $repo->{prio}\n";
 	    print "Enabled: ", ($repo->{enabled} ? "yes" : "no"), "\n";
 	    if (my $last_status = $repo->{packlist_last_status_code}) {
@@ -273,11 +285,19 @@ sub do_repo {
 	}
     }
     elsif ($cmd eq "add") {
-	$USAGE = "repo add <url> [<name>]";
+	$USAGE = "repo add <url> [<name>] [--username <user> [--password <password>]]";
+	my $user;
+	my $pass;
+	require Getopt::Long;
+	Getopt::Long::GetOptions(
+	    'username=s' => \$user,
+            'password=s' => \$pass,
+        ) || usage();
 	my $url = shift(@ARGV) || usage();
 	my $name;
 	if (@ARGV) {
 	    $name = shift(@ARGV);
+	    usage() if @ARGV;
 	    if ($url !~ /^[a-z][+\w]+:/ && $name =~ /^[a-z][+\w]+:/) {
 		# ppm3 had the arguments reversed, so try that
 		($url, $name) = ($name, $url);
@@ -294,6 +314,15 @@ sub do_repo {
 	    else {
 		die "The repository URL must be absolute or a local directory";
 	    }
+	}
+	if ($user) {
+	    $user .= ":$pass" if defined $pass;
+	    $url = URI->new($url);
+	    $url->userinfo($user);
+	    $url = $url->as_string;
+	}
+	else {
+	    usage() if defined $pass;
 	}
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
