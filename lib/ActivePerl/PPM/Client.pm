@@ -190,13 +190,20 @@ sub repo_enable {
 sub repo_add {
     my($self, %attr) = @_;
     my $dbh = $self->dbh;
-    local $dbh->{RaiseError} = 1;
-    $dbh->do("INSERT INTO repo (name, packlist_uri, prio) VALUES (?, ?, ?)", undef,
-	     $attr{name}, $attr{packlist_uri}, ($attr{prio} || 0));
-    my $id = $dbh->func('last_insert_rowid');
-    $dbh->commit;
-    $self->repo_sync;
-    return $id;
+    local $dbh->{PrintError} = 0;
+    if ($dbh->do("INSERT INTO repo (name, packlist_uri, prio) VALUES (?, ?, ?)", undef,
+	         $attr{name}, $attr{packlist_uri}, ($attr{prio} || 0)))
+    {
+	my $id = $dbh->func('last_insert_rowid');
+	$dbh->commit;
+	$self->repo_sync;
+	return $id;
+    }
+    my $err = $DBI::errstr;
+    if (my $repo = $self->dbh->selectrow_hashref("SELECT * FROM repo WHERE packlist_uri = ?", undef, $attr{packlist_uri})) {
+	die "Repo ", $repo->{name} || $repo->{id}, " already set up with URL $attr{packlist_uri}";
+    }
+    die $err;
 }
 
 sub repo_delete {
