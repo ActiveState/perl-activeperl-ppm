@@ -10,5 +10,5 @@
     <DEPENDENCY NAME="Sub-Uplevel" VERSION="0,0,0,0" />
     <DEPENDENCY NAME="Test-Exception" VERSION="0,0,0,0" />
   </IMPLEMENTATION>
-  <PROVIDES NAME="AI::NeuralNet::Simple" VERSION="0.10"/>
+  <PROVIDE NAME="AI::NeuralNet::Simple" VERSION="0.10"/>
 </SOFTPKG>

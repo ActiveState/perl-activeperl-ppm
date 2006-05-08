@@ -1,7 +1,7 @@
 package ActivePerl::PPM::PPD;
 
 use strict;
-use XML::Simple ();
+use ActivePerl::PPM::ParsePPD ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::Logger qw(ppm_log);
 
@@ -14,73 +14,49 @@ sub ActivePerl::PPM::Package::new_ppd {
 	$tmp;
     };
 
-    my $xml = eval { XML::Simple::XMLin($data,
-	KeepRoot => 1,  # so that we can verify root
-        ForceArray => [qw(IMPLEMENTATION DEPENDENCY PROVIDES REQUIRES)],
-    ) };
+    my $pkg;
+    my $p = ActivePerl::PPM::ParsePPD->new(sub {
+	$pkg = shift;
+    });
+    eval {
+	$p->parse_more($data);
+	$p->parse_done;
+    };
     if ($@) {
 	# malformed XML
 	ppm_log("ERR", $@);
 	return undef;
     }
 
-    if (!exists $xml->{SOFTPKG}) {
-	ppm_log("ERR", "Root element isn't <SOFTPKG>");
-	return undef;
-    }
-    $xml = $xml->{SOFTPKG};  # discard root
-
-    if (!(exists $xml->{NAME} && exists $xml->{VERSION})) {
-	ppm_log("ERR", "Required SOFTPKG attribute NAME and VERSION missing");
-	return undef;
-    }
-
     # Move relevant attributes for the matching implementation up
-    for my $impl (@{$xml->{IMPLEMENTATION} || []}) {
-	my $impl_arch = $impl->{ARCHITECTURE}{NAME} || "noarch";
+    for my $impl (@{$pkg->{implementation} || []}) {
+	my $impl_arch = $impl->{architecture} || "noarch";
 	if ($arch eq $impl_arch || $impl_arch eq "noarch") {
-	    $xml->{CODEBASE} = $impl->{CODEBASE};
-	    for (qw(DEPENDENCY PROVIDES REQUIRES)) {
-		next unless exists $impl->{$_};
-		push(@{$xml->{$_}}, @{$impl->{$_}});
+	    for my $k (keys %$impl) {
+		if (ref($impl->{$k}) eq "HASH") {
+		    for my $k2 (keys %{$impl->{$k}}) {
+			$pkg->{$k}{$k2} = $impl->{$k}{$k2};
+		    }
+		}
+		else {
+		    $pkg->{$k} = $impl->{$k};
+		}
 	    }
 	}
     }
-    delete $xml->{IMPLEMENTATION};  # not used any more
+    delete $pkg->{implementation};  # not used any more
 
     # convert legacy OSD version number
-    for my $version ($xml->{VERSION}) {
+    for my $version ($pkg->{version}) {
 	if ($version =~ /^\d+(?:,\d+){3}/) {
 	    $version =~ s/,/./g;
 	    1 while $version =~ s/(\d\.\d+)\.0+$/$1/;  # drop trailing '.0's
 	}
     }
 
-    # convert legacy DEPENDENCY into REQUIRES.  This loose the version info.
-    if (my $dep = delete $xml->{DEPENDENCY}) {
-	push(@{$xml->{REQUIRES}}, map { NAME => $_->{NAME}, VERSION => 0 }, @$dep);
-    }
+    $pkg->{arch} = $arch;
 
-    my %self;
-    $self{arch} = $arch;
-
-    for my $role (qw(require provide)) {
-	my $tmp = delete $xml->{uc($role) . "S"} || next;
-	for (@$tmp) {
-	    $self{$role}{$_->{NAME}} = $_->{VERSION};
-	}
-    }
-
-    if (my $codebase = delete $xml->{CODEBASE}) {
-	$self{codebase} = $codebase->{HREF};
-    }
-
-    # move the remaining elements into %self
-    for my $attr (keys %$xml) {
-	$self{lc($attr)} = $xml->{$attr};
-    }
-
-    return $class->new(\%self);
+    return $class->new($pkg);
 }
 
 1;
@@ -138,7 +114,7 @@ minimal PPD document:
     <ABSTRACT>
       An encoding scheme for Buffy the Vampire Slayer fans
     </ABSTRACT>
-    <PROVIDES NAME="Acme::Buffy" VERSION="1.3"/>
+    <PROVIDE NAME="Acme::Buffy" VERSION="1.3"/>
     <IMPLEMENTATION>
       <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Buffy.tar.gz" />
       <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
@@ -166,7 +142,7 @@ date when the package was uploaded to CPAN.
 
 =item *
 
-Added REQUIRES and PROVIDES elements that are used to describe
+Added REQUIRE and PROVIDE elements that are used to describe
 features that this package depends on and provides.  The NAME
 attribute is required for both.  The VERSION attribute is optional and
 should be a floating number.  Features are assumed to be backwards
@@ -175,8 +151,8 @@ better.
 
 =item *
 
-The DEPENDENCY elements are deprecated.  Use REQUIRES instead.  If
-present they are mapped to REQUIRES but their VERSION attribute is
+The DEPENDENCY elements are deprecated.  Use REQUIRE instead.  If
+present they are mapped to REQUIRE but their VERSION attribute is
 ignored.
 
 =item *

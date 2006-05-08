@@ -23,7 +23,7 @@ my $ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', "MSWin32-x86-multi-thread")
       <DEPENDENCY NAME="Carp-Clan" VERSION="5,3,0,0" />
       <OS NAME="MSWin32" />
     </IMPLEMENTATION>
-    <PROVIDES NAME="Date::Calc" VERSION="5.4"/>
+    <PROVIDE NAME="Date::Calc" VERSION="5.4"/>
     <TITLE>Date-Calc</TITLE>
   </SOFTPKG>
 EOT
