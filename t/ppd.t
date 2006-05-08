@@ -1,7 +1,7 @@
 #!perl -w
 
 use Test qw(plan ok);
-plan tests => 16;
+plan tests => 17;
 
 use ActivePerl::PPM::PPD;
 
@@ -50,6 +50,7 @@ ok(exists $features{"Carp-Clan"});
 # Try some to parse some bad stuff
 ok(ActivePerl::PPM::Package->new_ppd("<foo>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<foo></foo><bar>"), undef);
+ok(ActivePerl::PPM::Package->new_ppd(__FILE__), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<HARDPKG/>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG/>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG NAME='Foo'/>"), undef);

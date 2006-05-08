@@ -69,8 +69,6 @@ ActivePerl::PPM::PPD - Parser for PPD files
 
 =head1 SYNOPSIS
 
-  my $ppd = ActivePerl::PPM::Package->new_ppd('foo.ppd');
-  # or
   my $ppd = ActivePerl::PPM::Package->new_ppd('<SOFTPKG NAME="Foo">...</SOFTPKG>');
 
 =head1 DESCRIPTION
@@ -85,14 +83,11 @@ The following methods are added:
 
 =over
 
-=item $ppd = ActivePerl::PPM::Package->new_ppd( $filename, $archname )
-
 =item $ppd = ActivePerl::PPM::Package->new_ppd( $ppd_document, $archname )
 
-The constructor take either a filename or a literal document as
+The constructor take a literal document as
 argument and will return and object representing the PPD.  The method
-return C<undef> if the specified file can't be read, or if the file or
-the $ppd_document does not contain the expected XML.
+return C<undef> if $ppd_document does not contain the expected XML.
 
 The $archname should be specified to select attributes for a specific
 architecture where the PPD describes multiple implementations.  The
