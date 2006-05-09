@@ -3,65 +3,25 @@ class IDirs
 
    - implement frozen/enabled attributes
    - make behaviour robust for readonly idirs (files not owned by you)
-   - better strategy for handling file conflicts; for instance Carp-Clan
-     and Date-Calc from the ActiveState repo are both installing the same
-     files and we currently fail with a "column path is not unique(1) at dbdimp.c"
-     exception.
-   - rollback of install does not remove directories it might have created
-   - install scripts (pre/post/uninstall)
    - update HTML index and generate HTML docs on install
-   - relocation on install (should be in class Client perhaps)
    - sync_db should spend more effort on determining metadata for packages
      it discovers via .packlist files (repo, search.cpan.org,...)
    - track unknown files not found in .packlists (create PPM-Orphans package)
-   - track installdate/updatedate for packages
-   - track PPD location (from where was the package installed)
    - verify should allow callbacks to override the 'print' behaviour
-   - When uninstalling files, delete directories that end up empty (like
-     p4's rmdir option).
    - more tests
 
 class Client
 ------------
-   - even more idirs?  Any need?
-   - use something else than $ENV{HOME} on Windows/MacOS
    - move more of the install logic here (out of ppm)
-   - improve search interface
-   - incremental repo_sync
    - REST repo
    - SOAP repo
-
-class Package
--------------
-   - modules method (filtered and prettified 'provides').
-   - Unicode fields (author, abstract)
 
 module Web
 ----------
    - download method (something that reports progress) and ensure
      proper successful download
-   - multiple downloads at the same time
    - PPD download that aborts as soon as it discovers that what it
      downloads isn't an XML <SOFTPKG> file.
-   - pipelined fetch of PPD files
-
-ppm4
-----
-   - query should take search pattern as argument?
-   - query should list more attributes
-   - usage
-   - missing commands
-      - 'ppm upgrade' should report recommended upgrades
-      - belong
-      - help
-   - create temp repo for 'ppm install http://example.com/Foo.ppd'.  If 'Foo.ppd'
-     contains package 'Foo' and depends on package 'Bar', then look for
-     'http://example.com/Bar.ppd' before looking in other repos.
-
-ppm4-gui
---------
-   - design it
-   - implement it
 
 test suite
 ----------
