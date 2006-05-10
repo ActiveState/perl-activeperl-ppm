@@ -11,6 +11,8 @@ use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
 use ActivePerl::PPM::Web qw(web_ua);
 
+use base 'ActivePerl::PPM::DBH';
+
 sub new {
     my($class, $dir) = @_;
     unless ($dir) {
@@ -94,12 +96,6 @@ sub idirs {
     else {
 	return @{$self->{idirs_seq}};
     }
-}
-
-sub dbh {
-    my $self = shift;
-    $self->_init_db unless $self->{dbh};
-    $self->{dbh};
 }
 
 sub _init_db {

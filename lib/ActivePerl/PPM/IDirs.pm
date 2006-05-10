@@ -12,6 +12,8 @@ use File::Basename ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_status ppm_debug);
 
+use base 'ActivePerl::PPM::DBH';
+
 
 sub new {
     my $class = shift;
@@ -88,13 +90,6 @@ sub new {
     return $self;
 }
 
-sub DESTROY {
-    my $self = shift;
-    if (my $dbh = delete $self->{dbh}) {
-	$dbh->disconnect;
-    }
-}
-
 sub name {
     my $self = shift;
     $self->{name};
@@ -130,12 +125,6 @@ sub packages {
     return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")}
 	if wantarray;
     return $dbh->selectrow_array("SELECT count(*) FROM package");
-}
-
-sub dbh {
-    my $self = shift;
-    $self->_init_db unless $self->{dbh};
-    $self->{dbh};
 }
 
 sub packlists {
