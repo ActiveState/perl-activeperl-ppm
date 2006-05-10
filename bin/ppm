@@ -234,6 +234,9 @@ sub do_repo {
 	    print "[$repo_id] $status$repo->{name} <" . uri_hide_passwd($repo->{packlist_uri}) . ">\n";
 	}
     }
+    elsif ($cmd eq "search") {
+	do_search();
+    }
     elsif ($cmd eq "sync") {
 	$USAGE = "repo sync [--force]";
 	my $force;
