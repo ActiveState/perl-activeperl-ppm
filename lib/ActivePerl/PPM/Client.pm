@@ -363,11 +363,11 @@ sub _check_ppd {
 	$ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
 	$ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
 
-	# make URL attributes absolute (XXX make them repo relative instead?)
+	# make URL attributes relative to $abs_url
 	my $ppd_base = $ppd_res->base;
 	for my $attr (qw(codebase)) {
 	    next unless exists $ppd->{$attr};
-	    my $url = URI->new_abs($ppd->{$attr}, $ppd_base);
+	    my $url = URI->new_abs($ppd->{$attr}, $ppd_base)->rel($abs_url);
 	    $ppd->{$attr} = $url->as_string;
 	}
 
@@ -477,6 +477,20 @@ sub check_downgrade {
 sub package {
     my $self = shift;
     return ActivePerl::PPM::RepoPackage->new_dbi($self->dbh, @_);
+}
+
+sub package_set_abs_ppd_uri {
+    my($self, $pkg) = @_;
+    my($uri, $etag, $lastmod) = $self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $pkg->{repo_id});
+    if ($pkg->{ppd_uri}) {
+	$pkg->{ppd_uri} = URI->new_abs($pkg->{ppd_uri}, $uri)->as_string;
+    }
+    else {
+	$pkg->{ppd_uri} = $uri;
+	$pkg->{ppd_etag} = $etag;
+	$pkg->{ppd_lastmod} = $lastmod;
+    }
+    return $pkg;
 }
 
 1;

@@ -8,9 +8,6 @@ sub BASE_FIELDS {
     return (
        $class->SUPER::BASE_FIELDS,
        [repo_id         => "integer not null"],
-       [ppd_uri         => "text"],
-       [ppd_etag        => "text"],
-       [ppd_lastmod     => "text"],
        [ppd_fresh_until => "integer"],
     );
 }
@@ -38,18 +35,10 @@ The following are the new attributes:
 
 What repo does this package come from.
 
-=item $path = $pkg->ppd_uri
+=item $url = $pkg->ppd_uri
 
-This a relative URI for the PPD file itself.
-
-=item $str = $pkg->ppd_etag
-
-This is the C<ETag> that the server reported for the PPD last time.
-
-=item $str = $pkg->ppd_lastmod
-
-This is the C<Last-Modified> date that the server reported for the PPD
-last time.
+Inherited, but here this might be a relative URI and is then
+interpreted relative to the packlist_uri of the repo.
 
 =item $num = $pkg->ppd_fresh_until
 

@@ -10,6 +10,9 @@ sub BASE_FIELDS {
        [version  => "text"],
        [author   => "text"],
        [abstract => "text"],
+       [ppd_uri  => "text"],
+       [ppd_etag => "text"],
+       [ppd_lastmod => "text"],
        [codebase => "text"],
     );
 }
@@ -315,9 +318,23 @@ The name and email address of the current maintainer of the package.
 
 A short sentence describing the purpose of the package.
 
+=item $url = $pkg->ppd_uri
+
+This is the URI for the PPD file itself.
+
+=item $str = $pkg->ppd_etag
+
+This is the C<ETag> that the server reported for the PPD last time.
+
+=item $str = $pkg->ppd_lastmod
+
+This is the C<Last-Modified> field that the server reported for the
+PPD last time.
+
 =item $url = $pkg->codebase
 
 Returns the URL to implementation; a blib tarball.
+Interpret this URL relative to I<ppd_uri>.
 
 =item %features = $pkg->provides
 

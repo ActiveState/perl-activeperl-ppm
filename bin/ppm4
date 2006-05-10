@@ -123,7 +123,7 @@ sub do_idirs {
 sub do_list {
     my %opt;
     if (@ARGV) {
-	$USAGE = "list [--name] [--version] [--abstract] [--author]";
+	$USAGE = "list [--name] [--version] [--abstract] [--author] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'id',
@@ -133,6 +133,7 @@ sub do_list {
            'author',
 	   'files',
            'size',
+           'ppd',
         ) || usage();
 	usage() if @ARGV;
     }
@@ -157,6 +158,7 @@ sub do_list {
 	push(@fields, "version") if $opt{version};
 	push(@fields, "abstract") if $opt{abstract};
 	push(@fields, "author") if $opt{author};
+	push(@fields, "ppd_uri") if $opt{ppd};
 	require ActiveState::Table;
 	my $tab = ActiveState::Table->new;
 	$tab->add_field($_) for @fields;
@@ -365,7 +367,7 @@ sub do_install {
     }
     else {
 	# seach for feature in repos
-	_install($ppm->packages_missing_for($feature, 0, force => $force));
+	_install_repo($ppm->packages_missing_for($feature, 0, force => $force));
     }
 }
 
@@ -373,7 +375,7 @@ sub do_upgrade {
     $USAGE = "upgrade <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install($ppm->packages_missing_for($feature, undef));
+    _install_repo($ppm->packages_missing_for($feature, undef));
 }
 
 sub _install_uri {
@@ -390,7 +392,10 @@ sub _install_uri {
     }
     if (my $codebase = $pkg->{codebase}) {
 	# make it absolute
-	$pkg->{codebase} = URI->new_abs($codebase, $res->base)->as_string;
+	$pkg->{codebase} = URI->new_abs($codebase, $res->base)->rel($uri)->as_string;
+	$pkg->{ppd_uri} = $uri;
+	$pkg->{ppd_etag} = $res->header("ETag");
+	$pkg->{ppd_lastmod} = $res->header("Last-Modified");
     }
     else {
 	die "The PPD does not provide code to install for this platform";
@@ -400,6 +405,10 @@ sub _install_uri {
     # package features.
 
     _install($pkg);
+}
+
+sub _install_repo {
+    _install(map $ppm->package_set_abs_ppd_uri($_), @_);
 }
 
 sub _install {
@@ -417,16 +426,17 @@ sub _install {
     eval {
 	for my $pkg (@_) {
 	    my $name = $pkg->name_version;
-	    my $codebase = $pkg->codebase;
+	    my $codebase = $pkg->{codebase};
 	    die "No codebase for $name" unless $codebase;
+	    $codebase = URI->new_abs($codebase, $pkg->{ppd_uri});
 
 	    if ($codebase =~ /\.(tgz|tar\.gz)$/) {
 		$pkg->{codebase_type} = "tgz";
 	    }
 	    die "Don't know how to unpack $codebase" unless $pkg->{codebase_type};
 
-	    if ($codebase =~ /^file:/) {
-		$pkg->{codebase_file} = URI->new($codebase)->file;
+	    if ($codebase->scheme eq 'file') {
+		$pkg->{codebase_file} = $codebase->file;
 		unless (-f $pkg->{codebase_file}) {
 		    die "No file at $pkg->{codebase_file}";
 		}
