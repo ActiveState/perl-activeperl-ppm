@@ -64,14 +64,14 @@ sub new {
 	    }
 	    elsif ($tag eq "SOFTPKG") {
 		my @c = $p->context;
-		$p->xpcroak("$tag must be root") if @c && "@c" ne "REPOSITORYSUMMARY";
+		$p->xpcroak("$tag must be root") if @c && "@c" !~ /^REPOSITORY(SUMMARY)?$/;
 		my %attr = @_;
 		$p->xpcroak("Required SOFTPKG attribute NAME and VERSION missing")
 		    unless exists $attr{NAME} && exists $attr{VERSION};
 		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION} );
 		$p->{ctx} = $p->{softpkg};
 	    }
-	    elsif ($tag eq "REPOSITORYSUMMARY") {
+	    elsif ($tag =~ /^REPOSITORY(SUMMARY)?$/) {
 		$p->xpcroak("$tag must be root") if $p->depth;
 	    }
 	    elsif ($IGNORE_TAG{$tag}) {
