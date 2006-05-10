@@ -96,8 +96,8 @@ ok(j($dir->packages), "");
 ok($dir->verify);
 
 END {
-    #system("echo .dump | sqlite3 $prefix/etc/ppm.db");
     if ($prefix && -d $prefix) {
+	#system("sqlite3", "$prefix/etc/ppm-idirs.db", ".dump");
 	require File::Path;
 	File::Path::rmtree($prefix, 1);
     }
