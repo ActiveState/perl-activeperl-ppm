@@ -23,7 +23,7 @@ eval {
 };
 if ($@) {
     ppm_log("ERR", "$PROGNAME $CMD: $@");
-    #$@ =~ s/ at .*//;
+    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
     print STDERR "$PROGNAME $CMD failed: $@";
     exit 1;
 }
@@ -44,7 +44,7 @@ sub usage {
 }
 
 sub gui {
-    die "GUI NYI";
+    usage("The graphical shell has not been implemented yet.");
 }
 
 sub do_dump {
@@ -75,7 +75,7 @@ sub do_version {
 	usage("The $CMD command does not take arguments.");
     }
     require ActivePerl::PPM;
-    print "ppm $ActivePerl::PPM::VERSION\n";
+    print "ppm $ActivePerl::PPM::VERSION (Beta 1)\n";
     print "Copyright (C) 2006 ActiveState Software Inc.  All rights reserved.\n";
 }
 
