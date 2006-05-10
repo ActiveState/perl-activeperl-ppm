@@ -8,7 +8,7 @@ sub BASE_FIELDS {
     return (
        $class->SUPER::BASE_FIELDS,
        [repo_id         => "integer not null"],
-       [ppd_uri         => "text unique"],
+       [ppd_uri         => "text"],
        [ppd_etag        => "text"],
        [ppd_lastmod     => "text"],
        [ppd_size        => "integer"],
