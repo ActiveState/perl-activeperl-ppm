@@ -360,7 +360,6 @@ sub _check_ppd {
 	$ppd->{repo_id} = $repo->{id};
 	$ppd->{ppd_uri} = $rel_url;
 	$ppd->{ppd_etag} = $ppd_res->header("ETag");
-	$ppd->{ppd_size} = $ppd_res->header("Content-Length");
 	$ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
 	$ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
 

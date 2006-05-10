@@ -11,7 +11,6 @@ sub BASE_FIELDS {
        [ppd_uri         => "text"],
        [ppd_etag        => "text"],
        [ppd_lastmod     => "text"],
-       [ppd_size        => "integer"],
        [ppd_fresh_until => "integer"],
     );
 }
@@ -50,11 +49,6 @@ This is the C<ETag> that the server reported for the PPD last time.
 =item $str = $pkg->ppd_lastmod
 
 This is the C<Last-Modified> date that the server reported for the PPD
-last time.
-
-=item $num = $pkg->ppd_size
-
-This is the C<Content-Length> that the server reported for the PPD
 last time.
 
 =item $num = $pkg->ppd_fresh_until
