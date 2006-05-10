@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
    NAME         => "ActivePerl::PPM",
    VERSION_FROM => "lib/ActivePerl/PPM.pm",
-   EXE_FILES    => ["bin/ppm4"],
+   EXE_FILES    => ["bin/ppm"],
    PREREQ_PM    => {
 		       'DBI' => 1.50,
 		       'DBD::SQLite' => 1.12,
