@@ -456,8 +456,7 @@ sub _copy_dir {
     my($state, $from, $to) = @_;
 
     unless (-d $to) {
-	# XXX should we use mkpath instead?
-	mkdir($to, 0755) || die "Can't mkdir $to: $!";
+	File::Path::mkpath($to, 0, 0755) || die "Can't mkdir $to: $!";
 	_on_rollback($state, "rmdir", $to);
     }
 
