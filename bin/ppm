@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w
 
 use strict;
+use ActivePerl::PPM::limited_inc;
+
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
