@@ -424,6 +424,7 @@ sub _install {
     my $tmpdir = "/tmp/ppm-$$";
     mkpath($tmpdir, $verbose) || die "Can't mkpath('$tmpdir'): $!";
     eval {
+	# determine codebase_file
 	for my $pkg (@_) {
 	    my $name = $pkg->name_version;
 	    my $codebase = $pkg->{codebase};
@@ -458,6 +459,7 @@ sub _install {
 	    }
 	}
 
+	# unpack
 	for my $pkg (@_) {
 	    my $pname = $pkg->name_version;
 	    print "Unpacking $pname...";
@@ -496,10 +498,26 @@ sub _install {
 	    print "done\n";
 	}
 
-	# XXX install scripts
+	# relocate
+	if ($^O ne "MSWin32") {
+	    require ActiveState::RelocateTree;
+	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
+	    my $prefix = do { require Config; $Config::Config{prefix} };
+	    for my $pkg (@_) {
+		print "Relocating ", $pkg->name_version, "...";
+		ActiveState::RelocateTree::relocate (
+		    to      => $pkg->{blib},
+		    inplace => 1,
+	            search  => $ppm_sponge,
+	            replace => $prefix,
+		);
+		print "done\n";
+	    }
+	}
+
 	# XXX regenerate HTML
 
-	# do the install
+	# install
 	print "Installing...";
 	if (my $summary = $ppm->current_idirs->install(@_)) {
 	    print "done\n";
@@ -514,6 +532,7 @@ sub _install {
 	    die;
 	}
 
+	# XXX run install scripts
     };
     my $err = $@;
     rmtree($tmpdir, $verbose);
