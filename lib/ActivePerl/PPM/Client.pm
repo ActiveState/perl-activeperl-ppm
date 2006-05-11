@@ -286,7 +286,7 @@ sub repo_sync {
 	    $dbh->do("UPDATE repo SET packlist_last_status_code = ?, packlist_last_access = ? WHERE id = ?", undef, $res->code, time, $repo->{id});
 	    #print $res->status_line, "\n";
 	    if ($res->code == 304) {  # not modified
-		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE repo_id = ?", undef, $repo->{id})};
+		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE ppd_uri NOTNULL AND repo_id = ?", undef, $repo->{id})};
 		$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, $res->fresh_until, $repo->{id});
 	    }
 	    elsif ($res->is_success) {
