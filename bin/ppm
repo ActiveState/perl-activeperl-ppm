@@ -336,6 +336,16 @@ sub do_repo {
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
     }
+    elsif ($cmd =~ /^\d+$/) {
+	@ARGV = ("describe") unless @ARGV;
+	if ($ARGV[0] =~ /^\d+$/) {
+	    # avoids infinite recursion
+	    $USAGE = "repo <num> <cmd> ...";
+	    usage();
+	}
+	splice(@ARGV, 1, 0, $cmd);
+	do_repo();
+    }
     else {
 	$USAGE = "repo <cmd> <args>";
 	usage("The repo command '$cmd' isn't recognized; try one of list, describe, add, delete, on, off");
