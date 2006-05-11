@@ -620,14 +620,14 @@ Install, upgrade and remove packages from the current install area:
     ppm upgrade <module>
     ppm remove <pkg>
 
-Manage install and search areas:
+Manage and search install areas:
 
     ppm idirs [--current <name>] [--sync] [--no-header]
     ppm list [--name] [--version] [--abstract] ...
     ppm files <pkg>
     ppm verify [<pkg>]
 
-Manange and search repositories:
+Manage and search repositories:
 
     ppm repo list
     ppm repo sync [--force]
