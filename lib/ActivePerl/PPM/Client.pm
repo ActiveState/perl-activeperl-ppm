@@ -264,7 +264,7 @@ sub repo_sync {
 		    my $try;
 		    for $try (@try) {
 			my $try_res = $ua->get($try);
-			if ($try_res->is_success && $try_res->content =~ /<REPOSITORYSUMMARY\b/) {
+			if ($try_res->is_success && $try_res->content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 			    $repo->{packlist_uri} = $try->as_string;
 			    $dbh->do("UPDATE repo SET packlist_uri = ? WHERE id = ?", undef, $repo->{packlist_uri}, $repo->{id});
 			    $res = $try_res;
@@ -312,6 +312,18 @@ sub repo_sync {
 		    ppm_log("WARN", "No ppds found in $repo->{packlist_uri}") unless @check_ppd;
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
+		}
+		elsif ($res->content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+		    _repo_delete_packages($dbh, $repo->{id});
+		    require ActivePerl::PPM::ParsePPD;
+		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
+			my $pkg = shift;
+			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg);
+			$pkg->{repo_id} = $repo->{id};
+			$pkg->dbi_store($dbh);
+		    });
+		    $p->parse_more($res->content);
+		    $p->parse_done;
 		}
 		else {
 		    ppm_log("ERR", "Unrecognized repo type " . $res->content_type);

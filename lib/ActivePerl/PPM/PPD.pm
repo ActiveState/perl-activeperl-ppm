@@ -6,7 +6,7 @@ use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::Logger qw(ppm_log);
 
 sub ActivePerl::PPM::Package::new_ppd {
-    my($class, $data, $arch) = @_;
+    my($class, $pkg, $arch) = @_;
     $arch ||= do {
 	require Config;
 	my $tmp = $Config::Config{archname};
@@ -14,18 +14,25 @@ sub ActivePerl::PPM::Package::new_ppd {
 	$tmp;
     };
 
-    my $pkg;
-    my $p = ActivePerl::PPM::ParsePPD->new(sub {
-	$pkg = shift;
-    });
-    eval {
-	$p->parse_more($data);
-	$p->parse_done;
-    };
-    if ($@) {
-	# malformed XML
-	ppm_log("ERR", $@);
-	return undef;
+    unless (ref $pkg) {
+	my $data = $pkg;
+	$pkg = undef;
+	my $p = ActivePerl::PPM::ParsePPD->new(sub {
+	    $pkg = shift;
+	});
+	eval {
+	    $p->parse_more($data);
+	    $p->parse_done;
+	};
+	if ($@) {
+	    # malformed XML
+	    ppm_log("ERR", $@);
+	    return undef;
+	}
+	unless ($pkg) {
+	    ppm_log("ERR", "No SOFTPKG found in parsed PPD document");
+	    return undef;
+	}
     }
 
     # Move relevant attributes for the matching implementation up
@@ -84,6 +91,8 @@ The following methods are added:
 =over
 
 =item $ppd = ActivePerl::PPM::Package->new_ppd( $ppd_document, $archname )
+
+=item $ppd = ActivePerl::PPM::Package->new_ppd( $parsed_ppd_hashref, $archname )
 
 The constructor take a literal document as
 argument and will return and object representing the PPD.  The method
