@@ -22,14 +22,35 @@ sub web_ua {
 
 package ActivePerl::PPM::Web::UA;
 
+use Time::HiRes qw(time);
+
 use base 'LWP::UserAgent';
 use ActivePerl::PPM::Logger qw(ppm_log);
 
 sub simple_request {
     my $self = shift;
     my $req = shift;
+    my $before = time();
+
     my $res = $self->SUPER::simple_request($req, @_);
-    ppm_log("INFO", sprintf("%s %s ==> %s", $req->method, $req->uri, $res->status_line));
+
+    my $used = time() - $before;
+    my $bytes = "";
+    my $speed = "";
+    if (my $len = $res->content_length) {
+	$bytes = "$len bytes ";
+	$speed = sprintf " - %.0f KB/s", ($len/1024) / $used;
+    }
+    if ($used < 3) {
+	$used = sprintf "%.2f sec", $used;
+    }
+    elsif ($used < 20) {
+	$used = sprintf "%.1f sec", $used;
+    }
+    else {
+	$used = sprintf "%.0f sec", $used;
+    }
+    ppm_log("INFO", sprintf("%s %s ==> %s (${bytes}in $used$speed)", $req->method, $req->uri, $res->status_line));
     return $res;
 }
 
