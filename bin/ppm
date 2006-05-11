@@ -8,6 +8,8 @@ use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
 use File::Path qw(mkpath rmtree);
 
+$SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
+
 (my $PROGNAME = $0) =~ s,.*[\\/],,;
 
 my $CMD = shift || gui();
