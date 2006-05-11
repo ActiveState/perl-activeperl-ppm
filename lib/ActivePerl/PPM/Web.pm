@@ -38,8 +38,10 @@ sub simple_request {
     my $bytes = "";
     my $speed = "";
     if (my $len = $res->content_length) {
-	$bytes = "$len bytes ";
-	$speed = sprintf " - %.0f KB/s", ($len/1024) / $used;
+	if ($req->method ne "HEAD") {
+	    $bytes = "$len bytes ";
+	    $speed = sprintf " - %.0f KB/s", ($len/1024) / $used;
+	}
     }
     if ($used < 3) {
 	$used = sprintf "%.2f sec", $used;
