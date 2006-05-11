@@ -557,9 +557,29 @@ sub _install {
 }
 
 sub do_remove {
-    $USAGE = "remove <package>";
-    usage() unless @ARGV == 1;
-    $ppm->current_idirs->uninstall($ARGV[0]);
+    $USAGE = "remove <package> ...";
+    usage() unless @ARGV;
+
+    my $idirs = $ppm->current_idirs;
+    my $removed_count = 0;
+    for my $pkg (@ARGV) {
+	print "$pkg: ";
+	eval {
+	    $idirs->uninstall($pkg);
+	};
+	if ($@ =~ /^Package \Q$pkg\E isn't installed/) {
+	    print "not installed\n";
+	}
+	elsif ($@) {
+	    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
+	    print $@;
+	}
+	else {
+	    print "uninstalled\n";
+	    $removed_count++;
+	}
+    }
+    die "No packages uninstalled" unless $removed_count;
 }
 
 BEGIN {
