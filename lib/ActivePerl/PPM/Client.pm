@@ -264,7 +264,7 @@ sub repo_sync {
 		    my $try;
 		    for $try (@try) {
 			my $try_res = $ua->get($try);
-			if ($try_res->is_success && $try_res->content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+			if ($try_res->is_success && $try_res->decoded_content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 			    $repo->{packlist_uri} = $try->as_string;
 			    $dbh->do("UPDATE repo SET packlist_uri = ? WHERE id = ?", undef, $repo->{packlist_uri}, $repo->{id});
 			    $res = $try_res;
@@ -308,12 +308,12 @@ sub repo_sync {
 			    push(@check_ppd, URI->new_abs($href,$base)->rel($repo->{packlist_uri})) if $href =~ /\.ppd$/;
 			}, "attr"],
 		    );
-		    $p->parse($res->content)->eof;
+		    $p->parse($res->decoded_content)->eof;
 		    ppm_log("WARN", "No ppds found in $repo->{packlist_uri}") unless @check_ppd;
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 		}
-		elsif ($res->content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+		elsif ($res->decoded_content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 		    _repo_delete_packages($dbh, $repo->{id});
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
@@ -322,7 +322,7 @@ sub repo_sync {
 			$pkg->{repo_id} = $repo->{id};
 			$pkg->dbi_store($dbh);
 		    });
-		    $p->parse_more($res->content);
+		    $p->parse_more($res->decoded_content);
 		    $p->parse_done;
 		}
 		else {
@@ -364,7 +364,7 @@ sub _check_ppd {
 	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
     }
     elsif ($ppd_res->is_success) {
-	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->content);
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content);
 	$ppd->{id} = $row->{id} if $row;
 	$ppd->{repo_id} = $repo->{id};
 	$ppd->{ppd_uri} = $rel_url;

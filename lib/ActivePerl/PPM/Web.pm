@@ -9,13 +9,15 @@ use ActivePerl::PPM ();
 my $ua;
 
 sub web_ua {
-    return $ua ||= do {
-	ActivePerl::PPM::Web::UA->new(
+    unless ($ua) {
+	$ua = ActivePerl::PPM::Web::UA->new(
 	    agent => "PPM/$ActivePerl::PPM::VERSION ($^O) ",
 	    env_proxy => 1,
 	    keep_alive => 1,
         );
-    };
+	$ua->default_header("Accept-Encoding" => "gzip, deflate");
+    }
+    return $ua;
 }
 
 package ActivePerl::PPM::Web::UA;
