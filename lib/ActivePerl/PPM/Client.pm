@@ -154,7 +154,13 @@ EOT
 
     # initial values
     $dbh->do(qq(INSERT INTO config VALUES ("current-idirs", "site")));
-    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", "http://ppm.ActiveState.com/PPM/ppmserver-5.8-$^O.plex?urn:/PPM/Server/SQL")));
+
+    my $os = lc($^O);
+    $os = "windows" if $os eq "mswin32";
+    my $repo_uri = "http://ppm.activestate.com/PPMPackages/5.8-$os/";
+    if ($os =~ /^(windows|linux|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
+	$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", ?)), undef, $repo_uri);
+    }
 }
 
 sub repos {
