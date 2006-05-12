@@ -445,8 +445,7 @@ sub _install {
     my $verbose = 0;
     my $ua = web_ua();
 
-    my $tmpdir = "/tmp/ppm-$$";
-    mkpath($tmpdir, $verbose) || die "Can't mkpath('$tmpdir'): $!";
+    my $tmpdir = do { require File::Temp; File::Temp::tempdir() };
     eval {
 	# determine codebase_file
 	for my $pkg (@_) {
