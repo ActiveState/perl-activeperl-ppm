@@ -151,7 +151,6 @@ sub do_list {
     }
     else {
 	$opt{version}++;
-	$opt{abstract}++;
 	$opt{files}++;
 	$opt{size}++;
     }
