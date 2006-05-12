@@ -198,6 +198,8 @@ sub verify {
 sub package_id {
     my($self, $pkg) = @_;
     my $id = $self->dbh->selectrow_array("SELECT id FROM package WHERE name = ?", undef, $pkg);
+    $id = $self->dbh->selectrow_array("SELECT id FROM package WHERE lower(name) = lower(?)", undef, $pkg)
+	unless defined($id);
     return $id;
 }
 
