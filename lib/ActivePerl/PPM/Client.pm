@@ -453,7 +453,17 @@ sub packages_missing_for {
         my($feature, $want, $needed_by) = @{shift @todo};
 	ppm_debug("Want $feature >= $want");
 
-        my $have = $self->feature_have($feature); # XXX also consider the @pkg provide
+        my $have;
+	for my $pkg (@pkg) {
+	    $have = $pkg->{provide}{$feature};
+	    if (defined $have) {
+		if ($have < $want) {
+		    die "Conflict for feature $feature version $have provided by $pkg->{name}, want version $want";
+		}
+		last;
+	    }
+	}
+	$have = $self->feature_have($feature) unless defined($have);
 	ppm_debug("Have $feature $have") if defined($have);
 
         if ($opt{force} || !defined($have) || $have < $want) {
