@@ -8,6 +8,7 @@ sub BASE_FIELDS {
        [id       => "integer primary key"],
        [name     => "text not null"],
        [version  => "text"],
+       [release_date => "datetime"],
        [author   => "text"],
        [abstract => "text"],
        [ppd_uri  => "text"],
@@ -309,6 +310,12 @@ on these version strings.
 Returns the name and version concatenated together.  This form might
 be handy for display, but there is no reliable way to parse back what
 is the name and what is the version identifier.
+
+=item $str = $pkg->release_date
+
+Returns the date the package was released on as an ISO 8601 date
+(YYYY-MM-DDThh:mm:ss).  For CPAN packages this is the date the package
+was uploaded to CPAN.
 
 =item $str = $pkg->author
 
