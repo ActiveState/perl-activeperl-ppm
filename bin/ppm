@@ -135,7 +135,7 @@ sub do_idirs {
 sub do_list {
     my %opt;
     if (@ARGV) {
-	$USAGE = "list [--name] [--version] [--abstract] [--author] [--ppd] [--files] [--size]";
+	$USAGE = "list [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'id',
@@ -151,6 +151,7 @@ sub do_list {
     }
     else {
 	$opt{version}++;
+        $opt{date}++;
 	$opt{files}++;
 	$opt{size}++;
     }
@@ -167,6 +168,7 @@ sub do_list {
 	my @fields;
 	push(@fields, "name");
 	push(@fields, "version") if $opt{version};
+	push(@fields, "release_date") if $opt{date};
 	push(@fields, "abstract") if $opt{abstract};
 	push(@fields, "author") if $opt{author};
 	push(@fields, "ppd_uri") if $opt{ppd};
