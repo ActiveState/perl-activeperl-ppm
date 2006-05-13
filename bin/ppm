@@ -141,6 +141,7 @@ sub do_list {
            'id',
            'name',
            'version',
+           'date',
            'abstract',
            'author',
 	   'files',
@@ -179,6 +180,9 @@ sub do_list {
 	$tab->add_field("size") if $opt{size};
 	for my $pkg ($idir->packages(@fields)) {
 	    my %row = map {$_ => shift(@$pkg)} @fields;
+	    if ($row{release_date}) {
+		$row{release_date} =~ s/T.*//;  # drop time
+	    }
 	    if ($opt{files} || $opt{size}) {
 		my @files = $idir->package_files($row{name});
 		$row{files} = @files if $opt{files};
