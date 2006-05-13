@@ -395,7 +395,23 @@ sub _check_ppd {
 sub search {
     my($self, $pattern) = @_;
     $self->repo_sync;
-    @{$self->dbh->selectcol_arrayref("SELECT name FROM package WHERE name like ?", undef, $pattern)};
+
+    my $dbh = $self->dbh;
+    if ($pattern =~ /::/) {
+	my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
+	return @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern)};
+    }
+
+    if ($pattern eq '*') {
+	return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")};
+    }
+
+    unless ($pattern =~ /\*/) {
+	my @res = @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE name = ?", undef, $pattern)};
+	return @res if @res;
+	$pattern = "*$pattern*";
+    }
+    return @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern))};
 }
 
 sub feature_best {

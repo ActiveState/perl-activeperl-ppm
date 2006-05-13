@@ -369,16 +369,12 @@ sub do_search {
     $USAGE = "search <pattern>";
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
-    $pattern =~ s/\*/%/g;  # glob to SQL LIKE
-    $pattern =~ s/\?/_/g;  # glob to SQL LIKE
-    $pattern = "%$pattern%" unless $pattern =~ /[%_]/;
-
     my @res = $ppm->search($pattern);
     if (@res) {
 	print "$_\n" for @res;
     }
     else {
-	print "no packages found\n";
+	print "*** no packages matching '$pattern' found ***\n";
     }
 }
 
