@@ -40,7 +40,8 @@ sub new {
 		    $tag = "REQUIRE";
 		    $attr{VERSION} = "0";
 		}
-		$p->{ctx}{lc $tag}{$attr{NAME}} = $attr{VERSION};
+		$attr{NAME} =~ s/::$// if $attr{NAME} =~ /::\w+::/;
+		$p->{ctx}{lc $tag}{$attr{NAME}} = $attr{VERSION} || 0;
 	    }
 	    elsif ($TEXT_TAG{$tag}) {
 		@{$p->{txt}} = ();

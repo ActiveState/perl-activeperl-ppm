@@ -261,12 +261,13 @@ sub repo_sync {
 		unless ($uri =~ m,/package.lst$,) {
 		    $uri = URI->new($uri);
 		    my @try;
-		    unless ($uri->path =~ m,/$,) {
-			my $uri_slash = $uri->clone;
+		    my $uri_slash = $uri;
+		    unless ($uri_slash->path =~ m,/$,) {
+			$uri_slash = $uri->clone;
 			$uri_slash->path( $uri->path . "/");
-			push(@try, URI->new_abs("package.lst", $uri_slash));
 		    }
-		    push(@try, URI->new_abs("package.lst", $uri));
+		    push(@try, URI->new_abs("package.xml", $uri_slash));
+		    push(@try, URI->new_abs("package.lst", $uri_slash));
 		    my $try;
 		    for $try (@try) {
 			my $try_res = $ua->get($try);
