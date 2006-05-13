@@ -49,7 +49,7 @@ sub new {
 	);
     }
     elsif ($name) {
-	die "NYI";
+	die "Unknown idirs '$name'";
     }
     else {
 	my $prefix = delete $opt{prefix}

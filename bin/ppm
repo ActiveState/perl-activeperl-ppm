@@ -134,8 +134,9 @@ sub do_idirs {
 
 sub do_list {
     my %opt;
+    my $idirs_name;
     if (@ARGV) {
-	$USAGE = "list [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
+	$USAGE = "list [<idirs>] [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'id',
@@ -148,9 +149,10 @@ sub do_list {
            'size',
            'ppd',
         ) || usage();
+	$idirs_name = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
-    else {
+    unless (%opt) {
 	$opt{version}++;
         $opt{date}++;
 	$opt{files}++;
@@ -158,12 +160,15 @@ sub do_list {
     }
     $opt{name}++;
 
-    my $idir = $ppm->current_idirs;
+    my $idirs = $idirs_name ? $ppm->idirs($idirs_name) : $ppm->current_idirs;
     if (keys %opt == 1) {
 	# just list the names
-	for my $pkg ($idir->packages) {
+	my $count;
+	for my $pkg ($idirs->packages) {
 	    print "$pkg\n";
+	    $count++;
 	}
+	goto NO_PKG_INSTALLED unless $count;
     }
     else {
 	my @fields;
@@ -178,13 +183,13 @@ sub do_list {
 	$tab->add_field($_) for @fields;
 	$tab->add_field("files") if $opt{files};
 	$tab->add_field("size") if $opt{size};
-	for my $pkg ($idir->packages(@fields)) {
+	for my $pkg ($idirs->packages(@fields)) {
 	    my %row = map {$_ => shift(@$pkg)} @fields;
 	    if ($row{release_date}) {
 		$row{release_date} =~ s/T.*//;  # drop time
 	    }
 	    if ($opt{files} || $opt{size}) {
-		my @files = $idir->package_files($row{name});
+		my @files = $idirs->package_files($row{name});
 		$row{files} = @files if $opt{files};
 		$row{size} = do {
 		    require ActiveState::DiskUsage;
@@ -196,7 +201,19 @@ sub do_list {
 	    }
 	    $tab->add_row(\%row);
 	}
-	print $tab->as_box(null => "", show_trailer => 0);
+	if (my $rows = $tab->rows) {
+	    print $tab->as_box(null => "", show_trailer => 0);
+	    if (1) {
+		$idirs_name ||= $ppm->current_idirs_name;
+		my $s = ($rows == 1) ? "" : "s";
+		print " ($rows package$s installed in '$idirs_name' area)\n";
+	    }
+	}
+	else {
+	NO_PKG_INSTALLED:
+	    $idirs_name ||= $ppm->current_idirs_name;
+	    print STDERR "*** no packages installed in '$idirs_name' area ***\n";
+	}
     }
 }
 
@@ -596,6 +613,7 @@ sub do_remove {
 
 BEGIN {
     # aliases for PPM3 compatibility (mostly)
+    *do_area = \&do_idirs;
     *do_query = \&do_list;
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
@@ -628,6 +646,7 @@ Manage and search install areas:
 
     ppm idirs [--current <name>] [--sync] [--no-header]
     ppm list [--name] [--version] [--abstract] ...
+    ppm list <idirs> [--name] [--version] [--abstract] ...
     ppm files <pkg>
     ppm verify [<pkg>]
 
