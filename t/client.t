@@ -54,12 +54,12 @@ ok($repo->{name}, "Test repo");
 ok($repo->{prio}, 0);
 ok($repo->{packlist_uri}, qr,^file:///.*t/repo/test1/$,);
 
-ok(j($client->search("%Buffy")), "Acme-Buffy");
+ok(j($client->search("*Buffy")), "Acme-Buffy");
 
 $client->repo_enable(1, 0);  # disable it
 $repo = $client->repo(1);
 ok(!$repo->{enabled});
-ok(j($client->search("%Buffy")), "");
+ok(j($client->search("*Buffy")), "");
 
 $client->repo_add(name => "Test repo", packlist_uri => URI::file->new_abs("t/repo/test2/"));
 $repo = $client->repo(2);
@@ -69,7 +69,7 @@ ok($repo->{name}, "Test repo");
 ok($repo->{prio}, 0);
 ok($repo->{packlist_uri}, qr,^file:///.*t/repo/test2/package.lst$,);
 
-ok(j($client->search("%Buffy")), "Acme-Buffy");
+ok(j($client->search("*Buffy")), "Acme-Buffy");
 undef($client);
 
 END {
