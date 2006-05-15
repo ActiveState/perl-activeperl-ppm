@@ -1,7 +1,7 @@
 #!perl -w
 
 use Test qw(plan ok);
-plan tests => 18;
+plan tests => 24;
 
 use ActivePerl::PPM::PPD;
 
@@ -21,6 +21,8 @@ my $ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', "MSWin32-x86-multi-thread")
       <CODEBASE HREF="http://ppm.activestate.com/PPMPackages/5.6-windows/MSWin32-x86-multi-thread-5.6/Date-Calc-5.4.tar.gz" />
       <DEPENDENCY NAME="Bit-Vector" VERSION="6,4,0,0" />
       <DEPENDENCY NAME="Carp-Clan" VERSION="5,3,0,0" />
+      <INSTALL EXEC="PPM_PERL" HREF="sorry.pl">ignored</INSTALL>
+      <UNINSTALL>false</UNINSTALL>
       <OS NAME="MSWin32" />
     </IMPLEMENTATION>
     <PROVIDE NAME="Date::Calc" VERSION="5.4"/>
@@ -46,6 +48,13 @@ ok(exists $features{"Date::Calc"});
 %features = $ppd->requires;
 ok(exists $features{"Bit-Vector"});
 ok(exists $features{"Carp-Clan"});
+
+ok($ppd->{script}{install}{exec}, "PPM_PERL");
+ok($ppd->{script}{install}{uri}, "sorry.pl");
+ok($ppd->{script}{install}{text}, undef);
+ok($ppd->{script}{uninstall}{exec}, undef);
+ok($ppd->{script}{uninstall}{uri}, undef);
+ok($ppd->{script}{uninstall}{text}, "false");
 
 # Try some to parse some bad stuff
 ok(ActivePerl::PPM::Package->new_ppd("<foo>"), undef);

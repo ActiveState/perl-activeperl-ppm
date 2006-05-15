@@ -62,7 +62,9 @@ sub new {
 	    }
 	    elsif ($tag eq "INSTALL" || $tag eq "UNINSTALL") {
 		my %attr = @_;
-		$p->{ctx}{lc $tag} = \%attr;
+		my $h = $p->{ctx}{script}{lc $tag} = {};
+		$h->{exec} = $attr{EXEC} if exists $attr{EXEC};
+		$h->{uri} = $attr{HREF} if exists $attr{HREF};
 		@{$p->{txt}} = ();
 	    }
 	    elsif ($tag eq "SOFTPKG") {
@@ -93,7 +95,9 @@ sub new {
 		$p->{ctx}{lc $tag} = join("", @{$p->{txt}});
 	    }
 	    elsif ($tag =~ /^(UN)?INSTALL$/ && @{$p->{txt}}) {
-		$p->{ctx}{lc $tag}{script} = join("", @{$p->{txt}});
+		my $h = $p->{ctx}{script}{lc $tag};
+		$h->{text} = join("", @{$p->{txt}})
+		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
 	    }
 	    elsif ($tag eq "SOFTPKG") {
 		$handler->($p->{softpkg});
