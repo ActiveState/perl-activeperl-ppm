@@ -505,6 +505,7 @@ sub uninstall {
    # Prune the database
     $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $pkg_id);
     $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $pkg_id);
+    $dbh->do("DELETE FROM script WHERE package_id = ?", undef, $pkg_id);
     $dbh->do("DELETE FROM package WHERE id = ?", undef, $pkg_id);
     $dbh->commit;
 }
@@ -615,6 +616,7 @@ sub sync_db {
 	    ppm_log("NOTICE", "The $pkg package is gone");
 	    $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $info{id});
+	    $dbh->do("DELETE FROM script WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM package WHERE id = ?", undef, $info{id});
 	    $dbh->commit;
 	}

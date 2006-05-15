@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 15;
+plan tests => 23;
 
 use ActivePerl::PPM::Package ();
 use DBI;
@@ -86,9 +86,33 @@ for my $create (ActivePerl::PPM::Package->sql_create_tables(name_unique => 1)) {
 $dbh->commit;
 
 $pkg = ActivePerl::PPM::Package->new(name => "Foo", version => "1.1");
-ok($pkg->dbi_store($dbh));
+ok($pkg->dbi_store($dbh), 1);
 
 $pkg = ActivePerl::PPM::Package->new(name => "Foo", version => "1.2");
 ok($pkg->dbi_store($dbh), undef);  # fails because (name) not unique
+
+$dbh->commit;
+
+# test storing package with lots of features
+$pkg = ActivePerl::PPM::Package->new(name => "Bar", version => "1.0");
+$pkg->{require}{'Foo::Bar'} = 1.1;
+$pkg->{provide}{'Bar::'} = 1.0;
+$pkg->{provide}{'Good feeling'} = 0;
+
+$pkg->{script}{install}   = { exec => "PPM_PERL", text => q(print "Hello, world!\n"), };
+$pkg->{script}{uninstall} = { exec => "PPM_PERL", uri => "http://www.example.com/goodbye.pl", };
+
+ok($pkg->dbi_store($dbh), 2);
+undef($pkg);
+$dbh->commit;
+
+$pkg = ActivePerl::PPM::Package->new_dbi($dbh, 2);
+ok($pkg->name_version, "Bar-1.0");
+ok($pkg->{id}, 2);
+ok($pkg->{provide}{"Good feeling"}, 0);
+ok($pkg->{require}{"Foo::Bar"}, 1.1);
+ok($pkg->{script}{install}{exec}, "PPM_PERL");
+ok($pkg->{script}{install}{uri}, undef);
+ok($pkg->{script}{install}{text}, q(print "Hello, world!\n"));
 
 $dbh->disconnect;

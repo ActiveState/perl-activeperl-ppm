@@ -155,10 +155,17 @@ sub sql_create_tables {
 )",
 "CREATE TABLE IF NOT EXISTS feature (
      package_id integer not null,
+     role char(1) not null,  /* 'p' or 'r' */
      name text not null,
-     version double not null,
-     role char(1) not null
-)"
+     version double not null
+)",
+"CREATE TABLE IF NOT EXISTS script (
+     package_id integer not null,
+     role text not null, /* 'install' or 'uninstall' */
+     exec text, /* interpreter */
+     uri text,
+     text text
+)",
 }
 
 my %ROLE = (
@@ -188,10 +195,20 @@ sub new_dbi {
     return undef unless $pkg;
 
     if (1) {
-        my $sth = $dbh->prepare("SELECT name, version, role FROM feature WHERE package_id = ?");
+        my $sth = $dbh->prepare("SELECT role, name, version FROM feature WHERE package_id = ?");
         $sth->execute($pkg->{id});
-        while (my($feature, $version, $role) = $sth->fetchrow_array) {
+        while (my($role, $feature, $version) = $sth->fetchrow_array) {
             $pkg->{$ROLE{$role}}{$feature} = $version;
+        }
+    }
+
+    if (1) {
+        my $sth = $dbh->prepare("SELECT role, exec, uri, text FROM script WHERE package_id = ?");
+        $sth->execute($pkg->{id});
+        while (my($role, $exec, $uri, $text) = $sth->fetchrow_array) {
+            $pkg->{script}{$role}{exec} = $exec if defined($exec);
+            $pkg->{script}{$role}{uri}  = $uri  if defined($uri);
+            $pkg->{script}{$role}{text} = $text if defined($text);
         }
     }
 
@@ -208,6 +225,7 @@ sub dbi_store {
     if (defined $id) {
 	$dbh->do("UPDATE package SET " . join(", ", map "$_ = ?", @fields) . " WHERE id = ?", undef, @{$self}{@fields}, $id);
 	$dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $id);
+	$dbh->do("DELETE FROM script WHERE package_id = ?", undef, $id);
     }
     else {
 	$dbh->do("INSERT INTO package (" . join(", ", @fields) . ") VALUES(" . join(", ", map "?", @fields) . ")",
@@ -218,8 +236,17 @@ sub dbi_store {
     for my $role (values %ROLE) {
 	my $hash = $self->{$role} || next;
 	while (my($feature, $version) = each %$hash) {
-	    $dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef,
-		     $id, $feature, $version, substr($role, 0, 1));
+	    $dbh->do("INSERT INTO feature (package_id, role, name, version) VALUES(?, ?, ?, ?)", undef,
+		     $id, substr($role, 0, 1), $feature, $version)
+	}
+    }
+
+    if (my $script = $self->{script}) {
+	for my $role (sort keys %$script) {
+	    local $dbh->{PrintError} = 1;
+	    my $v = $script->{$role};
+	    $dbh->do("INSERT INTO script (package_id, role, exec, uri, text) VALUES(?, ?, ?, ?, ?)", undef,
+		     $id, $role, $v->{exec}, $v->{uri}, $v->{text});
 	}
     }
 

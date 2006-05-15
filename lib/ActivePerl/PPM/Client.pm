@@ -220,6 +220,7 @@ sub repo_delete {
 sub _repo_delete_packages {
     my($dbh, $id) = @_;
     $dbh->do("DELETE FROM feature WHERE package_id IN (SELECT id FROM package WHERE repo_id = ?)", undef, $id);
+    $dbh->do("DELETE FROM script WHERE package_id IN (SELECT id FROM package WHERE repo_id = ?)", undef, $id);
     $dbh->do("DELETE FROM package WHERE repo_id = ?", undef, $id);
 }
 
