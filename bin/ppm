@@ -593,10 +593,12 @@ sub _install {
 		    }
 		}
 		if ($script->{exec}) {
-		    open(my $fh, ">:utf8", "$tmpdir/install_script") || die "Can't create $tmpdir/install_script: $!";
+		    my $file = "$tmpdir/install_script";
+		    open(my $fh, ">:utf8", $file) || die "Can't create $file: $!";
 		    print $fh $res->decoded_content;
-		    close($fh) || die "Can't write $tmpdir/install_script: $!";
-		    push(@commands, [_expand_exec($script->{exec}), "install_script"]);
+		    close($fh) || die "Can't write $file: $!";
+		    chmod(0755, $file);
+		    push(@commands, _expand_exec($script->{exec}, "install_script"));
 		}
 		else {
 		    push(@commands, grep length, split(/\n/, $res->decoded_content));
@@ -608,10 +610,13 @@ sub _install {
 		    my $text = $script->{text};
 		    $text =~ s/;;/\n/g;  # what ugliness
 
-		    open(my $fh, ">", "$tmpdir/install_script") || die "Can't create $tmpdir/install_script: $!";
+		    my $file = "$tmpdir/install_script";
+		    open(my $fh, ">", $file) || die "Can't create $file: $!";
 		    print $fh $text;
-		    close($fh) || die "Can't write $tmpdir/install_script: $!";
-		    push(@commands, [_expand_exec($script->{exec}), "install_script"]);
+		    close($fh) || die "Can't write $file: $!";
+		    chmod(0755, $file);
+
+		    push(@commands, _expand_exec($script->{exec}, "install_script"));
 		}
 		else {
 		    push(@commands, grep length, split(/;;/, $script->{text}));
@@ -649,9 +654,15 @@ sub _install {
 
 sub _expand_exec {
     my $exec = shift;
-    $exec = $^X if uc($exec) eq "PPM_PERL" || $exec eq "perl";
+    if (uc($exec) eq "SELF") {
+	$exec = shift;
+	$exec = "./$exec" if $^O ne "MSWin32";
+    }
+    elsif (uc($exec) eq "PPM_PERL" || $exec eq "perl") {
+	$exec = $^X;
+    }
     $exec = '@' . $exec;  # silence command echo
-    return $exec;
+    return [$exec, @_];
 }
 
 sub do_remove {
