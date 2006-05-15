@@ -649,7 +649,7 @@ sub _install {
 
 sub _expand_exec {
     my $exec = shift;
-    $exec = $^X if $exec eq "PPM_PERL" || $exec eq "perl";
+    $exec = $^X if uc($exec) eq "PPM_PERL" || $exec eq "perl";
     $exec = '@' . $exec;  # silence command echo
     return $exec;
 }
