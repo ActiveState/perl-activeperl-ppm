@@ -84,11 +84,46 @@ sub do_version {
 }
 
 sub do_help {
-    if (@ARGV) {
-	$USAGE = "help";
-	usage("The $CMD command does not take arguments.");
+    if (@ARGV > 1) {
+	$USAGE = "help [<subcommand>]";
+	usage();
     }
-    system("perldoc", __FILE__);
+    if (@ARGV) {
+	my $cmd = shift(@ARGV);
+	open(my $fh, "<", __FILE__) || die "Can't open " . __FILE__ . ": $!";
+	my $foundit;
+	while (<$fh>) {
+	    if (/^=item B<ppm \Q$cmd\E>/o) {
+		$foundit++;
+		last;
+	    }
+	}
+	if ($foundit) {
+	    open(my $out, "| pod2text");
+	    print $out "=over\n\n";
+	    print $out $_;
+	    my $over_depth = 0;
+	    while (<$fh>) {
+		last if /^=item B<ppm (?!\Q$cmd\E>)/o;
+		if (/^=back\b/) {
+		    last if $over_depth == 0;
+		    $over_depth--;
+		}
+		elsif (/^=over\b/) {
+		    $over_depth++;
+		}
+		print $out $_;
+	    }
+	    print $out "\n\n=back\n";
+	    close($out);
+	}
+	else {
+	    print "Sorry, no help for '$cmd'\n";
+	}
+    }
+    else {
+	system("perldoc", __FILE__);
+    }
 }
 
 sub do_area {
