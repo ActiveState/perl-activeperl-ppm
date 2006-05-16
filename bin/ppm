@@ -42,8 +42,9 @@ sub usage {
 	$msg .= "\n" unless $msg =~ /\n$/;
 	print STDERR $msg;
     }
-    $USAGE ||= "<cmd> args...";
-    print STDERR "Usage: $PROGNAME $USAGE\n";
+    $USAGE ||= "<cmd> <arg>...";
+    print STDERR "Usage:\t$PROGNAME $USAGE\n";
+    print STDERR "\tRun '$PROGNAME help" . ($USAGE =~ /^(\w+)/ ? " $1" : "") . "' to learn more.\n";
     exit 1;
 }
 
