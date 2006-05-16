@@ -468,7 +468,7 @@ sub _install {
     my $verbose = 0;
     my $ua = web_ua();
 
-    my $tmpdir = do { require File::Temp; File::Temp::tempdir() };
+    my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     eval {
 	# determine codebase_file
 	for my $pkg (@_) {
@@ -592,6 +592,8 @@ sub _run_script {
     my $script = $pkg->{script}{$kind};
     return unless $script;
 
+    $tmpdir ||= do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1, CLEANUP => 1) };
+
     my @commands;
     if (defined(my $uri = $script->{uri})) {
 	print "Downloading ", $pkg->name_version, " $kind script...";
@@ -684,7 +686,7 @@ sub do_remove {
 	    next;
 	}
 	eval {
-	    _run_script($o, "uninstall", "/tmp");
+	    _run_script($o, "uninstall");
 	    print "$pkg: ";
 	    $idirs->uninstall($pkg);
 	};
