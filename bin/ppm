@@ -704,7 +704,6 @@ sub do_remove {
 
 BEGIN {
     # aliases for PPM3 compatibility (mostly)
-    *do_area = \&do_area;
     *do_query = \&do_list;
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
@@ -761,6 +760,171 @@ Obtain version and copyright information about this program:
 The C<ppm> program is the Package Manager for ActivePerl.  It
 simplifies the task of locating, installing, upgrading and removing
 Perl packages.
+
+Invoking C<ppm> without arguments will bring up the grahical shell
+(not implemented yet), but ppm can also be used as a command line tool
+where the first argument provide the name of the sub-command to
+invoke.  The following sub-commands are recognized (alphabetic order):
+
+=over
+
+=item B<ppm area>
+
+Manage install areas.
+
+=item B<ppm dump> [ I<what> ]
+
+Internal debugging tool.
+
+=item B<ppm files> I<pkg>
+
+Will list the full path name of the files belonging to the given
+package, one line per file.
+
+=item B<ppm help> [ I<subcommand> ]
+
+Will print the documentation for PPM (this file).
+
+=item B<ppm install> I<pkg>
+
+=item B<ppm install> I<module>
+
+=item B<ppm install> I<file>.ppd
+
+=item B<ppm install> I<url>
+
+Install a package and its dependencies.
+
+=item B<ppm list> [ I<area> ] --I<field> ...
+
+List the packages installed.  If I<area> is not provided list the
+content of the current install area.
+
+=item B<ppm query>
+
+Alias for B<ppm list>.  Provided for PPM version 3 compatiblity.
+
+=item B<ppm remove> I<pkg> ...
+
+Will uninstall the given packages from the current install area.
+
+=item B<ppm rep> ...
+
+Alias for B<ppm repo>.  Provided for PPM version 3 compatiblity.
+
+=item B<ppm repo>
+
+Manage repositories.
+
+=item B<ppm search> I<pattern>
+
+Search for packages matching I<pattern> in all enabled repositories.
+
+=item B<ppm uninstall> ...
+
+Alias for B<ppm remove>.
+
+=item B<ppm update> ...
+
+Alias for B<ppm upgrade>.
+
+=item B<ppm upgrade> I<pkg>
+
+=item B<ppm upgrade> I<module>
+
+Will look for upgrades for the given package or module from the
+current enabled repositories and install it.
+
+=item B<ppm verify> [ I<pkg> ]
+
+Will check that the installed files are still present and unmodified.
+If the name of a package is given only verify that package.
+
+=item B<ppm version>
+
+Will print the current version of PPM and a copyright notice.
+
+=back
+
+=head1 FILES
+
+The following lists files and directories that PPM uses and creates:
+
+=over
+
+=item F<$HOME/.ActivePerl/>
+
+Directory where PPM keeps its state.  On Windows this directory is
+F<$APPDATA/ActiveState/ActivePerl/>.  Architecture or version specific
+directories can be created if you need to manage multiple perl
+installation from the same home area.
+
+=item F<$HOME/.ActivePerl/lib/>
+
+If this directory is present the PPM will have an install area called
+"home" that you can install packages into.  Useful if you use an
+ActivePerl installation that you dont have permissions to modify.
+
+=item F<$HOME/.ActivePerl/ppm.db>
+
+SQLite database where PPM keep its configuration and cache meta
+information about the content of the enabled repositories.
+
+=item F<$HOME/ppm4.log>
+
+Log file created to record actions that ppm take.
+On Windows this log goes to F<$TEMPDIR/ppm4.log>.
+
+=item F<$PREFIX/etc/ppm-area.db>
+
+SQLite database where PPM keep track of packages installed in the install area
+under C<$PREFIX>.
+
+=item F<$TEMPDIR/ppm-XXXXXX/>
+
+Temporary directories used during install.  Packages to be installed
+are unpacked here.
+
+=item F<*.ppd>
+
+The meta information about a single package is represented in XML by a
+PPD file.  See L<ActivePerl::PPM::PPD> for additional information.
+
+=item F<package.xml>
+
+Meta information about whole repositories are found in F<package.xml>
+files.  When a repository is added then ppm will look for this file
+and if present monitor it too keep itself in sync with the state of
+the repository.
+
+=item F<package.lst>
+
+Same as F<package.xml> but PPM 3 compatible.  PPM will use this file
+if F<package.xml> is not available.
+
+=back
+
+=head1 ENVIRONMENT
+
+The following environment variables affect how PPM behaves:
+
+=over
+
+=item C<ACTIVEPERL_PPM_DEBUG>
+
+If set to a TRUE value make ppm print more internal diagnostics.
+
+=item C<ACTIVEPERL_PPM_LOG_CONS>
+
+If set to a TRUE value make ppm print any log output to the console as well.
+
+=item C<DBI_TRACE>
+
+ppm use L<DBI> to access the internal SQLite databases and setting
+DBI_TRACE allow you to see what queries are performed.  Output goes to
+STDERR.  See L<DBI> for further details.
+
+=back
 
 =head1 WHAT'S NEW IN VERSION 4
 
