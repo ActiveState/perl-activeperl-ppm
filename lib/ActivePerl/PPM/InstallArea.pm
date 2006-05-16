@@ -377,7 +377,10 @@ sub _copy_file {
 
     my $copy_to = $to;
     if (-e $to) {
-	if (-f _ && File::Compare::compare($from, $to) == 0) {
+	if (-f _ &&
+            ((stat _)[2] & 07777) == ((stat $from)[2] & 07777) &&  # same mode
+            File::Compare::compare($from, $to) == 0)               # same content
+        {
 	    $copy_to = undef;
 	    $state->{summary}{unchanged}++;
 	    ppm_log("INFO", "$to already present");
@@ -424,6 +427,8 @@ sub _copy_file {
 
 	die "Read failed for file $from: $!"
 	    unless defined $n;
+
+	chmod((stat $in)[2] & 07777, $out);  # copy mode
 
 	close($in);
 	close($out) || die "Write failed for file $copy_to";
