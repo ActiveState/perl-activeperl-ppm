@@ -599,6 +599,7 @@ sub _install {
 		    inplace => 1,
 	            search  => $ppm_sponge,
 	            replace => $prefix,
+                    quiet   => 1,
 		);
 		print "done\n";
 	    }
