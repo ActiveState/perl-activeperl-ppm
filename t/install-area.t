@@ -14,9 +14,9 @@ if (-e $prefix) {
 sub j { join("|", @_) }
 sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 
-use ActivePerl::PPM::IDirs;
+use ActivePerl::PPM::InstallArea;
 
-my $dir = ActivePerl::PPM::IDirs->new(prefix => $prefix);
+my $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
 ok($dir->name, "");
 ok($dir->prefix, $prefix);
 ok($dir->lib, "$prefix/lib");
@@ -26,7 +26,7 @@ ok($dir->packages, 0);
 ok(j($dir->packlists), "");
 ok($dir->verify);
 
-$dir = ActivePerl::PPM::IDirs->new(prefix => $prefix);
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
 
 eval { $dir->install(); };    ok($@, qr/^No packages to install/);
 eval { $dir->install({}); };  ok($@, qr/^Missing package name/);
@@ -44,7 +44,7 @@ ok($dir->install({
     name => "Foo2",
     abstract => "Abs",
     files => {
-        "t/idirs.t" => "lib:idirs.t",
+        "t/install-area.t" => "lib:install-area.t",
         "t/logger.t" => "archlib:logger.t",
     },
 }));
@@ -57,24 +57,24 @@ ok($pkg[0][0], "Foo");
 ok($pkg[0][1], "1.0a");
 ok($pkg[1][2], "Abs");
 
-ok(-f "$prefix/lib/idirs.t");
-ok(file_eq("t/idirs.t", "$prefix/lib/idirs.t"));
+ok(-f "$prefix/lib/install-area.t");
+ok(file_eq("t/install-area.t", "$prefix/lib/install-area.t"));
 ok(-f "$prefix/lib/logger.t");
 ok(file_eq("t/logger.t", "$prefix/lib/logger.t"));
-ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/idirs.t|$prefix/lib/logger.t");
+ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/install-area.t|$prefix/lib/logger.t");
 ok($dir->verify);
 
 ok($dir->install({
     name => "Foo2",
     files => {
-        "t/logger.t" => "lib:idirs.t",
+        "t/logger.t" => "lib:install-area.t",
 	"t/repo" => "bin:",
     },
 }));
 ok($dir->packages, 2);
 ok(j($dir->packages), "Foo|Foo2");
-ok(-f "$prefix/lib/idirs.t");
-ok(file_eq("t/logger.t", "$prefix/lib/idirs.t"));
+ok(-f "$prefix/lib/install-area.t");
+ok(file_eq("t/logger.t", "$prefix/lib/install-area.t"));
 ok(!-f "$prefix/lib/logger.t");
 ok(-f "$prefix/bin/test1/Acme-Buffy.ppd");
 ok(file_eq("t/repo/test1/Acme-Buffy.ppd", "$prefix/bin/test1/Acme-Buffy.ppd"));
@@ -83,7 +83,7 @@ ok($dir->verify);
 $dir->uninstall("Foo2");
 ok($dir->packages, 1);
 ok(j($dir->packages), "Foo");
-ok(!-f "$prefix/lib/idirs.t");
+ok(!-f "$prefix/lib/install-area.t");
 ok(!-f "$prefix/bin/test1/Acme-Buffy.ppd");
 ok($dir->verify);
 

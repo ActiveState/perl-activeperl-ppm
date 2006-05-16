@@ -4,7 +4,7 @@ use strict;
 use Config qw(%Config);
 
 use ActivePerl ();
-use ActivePerl::PPM::IDirs ();
+use ActivePerl::PPM::InstallArea ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
@@ -49,8 +49,7 @@ sub new {
     my %idirs;
     if (-d "$dir/lib") {
 	unshift(@idirs, "home");
-	require ActivePerl::PPM::IDirs;
-	$idirs{home} = ActivePerl::PPM::IDirs->new(prefix => $dir, etc => $etc);
+	$idirs{home} = ActivePerl::PPM::InstallArea->new(prefix => $dir, etc => $etc);
     }
 
     my $self = bless {
@@ -88,10 +87,7 @@ sub idirs {
     my $self = shift;
     if (@_) {
 	my $name = shift;
-	return $self->{idirs}{$name} ||= do {
-	    require ActivePerl::PPM::IDirs;
-	    return  ActivePerl::PPM::IDirs->new($name);
-	}
+	return $self->{idirs}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
     }
     else {
 	return @{$self->{idirs_seq}};
@@ -568,7 +564,7 @@ current user.  If no such directory is found it is created.
 =item $client->current_idirs
 
 Returns an object representing the current install area.  See
-L<ActivePerl::PPM::IDirs> for methods available.
+L<ActivePerl::PPM::InstallArea> for methods available.
 
 =item $client->current_idirs_name
 
@@ -582,7 +578,7 @@ between sessions.
 =item $client->idirs( $name )
 
 With argument returns an object representing the given named install
-area.  See L<ActivePerl::PPM::IDirs> for methods available.
+area.  See L<ActivePerl::PPM::InstallArea> for methods available.
 
 Without argument return list of available names.
 

@@ -1,4 +1,4 @@
-package ActivePerl::PPM::IDirs;
+package ActivePerl::PPM::InstallArea;
 
 use strict;
 use Config qw(%Config);
@@ -49,7 +49,7 @@ sub new {
 	);
     }
     elsif ($name) {
-	die "Unknown idirs '$name'";
+	die "Unknown install area '$name'";
     }
     else {
 	my $prefix = delete $opt{prefix}
@@ -515,9 +515,9 @@ sub _init_db {
     my $etc = $self->etc;
     File::Path::mkpath($etc);
     require DBI;
-    my $db_file = "ppm-idirs.db";
+    my $db_file = "ppm-area.db";
     if (my $name = $self->name) {
-	$db_file = "ppm-$name.db";
+	$db_file = "ppm-$name-area.db";
     }
     my $dbh = DBI->connect("dbi:SQLite:dbname=$etc/$db_file", "", "", {
         AutoCommit => 0,
@@ -666,20 +666,20 @@ __END__
 
 =head1 NAME
 
-ActivePerl::PPM::IDirs - Perl install location
+ActivePerl::PPM::InstallArea - Perl installation area
 
 =head1 SYNOPSIS
 
-  my $dir = ActivePerl::PPM::IDirs->new("site");
+  my $area = ActivePerl::PPM::InstallArea->new("site");
   # or
-  my $dir = ActivePerl::PPM::IDirs->new(prefix => "$ENV{HOME}/perl");
+  my $area = ActivePerl::PPM::InstallArea->new(prefix => "$ENV{HOME}/perl");
 
 =head1 DESCRIPTION
 
-An C<ActivePerl::PPM::IDirs> provide an interface to a Perl install
-area.  Different install areas might have different protection
-policies and each contain a set of installed packages and modules.  An
-I<IDirs> is divided into the following areas:
+An C<ActivePerl::PPM::InstallArea> object provide an interface to a
+Perl install area.  Different install areas might have different
+protection policies and each contain a set of installed packages and
+modules.  An install area is divided into the following directories:
 
 =over 8
 
@@ -721,7 +721,7 @@ This is where HTML files go.
 
 =item prefix
 
-This just provide a prefix for the I<IDirs> as a whole.  All paths
+This just provide a prefix for the install area as a whole.  All paths
 above should be at or below C<prefix>.
 
 =back
@@ -730,51 +730,50 @@ The following methods are provided:
 
 =over
 
-=item $dir = ActivePerl::PPM::IDirs->new( $name )
+=item $area = ActivePerl::PPM::InstallArea->new( $name )
 
-=item $dir = ActivePerl::PPM::IDirs->new( %opts )
+=item $area = ActivePerl::PPM::InstallArea->new( %opts )
 
-Constructs a new C<ActivePerl::PPM::IDirs> object.  If constructed
+Constructs a new C<ActivePerl::PPM::InstallArea> object.  If constructed
 based on $name, then the constructor might return C<undef> if no
-I<IDirs> with the given name is known.  The "perl" and "site" I<IDirs>
-are always available.  Some perls might also have a "vendor" I<IDirs>.
-Additional user defined I<IDirs> might be available.
+install area with the given name is known.  The "perl" and "site" install areas
+are always available.  Some perls might also have a "vendor" install area
 
 Alternatively the directories to use can be specified directly by
 passing them as key/value pair %opts.  Only C<prefix> is mandatory.
 All other directories are derived from this, except for the C<man*>
 directories will only set up if specified explicitly.
 
-=item $dir->name
+=item $area->name
 
-Returns the name.  This returns the empty string for nameless I<IDirs>.
+Returns the name.  This returns the empty string for nameless I<InstallArea>.
 
-=item $dir->prefix
+=item $area->prefix
 
-=item $dir->archlib
+=item $area->archlib
 
-=item $dir->lib
+=item $area->lib
 
-=item $dir->bin
+=item $area->bin
 
-=item $dir->script
+=item $area->script
 
-=item $dir->man1
+=item $area->man1
 
-=item $dir->man3
+=item $area->man3
 
-=item $dir->html
+=item $area->html
 
-=item $dir->etc
+=item $area->etc
 
 Returns the corresponding path.
 
-=item $dir->inc
+=item $area->inc
 
 Returns the list of directories to be pushed onto perl's @INC for the
 current installdirs.
 
-=item $dir->install( \%pkg1, \%pkg2, ... )
+=item $area->install( \%pkg1, \%pkg2, ... )
 
 Install the given list of packages as one atomic operation.  The
 function returns TRUE if all packages installed or FALSE if
@@ -826,14 +825,14 @@ This will install the "Foo" directory into the archlib area and the
 
 =back
 
-=item $dir->uninstall( $pkg )
+=item $area->uninstall( $pkg )
 
 Removes the given package and its installed files.  Croaks if no such
 package was installed in the first place.  Uninstalling a package
 might break other packages that depended on features this package
 provided.
 
-=item $dir->verify( %opts )
+=item $area->verify( %opts )
 
 Verify that the files of the installed packages are still present and
 unmodified.  Prints messages to STDOUT about files that are missing or modified.
@@ -854,7 +853,7 @@ Only verify the given package.
 
 =back
 
-=item $dir->packages( @fields )
+=item $area->packages( @fields )
 
 Without arguments returns the sorted list of names of packages
 currently installed.  In scalar context returns the number of packages
@@ -865,34 +864,34 @@ an installed package.  The elements of each array are the fields
 requested.  The list will be sorted by package name.  See
 L<ActivePerl::PPM::Package> for what field names are available.
 
-=item $dir->package( $id )
+=item $area->package( $id )
 
-=item $dir->package( $name )
+=item $area->package( $name )
 
 Return an package object (see L<ActivePerl::PPM::Package>) for the
 given package.  Returns C<undef> if no such package is installed.
 
-=item $dir->package_id( $name )
+=item $area->package_id( $name )
 
 Returns the internal identifier for the given package.  Returns
-C<undef> if no such package is installed.  This is also the cheapest
+C<undef> if no such package is installed.  This is the cheapest
 way to check if a package is installed.
 
-=item $dir->feature_have( $feature )
+=item $area->feature_have( $feature )
 
 If one of the installed packages provide the given feature, then the
 feature version number is returned.  The method returns C<undef> if no
 package provide the given feature.
 
-=item $dir->package_files( $id )
+=item $area->package_files( $id )
 
-=item $dir->package_files( $name )
+=item $area->package_files( $name )
 
 Returns the list of names for the files that belong to the given
-package.  If a package name is provided, then this method will croak
-if the given package is not installed.
+package.  This method will croak if the given package is not
+installed.
 
-=item $dir->packlists
+=item $area->packlists
 
 Returns the list of packages that have F<.packlist> files installed.
 In scalar context return a hash reference; the keys are package names
@@ -903,10 +902,10 @@ does not use F<.packlist> files to track the files installed by the
 packages it manage, but it keeps them in sync for other tools that
 manage modules.
 
-=item $dir->sync_db
+=item $area->sync_db
 
 Synchronize the state of the PPM database with what modules seems to
-be installed in the directories of the current I<IDirs>.  Packages
+be installed in the directories of the current install area.  Packages
 where all files are gone will also be deleted from the PPM database.
 
 =back
