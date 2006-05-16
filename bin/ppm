@@ -579,77 +579,83 @@ sub _install {
 
 	# run install scripts
 	for my $pkg (@_) {
-	    my $script = $pkg->{script}{install};
-	    next unless $script;
-	    my @commands;
-	    if (defined(my $uri = $script->{uri})) {
-		print "Downloading ", $pkg->name_version, " install script...";
-		my $res = $ua->get(URI->new_abs($uri, $pkg->{ppd_uri}));
-		die $res->status_line unless $res->is_success;
-		if (my $len = $res->content_length) {
-		    my $save_len = length($res->content);
-		    if ($save_len != $len) {
-			die "Aborted download ($len bytes expected, got $save_len).\n";
-		    }
-		}
-		if ($script->{exec}) {
-		    my $file = "$tmpdir/install_script";
-		    open(my $fh, ">:utf8", $file) || die "Can't create $file: $!";
-		    print $fh $res->decoded_content;
-		    close($fh) || die "Can't write $file: $!";
-		    chmod(0755, $file);
-		    push(@commands, _expand_exec($script->{exec}, "install_script"));
-		}
-		else {
-		    push(@commands, grep length, split(/\n/, $res->decoded_content));
-		}
-		print "done\n";
-	    }
-	    else {
-		if (my $exec = $script->{exec}) {
-		    my $text = $script->{text};
-		    $text =~ s/;;/\n/g;  # what ugliness
-
-		    my $file = "$tmpdir/install_script";
-		    open(my $fh, ">", $file) || die "Can't create $file: $!";
-		    print $fh $text;
-		    close($fh) || die "Can't write $file: $!";
-		    chmod(0755, $file);
-
-		    push(@commands, _expand_exec($script->{exec}, "install_script"));
-		}
-		else {
-		    push(@commands, grep length, split(/;;/, $script->{text}));
-		}
-	    }
-	    if (@commands) {
-		require ActiveState::Run;
-		require Cwd;
-		my $old_cwd = Cwd::cwd();
-		local $ENV{PPM_INSTROOT} = $ppm->current_idirs->prefix;
-		local $ENV{PPM_INSTLIB} = $ppm->current_idirs->lib;
-		local $ENV{PPM_INSTARCHLIB} = $ppm->current_idirs->archlib;
-		local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
-		local $ENV{PPM_ACTION} = "install";  # XXX 'upgrade'
-		# local $ENV{PPM_PREV_VERSION} = ...;
-		# local $ENV{PPM_NEW_VERSION} = ...;
-		# local $ENV{PPM_INSTPACKLIST} = ....;
-		local $ENV{PPM_PERL} = $^X;
-		eval {
-		    chdir $tmpdir;
-		    print "Running ", $pkg->name_version, " install script...\n";
-		    for my $cmd (@commands) {
-			ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
-		    }
-		};
-		chdir($old_cwd) || die "Can't chdir back to '$old_cwd': $!";
-		die if $@;
-	    }
+	    _run_script($pkg, "install", $tmpdir);
 	}
     };
     my $err = $@;
     rmtree($tmpdir, $verbose);
     die $err if $err;
+}
+
+sub _run_script {
+    my($pkg, $kind, $tmpdir) = @_;
+    my $script = $pkg->{script}{$kind};
+    return unless $script;
+
+    my @commands;
+    if (defined(my $uri = $script->{uri})) {
+	print "Downloading ", $pkg->name_version, " $kind script...";
+	my $res = web_ua()->get(URI->new_abs($uri, $pkg->{ppd_uri}));
+	die $res->status_line unless $res->is_success;
+	if (my $len = $res->content_length) {
+	    my $save_len = length($res->content);
+	    if ($save_len != $len) {
+		die "Aborted download ($len bytes expected, got $save_len).\n";
+	    }
+	}
+	if ($script->{exec}) {
+	    my $file = "$tmpdir/${kind}_script";
+	    open(my $fh, ">:utf8", $file) || die "Can't create $file: $!";
+	    print $fh $res->decoded_content;
+	    close($fh) || die "Can't write $file: $!";
+	    chmod(0755, $file);
+	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
+	}
+	else {
+	    push(@commands, grep length, split(/\n/, $res->decoded_content));
+	}
+	print "done\n";
+    }
+    else {
+	if (my $exec = $script->{exec}) {
+	    my $text = $script->{text};
+	    $text =~ s/;;/\n/g;  # what ugliness
+
+	    my $file = "$tmpdir/${kind}_script";
+	    open(my $fh, ">", $file) || die "Can't create $file: $!";
+	    print $fh $text;
+	    close($fh) || die "Can't write $file: $!";
+	    chmod(0755, $file);
+
+	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
+	}
+	else {
+	    push(@commands, grep length, split(/;;/, $script->{text}));
+	}
+    }
+    if (@commands) {
+	require ActiveState::Run;
+	require Cwd;
+	my $old_cwd = Cwd::cwd();
+	local $ENV{PPM_INSTROOT} = $ppm->current_idirs->prefix;
+	local $ENV{PPM_INSTLIB} = $ppm->current_idirs->lib;
+	local $ENV{PPM_INSTARCHLIB} = $ppm->current_idirs->archlib;
+	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
+	local $ENV{PPM_ACTION} = $kind;  # XXX 'upgrade'
+	# local $ENV{PPM_PREV_VERSION} = ...;
+	# local $ENV{PPM_NEW_VERSION} = ...;
+	# local $ENV{PPM_INSTPACKLIST} = ....;
+	local $ENV{PPM_PERL} = $^X;
+	eval {
+	    chdir $tmpdir;
+	    print "Running ", $pkg->name_version, " $kind script...\n";
+	    for my $cmd (@commands) {
+		ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
+	    }
+	};
+	chdir($old_cwd) || die "Can't chdir back to '$old_cwd': $!";
+	die if $@;
+    }
 }
 
 sub _expand_exec {
@@ -672,14 +678,17 @@ sub do_remove {
     my $idirs = $ppm->current_idirs;
     my $removed_count = 0;
     for my $pkg (@ARGV) {
-	print "$pkg: ";
+	my $o = $idirs->package($pkg);
+	unless ($o) {
+	    print "$pkg: not installed\n";
+	    next;
+	}
 	eval {
+	    _run_script($o, "uninstall", "/tmp");
+	    print "$pkg: ";
 	    $idirs->uninstall($pkg);
 	};
-	if ($@ =~ /^Package \Q$pkg\E isn't installed/) {
-	    print "not installed\n";
-	}
-	elsif ($@) {
+	if ($@) {
 	    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
 	    print $@;
 	}
