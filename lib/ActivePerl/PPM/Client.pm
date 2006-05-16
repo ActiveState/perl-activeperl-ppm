@@ -45,52 +45,52 @@ sub new {
     }
 
     my $etc = $dir; # XXX or "$dir/etc";
-    my @idirs = ("site", "perl");
-    my %idirs;
+    my @area = ("site", "perl");
+    my %area;
     if (-d "$dir/lib") {
-	unshift(@idirs, "home");
-	$idirs{home} = ActivePerl::PPM::InstallArea->new(prefix => $dir, etc => $etc);
+	unshift(@area, "home");
+	$area{home} = ActivePerl::PPM::InstallArea->new(prefix => $dir, etc => $etc);
     }
 
     my $self = bless {
 	dir => $dir,
 	etc => $etc,
-	idirs => \%idirs,
-        idirs_seq => \@idirs,
+	area => \%area,
+        area_seq => \@area,
     }, $class;
     return $self;
 }
 
-sub current_idirs {
+sub current_area {
     my $self = shift;
-    return $self->idirs($self->current_idirs_name);
+    return $self->area($self->current_area_name);
 }
 
-sub current_idirs_name {
+sub current_area_name {
     my $self = shift;
-    my $old = $self->{'current-idirs'}
-        || $self->dbh->selectrow_array("SELECT value FROM config WHERE key = 'current-idirs'")
+    my $old = $self->{'current-area'}
+        || $self->dbh->selectrow_array("SELECT value FROM config WHERE key = 'current-area'")
         || "site";
     if (@_) {
 	my $new = shift;
-	die "Unrecognized idirs '$new'" unless grep $_ eq $new, $self->idirs;
-	$self->{'current-idirs'} = $new;
+	die "Unrecognized install area '$new'" unless grep $_ eq $new, $self->area;
+	$self->{'current-area'} = $new;
 	my $dbh = $self->dbh;
-	$dbh->do("INSERT OR REPLACE INTO config (key, value) VALUES ('current-idirs', ?)", undef, $new);
+	$dbh->do("INSERT OR REPLACE INTO config (key, value) VALUES ('current-area', ?)", undef, $new);
 	$dbh->commit;
-	ppm_log("NOTICE", "$new is current idirs");
+	ppm_log("NOTICE", "$new is current install area");
     }
     return $old;
 }
 
-sub idirs {
+sub area {
     my $self = shift;
     if (@_) {
 	my $name = shift;
-	return $self->{idirs}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
+	return $self->{area}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
     }
     else {
-	return @{$self->{idirs_seq}};
+	return @{$self->{area_seq}};
     }
 }
 
@@ -149,7 +149,7 @@ EOT
     }
 
     # initial values
-    $dbh->do(qq(INSERT INTO config VALUES ("current-idirs", "site")));
+    $dbh->do(qq(INSERT INTO config VALUES ("current-area", "site")));
 
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
@@ -432,13 +432,13 @@ sub package_best {
 
 sub feature_have {
     my($self, $feature) = @_;
-    for my $idirs_name ($self->idirs) {
-	my $idirs = $self->idirs($idirs_name);
-	if (defined(my $have = $idirs->feature_have($feature))) {
-	    ppm_debug("Feature $feature found in $idirs_name");
+    for my $area_name ($self->area) {
+	my $area = $self->area($area_name);
+	if (defined(my $have = $area->feature_have($feature))) {
+	    ppm_debug("Feature $feature found in $area_name");
 	    return $have;
 	}
-	ppm_debug("Feature $feature not found in $idirs_name");
+	ppm_debug("Feature $feature not found in $area_name");
     }
 
     if ($feature =~ /::/) {
@@ -546,8 +546,8 @@ ActivePerl::PPM::Client - Client class
 
 =head1 DESCRIPTION
 
-The C<ActivePerl::PPM::Client> object ties together a set of C<idirs>
-and C<repos> and allow the installed packages to be managed.
+The C<ActivePerl::PPM::Client> object ties together a set of install areas
+and repositories and allow the installed packages to be managed.
 
 The following methods are provided:
 
@@ -561,21 +561,21 @@ The constructor creates a new client based on the configuration found
 in $home_dir which defaults to F<$ENV{HOME}/.ActivePerl> directory of the
 current user.  If no such directory is found it is created.
 
-=item $client->current_idirs
+=item $client->current_area
 
 Returns an object representing the current install area.  See
 L<ActivePerl::PPM::InstallArea> for methods available.
 
-=item $client->current_idirs_name
+=item $client->current_area_name
 
-=item $client->current_idirs_name( $name )
+=item $client->current_area_name( $name )
 
 Get/set the name of the current install area.  This setting persists
 between sessions.
 
-=item $client->idirs
+=item $client->area
 
-=item $client->idirs( $name )
+=item $client->area( $name )
 
 With argument returns an object representing the given named install
 area.  See L<ActivePerl::PPM::InstallArea> for methods available.

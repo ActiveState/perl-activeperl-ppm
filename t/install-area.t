@@ -97,7 +97,7 @@ ok($dir->verify);
 
 END {
     if ($prefix && -d $prefix) {
-	#system("sqlite3", "$prefix/etc/ppm-idirs.db", ".dump");
+	#system("sqlite3", "$prefix/etc/ppm-area.db", ".dump");
 	require File::Path;
 	File::Path::rmtree($prefix, 1);
     }

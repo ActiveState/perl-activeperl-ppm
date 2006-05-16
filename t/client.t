@@ -18,15 +18,15 @@ sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 use ActivePerl::PPM::Client;
 
 my $client = ActivePerl::PPM::Client->new($prefix);
-ok(j($client->idirs), "site|perl");
-ok($client->current_idirs_name("perl"), "site");
+ok(j($client->area), "site|perl");
+ok($client->current_area_name("perl"), "site");
 ok(j($client->repos), 1);
 undef($client);
 
 $client = ActivePerl::PPM::Client->new($prefix);
-ok(j($client->idirs), "site|perl");
-ok($client->current_idirs_name, "perl");
-ok($client->idirs("site")->name, "site");
+ok(j($client->area), "site|perl");
+ok($client->current_area_name, "perl");
+ok($client->area("site")->name, "site");
 
 my $repo = $client->repo(1);
 ok($repo->{enabled});

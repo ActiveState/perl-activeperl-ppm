@@ -58,17 +58,17 @@ sub do_dump {
 	if ($what eq "client") {
 	    Data::Dump::dump($ppm);
 	}
-	elsif (grep $_ eq $what,$ppm->idirs) {
-	    Data::Dump::dump($ppm->idirs($what));
+	elsif (grep $_ eq $what,$ppm->area) {
+	    Data::Dump::dump($ppm->area($what));
 	}
 	elsif (grep $_ eq $what, $ppm->repos) {
 	    Data::Dump::dump($ppm->repo($what));
 	}
-	elsif (my $pkg = $ppm->current_idirs->package($what)) {
+	elsif (my $pkg = $ppm->current_area->package($what)) {
 	    Data::Dump::dump($pkg);
 	}
 	else {
-	    warn "No idirs/repo/package called $what\n";
+	    warn "No area/repo/package called $what\n";
 	}
     }
 }
@@ -91,13 +91,13 @@ sub do_help {
     system("perldoc", __FILE__);
 }
 
-sub do_idirs {
-    my $current = $ppm->current_idirs_name;
+sub do_area {
+    my $current = $ppm->current_area_name;
     my $show_header = 1;
     if (@ARGV) {
 	my $new_current;
 	my $sync;
-	$USAGE = "idirs [--current [<name>]] [--sync] [--no-header]";
+	$USAGE = "area [--current [<name>]] [--sync] [--no-header]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(
            'current:s' => \$new_current,
@@ -106,27 +106,27 @@ sub do_idirs {
         ) || usage();
 	usage() if @ARGV;
 	if (defined $new_current) {
-	    $ppm->current_idirs_name($new_current) if length($new_current);
-	    $ppm->current_idirs->sync_db if $sync;
+	    $ppm->current_area_name($new_current) if length($new_current);
+	    $ppm->current_area->sync_db if $sync;
 	    if (length($new_current)) {
-		print "Current idir is now $new_current.\n";
+		print "Current install area set to $new_current.\n";
 	    }
 	    else {
 		print "$current\n";
 	    }
 	    return;
 	}
-	$ppm->current_idirs->sync_db if $sync;
+	$ppm->current_area->sync_db if $sync;
     }
     if ($show_header) {
 	print "cur name   pkg# lib\n";
 	print "--- ------ ---- ------------------------------------\n";
     }
-    for my $idir ($ppm->idirs) {
-	my $o = $ppm->idirs($idir);
+    for my $area ($ppm->area) {
+	my $o = $ppm->area($area);
 	printf "%3s %-6s %4d %s\n",
-	    ($current eq $idir ? "->" : ""),
-	    $idir,
+	    ($current eq $area ? "->" : ""),
+	    $area,
 	    scalar($o->packages),
 	    $o->lib;
     }
@@ -134,9 +134,9 @@ sub do_idirs {
 
 sub do_list {
     my %opt;
-    my $idirs_name;
+    my $area_name;
     if (@ARGV) {
-	$USAGE = "list [<idirs>] [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
+	$USAGE = "list [<area>] [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'id',
@@ -149,7 +149,7 @@ sub do_list {
            'size',
            'ppd',
         ) || usage();
-	$idirs_name = shift(@ARGV) if @ARGV;
+	$area_name = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
     unless (%opt) {
@@ -160,11 +160,11 @@ sub do_list {
     }
     $opt{name}++;
 
-    my $idirs = $idirs_name ? $ppm->idirs($idirs_name) : $ppm->current_idirs;
+    my $area = $area_name ? $ppm->area($area_name) : $ppm->current_area;
     if (keys %opt == 1) {
 	# just list the names
 	my $count;
-	for my $pkg ($idirs->packages) {
+	for my $pkg ($area->packages) {
 	    print "$pkg\n";
 	    $count++;
 	}
@@ -183,13 +183,13 @@ sub do_list {
 	$tab->add_field($_) for @fields;
 	$tab->add_field("files") if $opt{files};
 	$tab->add_field("size") if $opt{size};
-	for my $pkg ($idirs->packages(@fields)) {
+	for my $pkg ($area->packages(@fields)) {
 	    my %row = map {$_ => shift(@$pkg)} @fields;
 	    if ($row{release_date}) {
 		$row{release_date} =~ s/T.*//;  # drop time
 	    }
 	    if ($opt{files} || $opt{size}) {
-		my @files = $idirs->package_files($row{name});
+		my @files = $area->package_files($row{name});
 		$row{files} = @files if $opt{files};
 		$row{size} = do {
 		    require ActiveState::DiskUsage;
@@ -204,15 +204,15 @@ sub do_list {
 	if (my $rows = $tab->rows) {
 	    print $tab->as_box(null => "", show_trailer => 0);
 	    if (1) {
-		$idirs_name ||= $ppm->current_idirs_name;
+		$area_name ||= $ppm->current_area_name;
 		my $s = ($rows == 1) ? "" : "s";
-		print " ($rows package$s installed in '$idirs_name' area)\n";
+		print " ($rows package$s installed in '$area_name' area)\n";
 	    }
 	}
 	else {
 	NO_PKG_INSTALLED:
-	    $idirs_name ||= $ppm->current_idirs_name;
-	    print STDERR "*** no packages installed in '$idirs_name' area ***\n";
+	    $area_name ||= $ppm->current_area_name;
+	    print STDERR "*** no packages installed in '$area_name' area ***\n";
 	}
     }
 }
@@ -220,7 +220,7 @@ sub do_list {
 sub do_files {
     $USAGE = "files <pkg>";
     usage() unless @ARGV == 1;
-    print "$_\n" for $ppm->current_idirs->package_files($ARGV[0]);
+    print "$_\n" for $ppm->current_area->package_files($ARGV[0]);
 }
 
 sub do_verify {
@@ -234,8 +234,8 @@ sub do_verify {
 	$opt{package} = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
-    my $idir = $ppm->current_idirs;
-    my %status = $idir->verify(%opt);
+    my $area = $ppm->current_area;
+    my %status = $area->verify(%opt);
     for my $v (qw(verified missing modified)) {
 	next if $v ne "verified" && !$status{$v};
 	my $s = $status{$v} == 1 ? "" : "s";
@@ -565,7 +565,7 @@ sub _install {
 
 	# install
 	print "Installing...";
-	if (my $summary = $ppm->current_idirs->install(@_)) {
+	if (my $summary = $ppm->current_area->install(@_)) {
 	    print "done\n";
 	    for my $what (sort keys %$summary) {
 		my $n = $summary->{$what} || 0;
@@ -639,9 +639,9 @@ sub _run_script {
 	require ActiveState::Run;
 	require Cwd;
 	my $old_cwd = Cwd::cwd();
-	local $ENV{PPM_INSTROOT} = $ppm->current_idirs->prefix;
-	local $ENV{PPM_INSTLIB} = $ppm->current_idirs->lib;
-	local $ENV{PPM_INSTARCHLIB} = $ppm->current_idirs->archlib;
+	local $ENV{PPM_INSTROOT} = $ppm->current_area->prefix;
+	local $ENV{PPM_INSTLIB} = $ppm->current_area->lib;
+	local $ENV{PPM_INSTARCHLIB} = $ppm->current_area->archlib;
 	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
 	local $ENV{PPM_ACTION} = $kind;  # XXX 'upgrade'
 	# local $ENV{PPM_PREV_VERSION} = ...;
@@ -677,10 +677,10 @@ sub do_remove {
     $USAGE = "remove <package> ...";
     usage() unless @ARGV;
 
-    my $idirs = $ppm->current_idirs;
+    my $area = $ppm->current_area;
     my $removed_count = 0;
     for my $pkg (@ARGV) {
-	my $o = $idirs->package($pkg);
+	my $o = $area->package($pkg);
 	unless ($o) {
 	    print "$pkg: not installed\n";
 	    next;
@@ -688,7 +688,7 @@ sub do_remove {
 	eval {
 	    _run_script($o, "uninstall");
 	    print "$pkg: ";
-	    $idirs->uninstall($pkg);
+	    $area->uninstall($pkg);
 	};
 	if ($@) {
 	    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
@@ -704,7 +704,7 @@ sub do_remove {
 
 BEGIN {
     # aliases for PPM3 compatibility (mostly)
-    *do_area = \&do_idirs;
+    *do_area = \&do_area;
     *do_query = \&do_list;
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
@@ -728,16 +728,16 @@ Install, upgrade and remove packages from the current install area:
     ppm install [--force] <pkg>
     ppm install [--force] <module>
     ppm install [--force] <url>
-    ppm install [--force] <file>
+    ppm install [--force] <file>.ppd
     ppm upgrade <pkg>
     ppm upgrade <module>
     ppm remove <pkg>
 
 Manage and search install areas:
 
-    ppm idirs [--current <name>] [--sync] [--no-header]
+    ppm area [--current <name>] [--sync] [--no-header]
     ppm list [--name] [--version] [--abstract] ...
-    ppm list <idirs> [--name] [--version] [--abstract] ...
+    ppm list <area> [--name] [--version] [--abstract] ...
     ppm files <pkg>
     ppm verify [<pkg>]
 
@@ -774,7 +774,7 @@ The command line shell has been replaced with a graphical shell (not implemented
 
 =item *
 
-PPM can now manage different installation areas (idirs).
+PPM can now manage different installation areas.
 
 =item *
 

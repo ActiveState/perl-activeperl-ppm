@@ -1,7 +1,7 @@
 #
 # This module tweak @INC so that PPM will only pick up modules from
-# the same idirs as itself lives in.  This make it safe to install
-# upgrades to packages that PPM depend in the 'site' or 'home' idirs.
+# the same install area as itself lives in.  This make it safe to install
+# upgrades to packages that PPM depend in the 'site' or 'home' areas.
 #
 
 (my $dir = __FILE__) =~ s,/ActivePerl/PPM/.*,,;
