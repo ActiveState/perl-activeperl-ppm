@@ -88,9 +88,9 @@ sub do_help {
 	$USAGE = "help [<subcommand>]";
 	usage();
     }
+    open(my $fh, "<", __FILE__) || die "Can't open " . __FILE__ . ": $!";
     if (@ARGV) {
 	my $cmd = shift(@ARGV);
-	open(my $fh, "<", __FILE__) || die "Can't open " . __FILE__ . ": $!";
 	my $foundit;
 	while (<$fh>) {
 	    if (/^=item B<ppm \Q$cmd\E>/o) {
@@ -122,7 +122,14 @@ sub do_help {
 	}
     }
     else {
-	system("perldoc", __FILE__);
+	use ActivePerl::PPM;
+	my $pager = $ENV{PAGER} || "more";
+	open(my $out, "| pod2text | $pager");
+	while (<$fh>) {
+	    s/version \d+\S*/version $ActivePerl::PPM::VERSION/ if /^ppm -/;
+	    print $out $_;
+	}
+	close($out);
     }
 }
 
