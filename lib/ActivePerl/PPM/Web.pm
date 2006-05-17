@@ -34,7 +34,7 @@ sub simple_request {
 
     my $res = $self->SUPER::simple_request($req, @_);
 
-    my $used = (time() - $before) || 1;
+    my $used = (time() - $before) || 1e-6;
     my $bytes = "";
     my $speed = "";
     if (my $len = $res->content_length) {
