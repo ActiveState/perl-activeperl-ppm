@@ -428,10 +428,16 @@ sub _copy_file {
 	die "Read failed for file $from: $!"
 	    unless defined $n;
 
-	chmod((stat $in)[2] & 07777, $out);  # copy mode
+	unless (($^O eq "MSWin32")) {
+	    chmod((stat $in)[2] & 07777, $out);  # copy mode
+	}
 
 	close($in);
 	close($out) || die "Write failed for file $copy_to";
+	if (($^O eq "MSWin32")) {
+	    chmod((stat $from)[2] & 07777, $copy_to);  # copy mode
+	}
+
 	ppm_log("INFO", "$copy_to written");
     }
 
