@@ -280,7 +280,7 @@ sub install {
 	    $state{pkg_id} = $pkg_id = $pkg->dbi_store($dbh);
 	    $state{packlist} = ExtUtils::Packlist->new;
 
-	    ppm_log("NOTICE", "Intalling $pkg->{name} with id $pkg_id");
+	    ppm_log("NOTICE", "Installing $pkg->{name} with id $pkg_id");
 
 	    my $files = $pkg->{files};
 	    next unless $files;
