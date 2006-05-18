@@ -503,18 +503,33 @@ sub uninstall {
 
     my $sth = $dbh->prepare("SELECT path FROM file WHERE package_id = ?");
     $sth->execute($pkg_id);
+    my %dir;
     while (my($path) = $sth->fetchrow_array) {
 	$path = $self->_expand_path($path);
 	if (unlink($path)) {
 	    ppm_log("NOTICE", "rm $path");
-	    # XXX if parent directory is empty now remove it as well?
+	    $dir{File::Basename::dirname($path)}++;
 	}
 	else {
 	    ppm_log("WARN", "Can't remove $path: $!");
 	}
     }
 
-   # Prune the database
+    while (%dir) {
+	for my $dir (keys %dir) {
+	    delete $dir{$dir};
+	    next if grep $dir eq $_, values %{$self->{dirs}};
+	    if (rmdir($dir)) {
+		ppm_log("NOTICE", "rmdir $dir");
+		$dir{File::Basename::dirname($dir)}++
+	    }
+	    else {
+		ppm_log("WARN", "rmdir $dir: $!");
+	    }
+	}
+    }
+
+    # Prune the database
     $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $pkg_id);
     $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $pkg_id);
     $dbh->do("DELETE FROM script WHERE package_id = ?", undef, $pkg_id);
