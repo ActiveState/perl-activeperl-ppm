@@ -958,6 +958,11 @@ The following environment variables affect how PPM behaves:
 
 If set to a TRUE value make ppm print more internal diagnostics.
 
+=item C<ACTIVEPERL_PPM_HOME>
+
+If set use this directory instead of F<~/.ActivePerl/> to store
+configuration information for PPM.
+
 =item C<ACTIVEPERL_PPM_LOG_CONS>
 
 If set to a TRUE value make ppm print any log output to the console as well.

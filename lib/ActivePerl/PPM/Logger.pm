@@ -49,7 +49,8 @@ sub new {
     my($class, %opt) = shift;
 
     my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} ||
-	($^O eq "MSWin32" ? "$ENV{TEMP}\\ppm4.log" : "$ENV{HOME}/ppm4.log");
+	($ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
+	 ($^O eq "MSWin32" ? "$ENV{TEMP}\\ppm4.log" : "$ENV{HOME}/ppm4.log"));
     my $fh;
     if (open($fh, ">>", $logfile)) {
 	require IO::Handle;  # adds methods to $fh
@@ -58,6 +59,7 @@ sub new {
     else {
 	warn "Can't log to '$logfile': $!";
 	$opt{cons}++;
+	undef($fh);
     }
 
     return bless {
@@ -93,7 +95,7 @@ sub log {
     $msg .= "\n";
 
     if ($self->{cons}) {
-	warn $msg;
+	print STDERR $msg;
     }
 
     if (my $fh = $self->{fh}) {

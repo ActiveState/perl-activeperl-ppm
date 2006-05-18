@@ -68,6 +68,7 @@ sub new {
     }
 
     # defaults
+    $dirs{etc} ||= $ENV{ACTIVEPERL_PPM_HOME};
     die "No prefix" unless $dirs{prefix};
     for my $d (qw(bin lib etc html)) {
 	$dirs{$d} ||= "$dirs{prefix}/$d";

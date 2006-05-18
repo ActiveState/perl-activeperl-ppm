@@ -11,6 +11,8 @@ if (-e $prefix) {
     die;  # prevent accidental clobber
 }
 
+delete $ENV{ACTIVEPERL_PPM_HOME};  # avoid overrides
+
 sub j { join("|", @_) }
 sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 

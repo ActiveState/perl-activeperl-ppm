@@ -15,6 +15,7 @@ use base 'ActivePerl::PPM::DBH';
 
 sub new {
     my($class, $dir) = @_;
+    $dir ||= $ENV{ACTIVEPERL_PPM_HOME};
     unless ($dir) {
 	my $home = do {
 	    if ($^O eq "MSWin32") {
