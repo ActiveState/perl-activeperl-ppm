@@ -392,7 +392,6 @@ sub _check_ppd {
 
 sub search {
     my($self, $pattern) = @_;
-    $self->repo_sync;
 
     my $dbh = $self->dbh;
     if ($pattern =~ /::/) {

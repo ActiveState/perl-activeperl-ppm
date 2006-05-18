@@ -429,6 +429,7 @@ sub do_search {
     $USAGE = "search <pattern>";
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
+    $ppm->repo_sync;
     my @res = $ppm->search($pattern);
     if (@res) {
 	print "$_\n" for @res;
@@ -457,7 +458,7 @@ sub do_install {
     }
     else {
 	# seach for feature in repos
-	_install_repo($ppm->packages_missing_for($feature, 0, force => $force));
+	_install_repo($feature, 0, force => $force);
     }
 }
 
@@ -465,7 +466,7 @@ sub do_upgrade {
     $USAGE = "upgrade <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install_repo($ppm->packages_missing_for($feature, undef));
+    _install_repo($feature, undef);
 }
 
 sub _install_uri {
@@ -498,7 +499,8 @@ sub _install_uri {
 }
 
 sub _install_repo {
-    _install(map $ppm->package_set_abs_ppd_uri($_), @_);
+    $ppm->repo_sync;
+    _install(map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing_for(@_));
 }
 
 sub _install {
