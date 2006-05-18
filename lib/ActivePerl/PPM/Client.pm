@@ -447,7 +447,7 @@ sub feature_have {
 	if (my $path = ActiveState::ModInfo::find_module($feature)) {
 	    return MM->parse_version($path) || 0;
 	}
-	ppm_debug("Module $feature found in \@INC");
+	ppm_debug("Module $feature not found in \@INC");
     }
 
     return undef;
