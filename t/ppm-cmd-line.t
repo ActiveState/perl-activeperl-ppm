@@ -4,7 +4,7 @@ use strict;
 use Test;
 use ActiveState::Run qw(shell_quote);
 
-plan tests => 10;
+plan tests => 20;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -12,11 +12,12 @@ if (-e $prefix) {
     die;  # prevent accidental clobber
 }
 
-mkdir($prefix, 0755);
+mkdir("$prefix",     0755) || die;
+mkdir("$prefix/lib", 0755) || die;
 
 END {
     if ($prefix && -d $prefix) {
-	system("sqlite3", "$prefix/ppm.db", ".dump");
+	#system("sqlite3", "$prefix/ppm.db", ".dump");
 	require File::Path;
 	File::Path::rmtree($prefix, 1);
     }
@@ -61,5 +62,21 @@ ok(ppm("help", "help"), qr/this file/);
 ok(ppm("help", "foo"), "Sorry, no help for 'foo'\n");
 ok($ppm_err, "");
 
+ppm("area");
+ok($ppm_out, qr/^\s+home\s+0\s+/m);
+ok($ppm_out, qr/^\s*->\s+site\s+(\d+)/m);
+ok($ppm_out, qr/^\s+perl\s+(\d+)/m);
+ok(ppm("area", "--current"), "site\n");
 
+ppm("area", "--current", "home");
+ok($?, 0);
+ok(ppm("area", "--current"), "home\n");
+die unless $ppm_out eq "home\n";  # don't want installs anywhere else
 
+# try installing from our live repo
+ppm("install", "Tie-Log");
+ok($?, 0);
+ppm("verify", "Tie-Log");
+ok($?, 0);
+ok(ppm("files", "Tie-Log"), qr,^\Q$prefix\E/lib/Tie/Log.pm$,m);
+ok(ppm("remove", "Tie-Log"), "Tie-Log: uninstalled\n");
