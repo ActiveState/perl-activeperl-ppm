@@ -632,9 +632,14 @@ sub sync_db {
 		$mod =~ s,^$self->{dirs}{archlib}/,, or
 		    $mod =~ s,^$self->{dirs}{lib}/,,;
 		$mod = fname2mod($mod);
-		$mod .= "::" unless $mod =~ /::/;
 		my $vers = MM->parse_version($f);
-		$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef, $id, $mod, $vers, "p");
+		undef($vers) if $vers eq "undef"; # Arrgh!
+		(my $mod_pkg = $mod) =~ s/::/-/g;
+		if ($mod_pkg eq $pkg && defined($vers)) {
+		    $dbh->do("UPDATE package SET version = ? WHERE id = ?", undef, $vers, $id);
+		}
+		$mod .= "::" unless $mod =~ /::/;
+		$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef, $id, $mod, ($vers || 0), "p");
 	    }
 	}
 	$dbh->commit;
