@@ -236,16 +236,15 @@ sub do_list {
 		$row{files} = @files if $opt{files};
 		$row{size} = do {
 		    require ActiveState::DiskUsage;
-		    require ActiveState::Bytes;
 		    my $size = 0;
 		    $size += ActiveState::DiskUsage::du($_) for @files;
-		    $size = ActiveState::Bytes::bytes_format($size);
+		    $size = sprintf "%.0f KB", $size / 1024;
 		} if $opt{size};
 	    }
 	    $tab->add_row(\%row);
 	}
 	if (my $rows = $tab->rows) {
-	    print $tab->as_box(null => "", show_trailer => 0);
+	    print $tab->as_box(null => "", show_trailer => 0, align => {files => "right", size => "right"});
 	    if (1) {
 		$area_name ||= $ppm->current_area_name;
 		my $s = ($rows == 1) ? "" : "s";
