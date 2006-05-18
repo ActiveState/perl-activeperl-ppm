@@ -11,6 +11,7 @@ WriteMakefile(
                        'XML::Simple' => 2.14,
                        'LWP' => 5.805,
                        'Archive::Tar' => 1.26,
+                       'ActiveState::Handy' => 1.01,
                    },
    dist         => { COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
 );

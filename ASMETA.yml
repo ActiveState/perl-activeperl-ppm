@@ -9,4 +9,5 @@ requires:
     'XML::Simple': 2.14
     'LWP::': 5.805
     'Archive::Tar': 1.26
+    'ActiveState::Handy': 1.1
 mm_fullext: ActivePerl/PPM
