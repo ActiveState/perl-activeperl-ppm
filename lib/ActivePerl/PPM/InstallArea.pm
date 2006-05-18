@@ -515,17 +515,23 @@ sub uninstall {
 	}
     }
 
+    # Clean up any directories that ended up empty
     while (%dir) {
-	for my $dir (keys %dir) {
-	    delete $dir{$dir};
-	    next if grep $dir eq $_, values %{$self->{dirs}};
-	    if (rmdir($dir)) {
-		ppm_log("NOTICE", "rmdir $dir");
-		$dir{File::Basename::dirname($dir)}++
-	    }
-	    else {
-		ppm_log("WARN", "rmdir $dir: $!");
-	    }
+	# Process the directory with the longest name in each round, as
+	# this ensures that we don't try to remove same directory
+	# more than once.
+	my $dir = (sort {length($b) <=> length($a)} keys %dir)[0];
+	delete $dir{$dir};
+	next if grep $dir eq $_, values %{$self->{dirs}}; # never delete any of our roots
+	last if length($dir) < length($self->{dirs}{prefix});  # safety net
+	# Rely on rmdir() failing for non-empty directories
+	if (rmdir($dir)) {
+	    ppm_log("NOTICE", "rmdir $dir");
+	    $dir{File::Basename::dirname($dir)}++
+	}
+	else {
+	    ppm_log("WARN", "rmdir $dir: $!")
+		unless $!{ENOTEMPTY};
 	}
     }
 
