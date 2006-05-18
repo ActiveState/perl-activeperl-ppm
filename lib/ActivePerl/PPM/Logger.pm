@@ -52,7 +52,11 @@ sub new {
 	($ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
 	 ($^O eq "MSWin32" ? "$ENV{TEMP}\\ppm4.log" : "$ENV{HOME}/ppm4.log"));
     my $fh;
-    if (open($fh, ">>", $logfile)) {
+    if ($ENV{HARNESS_ACTIVE}) {
+	# suppress logging when running under Test::Harness
+	$opt{level} ||= 1;
+    }
+    elsif (open($fh, ">>", $logfile)) {
 	require IO::Handle;  # adds methods to $fh
 	$fh->autoflush;
     }
