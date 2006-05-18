@@ -506,10 +506,18 @@ sub check_downgrade {
     for my $feature (sort keys %{$pkg->{provide}}) {
 	next if $feature eq $pkg->{name};
 	my $have = $self->feature_have($feature);
-        push(@downgrade, $feature) if $have && $have > $pkg->{provide}{$feature};
+        push(@downgrade, [$feature, $have, $pkg->{provide}{$feature}])
+	    if $have && $have > $pkg->{provide}{$feature};
     }
     if (@downgrade) {
-        die "Installing $pkg because of $because would downgrade @downgrade\n";
+	my $msg = "Installing " . $pkg->name_version;
+	$msg .= " to get $because" if $pkg->{name} ne $because;
+	$msg .= " would downgrade";
+	for my $d (@downgrade) {
+	    $msg .= " $d->[0] from version $d->[1] to $d->[2] and";
+	}
+	$msg =~ s/ and$//;
+	die $msg;
     }
 }
 
