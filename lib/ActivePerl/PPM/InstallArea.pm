@@ -619,6 +619,7 @@ sub sync_db {
 	my $pkglist = ExtUtils::Packlist->new($pkglists->{$pkg});
 	$dbh->do("DELETE FROM file WHERE package_id = ?", undef, $id);
 	$dbh->do("DELETE FROM feature WHERE package_id = ? AND role = 'p'", undef, $id);
+	$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES (?, ?, 0, 'p')", undef, $id, $pkg);
 	for my $f ($pkglists->{$pkg}, sort keys %$pkglist) {
 	    my $path = $self->_relative_path($f);
 	    my $info = _file_info($f);
