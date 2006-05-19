@@ -3,6 +3,7 @@
 use strict;
 use Test;
 use ActiveState::Run qw(shell_quote);
+use Config qw(%Config);
 
 plan tests => 20;
 
@@ -74,9 +75,17 @@ ok(ppm("area", "--current"), "home\n");
 die unless $ppm_out eq "home\n";  # don't want installs anywhere else
 
 # try installing from our live repo
-ppm("install", "Tie-Log");
-ok($?, 0);
-ppm("verify", "Tie-Log");
-ok($?, 0);
-ok(ppm("files", "Tie-Log"), qr,^\Q$prefix\E/lib/Tie/Log.pm$,m);
-ok(ppm("remove", "Tie-Log"), "Tie-Log: uninstalled\n");
+my $live_repo = 1;
+$live_repo = 0 if $^O eq "aix";
+$live_repo = 0 if $Config{archname} =~ /\b(ia|x)64/;
+if ($live_repo) {
+    ppm("install", "Tie-Log");
+    ok($?, 0);
+    ppm("verify", "Tie-Log");
+    ok($?, 0);
+    ok(ppm("files", "Tie-Log"), qr,^\Q$prefix\E/lib/Tie/Log.pm$,m);
+    ok(ppm("remove", "Tie-Log"), "Tie-Log: uninstalled\n");
+}
+else {
+    skip("No live repo for $Config{archname}") for 1..4;
+}
