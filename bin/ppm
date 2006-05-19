@@ -392,6 +392,12 @@ sub do_repo {
 		require URI::file;
 		$url = URI::file->new_abs($url);
 	    }
+	    elsif (eval {require PPM::Repositories} and
+		   my $repo = $PPM::Repositories::Repositories{$url})
+	    {
+		$name ||= $url;
+		$url = $repo->{location};
+	    }
 	    else {
 		die "The repository URL must be absolute or a local directory";
 	    }
@@ -418,9 +424,41 @@ sub do_repo {
 	splice(@ARGV, 1, 0, $cmd);
 	do_repo();
     }
+    elsif ($cmd eq "suggest") {
+	eval {
+	    require PPM::Repositories;
+	    require ActivePerl;
+	    my $count = 0;
+	    for my $id (sort keys %PPM::Repositories::Repositories) {
+		my $repo = $PPM::Repositories::Repositories{$id};
+		next unless $repo->{Active};
+		next if $repo->{Type} eq "PPMServer";
+		my $o = $repo->{PerlO} || [];
+		next if @$o && !grep $_ eq $^O, @$o;
+		my $v = $repo->{PerlV} || [];
+		my $my_v = ActivePerl::perl_version;
+		next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
+		print "\n$PROGNAME repo add $id\n";
+		print "   $repo->{Notes}\n";
+		print "   $repo->{location}\n";
+		$count++;
+	    }
+	    unless ($count) {
+		die "No suggested repository for this perl";
+	    }
+	};
+	if ($@) {
+	    if ($@ =~ /^Can't locate/) {
+		die "Install the PPM-Repositories package first";
+	    }
+	    else {
+		die $@;
+	    }
+	};
+    }
     else {
 	$USAGE = "repo <cmd> <args>";
-	usage("The repo command '$cmd' isn't recognized; try one of list, describe, add, delete, on, off");
+	usage("The repo command '$cmd' isn't recognized; try one of list, describe, add, delete, on, off, suggest");
     }
 }
 
@@ -862,6 +900,7 @@ Manage and search repositories:
     ppm repo off <num>
     ppm repo describe <num>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
+    ppm repo suggest
     ppm search <pattern>
     ppm describe <num>
 
