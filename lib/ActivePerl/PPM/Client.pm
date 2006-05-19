@@ -391,24 +391,27 @@ sub _check_ppd {
 
 
 sub search {
-    my($self, $pattern) = @_;
+    my($self, $pattern, @fields) = @_;
+
+    @fields = ("name") unless @fields;
+    my $fields = join(", ", @fields);
 
     my $dbh = $self->dbh;
     if ($pattern =~ /::/) {
 	my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
-	return @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern)};
+	return @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern)};
     }
 
     if ($pattern eq '*') {
-	return @{$dbh->selectcol_arrayref("SELECT name FROM package ORDER BY name")};
+	return @{$dbh->selectall_arrayref("SELECT $fields FROM package ORDER BY name")};
     }
 
     unless ($pattern =~ /\*/) {
-	my @res = @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE name = ?", undef, $pattern)};
+	my @res = @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE name = ?", undef, $pattern)};
 	return @res if @res;
 	$pattern = "*$pattern*";
     }
-    return @{$dbh->selectcol_arrayref("SELECT name FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern))};
+    return @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern))};
 }
 
 sub feature_best {

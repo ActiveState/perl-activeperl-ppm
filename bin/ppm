@@ -429,9 +429,34 @@ sub do_search {
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
     $ppm->repo_sync;
-    my @res = $ppm->search($pattern);
+    my @fields = ("name", "version", "release_date", "abstract");
+    my @res = $ppm->search($pattern, @fields);
     if (@res) {
-	print "$_\n" for @res;
+	if (0 && @res == 1) {
+	}
+	elsif (@res < 10) {
+	    my $count = 0;
+	    for (@res) {
+		my($name, $version, $date, $abstract) = @$_;
+		$count++;
+		print "\n" unless $count == 1;
+		print "$count: $name\n";
+		print "   $abstract\n" if $abstract;
+		print "   Version: $version\n";
+		if ($date) {
+		    $date =~ s/T.*//;
+		    print "   Released: ", $date, "\n";
+		}
+	    }
+	}
+	else {
+	    my $count = 0;
+	    my $count_width = length(@res);
+	    for (@res) {
+		$count++;
+		printf "%*d: %s v%s\n", $count_width, $count, $_->[0], $_->[1];
+	    }
+	}
     }
     else {
 	print "*** no packages matching '$pattern' found ***\n";
