@@ -77,7 +77,8 @@ die unless $ppm_out eq "home\n";  # don't want installs anywhere else
 # try installing from our live repo
 my $live_repo = 1;
 $live_repo = 0 if $^O eq "aix";
-$live_repo = 0 if $Config{archname} =~ /\b(ia|x)64/;
+$live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
+$live_repo = 0 if $Config{archname} =~ /\bsolaris-64\b/;
 if ($live_repo) {
     ppm("install", "Tie-Log");
     ok($?, 0);
