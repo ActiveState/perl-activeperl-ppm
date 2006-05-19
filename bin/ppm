@@ -432,7 +432,9 @@ sub do_search {
     my @fields = ("name", "version", "release_date", "abstract");
     my @res = $ppm->search($pattern, @fields);
     if (@res) {
-	if (0 && @res == 1) {
+	if (@res == 1) {
+	    @ARGV = (1);
+	    return do_describe();
 	}
 	elsif (@res < 10) {
 	    my $count = 0;
@@ -463,8 +465,43 @@ sub do_search {
     }
 }
 
+sub do_describe {
+    $USAGE = "describe <num>";
+    usage() unless @ARGV == 1;
+    my $num = shift(@ARGV);
+    $num =~ s/:$//;
+    usage unless $num =~ /^\d+$/;
+    my $pkg = $ppm->search_lookup($num) ||
+	die "*** no package #$num, do a '$PROGNAME search' first ***\n";
+    my $pad = " " x (length($num) + 2);
+    print "$num: $pkg->{name}\n";
+    print "${pad}$pkg->{abstract}\n" if $pkg->{abstract};
+    print "${pad}Version: $pkg->{version}\n";
+    if (my $date = $pkg->{release_date}) {
+	$date =~ s/T.*//;
+	print "${pad}Released: ", $date, "\n";
+    }
+    print "${pad}Author: $pkg->{author}\n" if $pkg->{author};
+    for my $role (qw(provide require)) {
+	for my $feature (sort keys %{$pkg->{$role} || {}}) {
+	    next if $feature eq $pkg->{name};
+	    (my $pretty_feature = $feature) =~ s/::$//;
+	    print "${pad}\u$role: $pretty_feature";
+	    if (my $vers = $pkg->{$role}{$feature}) {
+		print " version $vers";
+		print " or better" if $role eq "require";
+	    }
+	    print "\n";
+	}
+    }
+    my $repo = $ppm->repo($pkg->{repo_id});
+    print "${pad}Repo: $repo->{name}\n";
+    print "${pad}CPAN: http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n";
+    return;
+}
+
 sub do_install {
-    $USAGE = "install [--force] <module> | <url> | <file>";
+    $USAGE = "install [--force] <module> | <url> | <file> | <num>";
     my $force;
     require Getopt::Long;
     Getopt::Long::GetOptions(
@@ -479,6 +516,12 @@ sub do_install {
     elsif ($feature =~ /\.ppd$/) {
 	require URI::file;
 	_install_uri(URI::file->new_abs($feature));
+    }
+    elsif ($feature =~ /^\d+$/) {
+	my $pkg = $ppm->search_lookup($feature) ||
+	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
+	$ppm->package_set_abs_ppd_uri($pkg);
+	_install($pkg);
     }
     else {
 	# seach for feature in repos
@@ -798,6 +841,7 @@ Install, upgrade and remove packages from the current install area:
     ppm install [--force] <module>
     ppm install [--force] <url>
     ppm install [--force] <file>.ppd
+    ppm install [--force] <num>
     ppm upgrade <pkg>
     ppm upgrade <module>
     ppm remove <pkg>
@@ -819,6 +863,7 @@ Manage and search repositories:
     ppm repo describe <num>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
     ppm search <pattern>
+    ppm describe <num>
 
 Obtain version and copyright information about this program:
 
@@ -846,6 +891,10 @@ Manage install areas.
 
 Internal debugging tool.
 
+=item B<ppm describe> I<num>
+
+Show all properties for the given package from the last search result.
+
 =item B<ppm files> I<pkg>
 
 Will list the full path name of the files belonging to the given
@@ -862,6 +911,8 @@ Will print the documentation for PPM (this file).
 =item B<ppm install> I<file>.ppd
 
 =item B<ppm install> I<url>
+
+=item B<ppm install> I<num>
 
 Install a package and its dependencies.
 

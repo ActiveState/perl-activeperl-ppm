@@ -394,24 +394,43 @@ sub search {
     my($self, $pattern, @fields) = @_;
 
     @fields = ("name") unless @fields;
-    my $fields = join(", ", @fields);
 
     my $dbh = $self->dbh;
-    if ($pattern =~ /::/) {
-	my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
-	return @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern)};
-    }
 
-    if ($pattern eq '*') {
-	return @{$dbh->selectall_arrayref("SELECT $fields FROM package ORDER BY name")};
-    }
+    $dbh->do("DROP TABLE IF EXISTS search");
+    $dbh->commit;
 
-    unless ($pattern =~ /\*/) {
-	my @res = @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE name = ?", undef, $pattern)};
-	return @res if @res;
-	$pattern = "*$pattern*";
+ SEARCH: {
+	if ($pattern =~ /::/) {
+	    my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
+	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern);
+	}
+
+	if ($pattern eq '*') {
+	    $dbh->do("CREATE TABLE search AS SELECT id FROM package ORDER BY name");
+	}
+
+	unless ($pattern =~ /\*/) {
+	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE name = ?", undef, $pattern);
+	    last SEARCH if $dbh->selectrow_array("SELECT count(*) FROM search");
+	    # try again with a wider net
+	    $dbh->rollback;
+	    $pattern = "*$pattern*";
+	}
+	$dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern));
     }
-    return @{$dbh->selectall_arrayref("SELECT $fields FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern))};
+    $dbh->commit;
+
+    my $fields = join(", ", map "package.$_", @fields);
+    return @{$dbh->selectall_arrayref("SELECT $fields FROM package,search WHERE package.id = search.id ORDER by search.rowid")};
+}
+
+sub search_lookup {
+    my($self, $row) = @_;
+    my $dbh = $self->dbh;
+    my $id = $dbh->selectrow_array("SELECT id FROM search WHERE rowid = $row");
+    return $self->package($id) if defined $id;
+    return undef;
 }
 
 sub feature_best {
