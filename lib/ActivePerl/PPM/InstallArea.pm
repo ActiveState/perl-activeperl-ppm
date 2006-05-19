@@ -452,7 +452,15 @@ sub _save_file_info {
     my $info = _file_info($path);
 
     delete $state->{old_files}{$rpath};
-    $state->{dbh}->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $rpath, $info->{md5}, $info->{mode});
+    eval {
+	$state->{dbh}->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $rpath, $info->{md5}, $info->{mode});
+    };
+    if ($@) {
+	my $err = $@;
+	my $name = $state->{dbh}->selectrow_array("SELECT name FROM package, file WHERE package.id = package_id AND file.path = ?", undef, $rpath);
+	die $err unless $name;
+	die "File conflict; package $name already provide $path";
+    }
 }
 
 sub _copy_dir {

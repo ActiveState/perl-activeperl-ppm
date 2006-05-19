@@ -687,7 +687,7 @@ sub _install {
 	}
 	else {
 	    print "\n";
-	    die;
+	    die $@;
 	}
 
 	# run install scripts
