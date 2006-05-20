@@ -422,7 +422,8 @@ sub search {
     $dbh->commit;
 
     my $fields = join(", ", map "package.$_", @fields);
-    return @{$dbh->selectall_arrayref("SELECT $fields FROM package,search WHERE package.id = search.id ORDER by search.rowid")};
+    my $select_arrayref = @fields > 1 ? "selectall_arrayref" : "selectcol_arrayref";
+    return @{$dbh->$select_arrayref("SELECT $fields FROM package,search WHERE package.id = search.id ORDER by search.rowid")};
 }
 
 sub search_lookup {
