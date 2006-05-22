@@ -634,10 +634,13 @@ sub _install {
     else {
 	$area = $ppm->area("site");
 	if ($area->{readonly}) {
-	    ppm_log("NOTICE", "Installing into home");
-	    $area = $ppm->area("home");
+	    my($first_area) = $ppm->areas;
+	    die "Can't install into readonly site" if $first_area eq "site";
+	    ppm_log("NOTICE", "Installing into $first_area");
+	    $area = $ppm->area($first_area);
 	}
 	else {
+	SITE:
 	    ppm_log("NOTICE", "Installing into site");
 	}
     }
@@ -1064,12 +1067,6 @@ Directory where PPM keeps its state.  On Windows this directory is
 F<$APPDATA/ActiveState/ActivePerl/>.  Architecture or version specific
 directories can be created if you need to manage multiple perl
 installation from the same home area.
-
-=item F<$HOME/.ActivePerl/lib/>
-
-If this directory is present the PPM will have an install area called
-"home" that you can install packages into.  Useful if you use an
-ActivePerl installation that you dont have permissions to modify.
 
 =item F<$HOME/.ActivePerl/ppm.db>
 
