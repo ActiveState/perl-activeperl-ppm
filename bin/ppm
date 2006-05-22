@@ -739,7 +739,9 @@ sub _install {
 	# XXX regenerate HTML
 
 	# install
-	print "Installing...";
+	my $to = $area->name;
+	$to = " to $to area" if $to;
+	print "Installing$to...";
 	if (my $summary = $area->install(@_)) {
 	    print "done\n";
 	    for my $what (sort keys %$summary) {
