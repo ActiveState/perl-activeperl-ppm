@@ -443,7 +443,8 @@ sub feature_have {
     if ($feature =~ /::/) {
 	require ActiveState::ModInfo;
 	require ExtUtils::MakeMaker;
-	if (my $path = ActiveState::ModInfo::find_module($feature)) {
+	my $inc_ref = defined(*main::INC_ORIG) ? \@main::INC_ORIG : \@INC;
+	if (my $path = ActiveState::ModInfo::find_module($feature, $inc_ref)) {
 	    return MM->parse_version($path) || 0;
 	}
 	ppm_debug("Module $feature not found in \@INC");
