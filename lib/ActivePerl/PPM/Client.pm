@@ -11,6 +11,9 @@ use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
 use ActivePerl::PPM::Web qw(web_ua);
 
+use ActiveState::Path qw(is_abs_path);
+use File::Basename;
+
 use base 'ActivePerl::PPM::DBH';
 
 sub new {
@@ -46,11 +49,42 @@ sub new {
     }
 
     my $etc = $dir; # XXX or "$dir/etc";
-    my @area = ("site", "perl");
+    my @inc = defined(*main::INC_ORIG) ? @main::INC_ORIG : @INC;
+
+    # determine what install areas exists from @INC
+    my @area;
     my %area;
-    if (-d "$dir/lib") {
-	unshift(@area, "home");
-	$area{home} = ActivePerl::PPM::InstallArea->new(prefix => $dir, etc => $etc);
+    my @tmp = @inc;
+    while (@tmp) {
+	my $dir = shift(@tmp);
+	next unless is_abs_path($dir);
+	if (my $name = _known_area($dir)) {
+	    push(@area, $name) unless grep $_ eq $name, @area;
+	    next;
+	}
+	my $name = "user";
+	while (grep $_ eq $name, @area) {
+	    # make name unique
+	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
+	    $name .= "_" . ++$num;
+	}
+	push(@area, $name);
+	my $base = File::Basename::basename($dir);
+	my $arch;
+	if ($base eq $Config{archname}) {
+	    $arch = $dir;
+	    $dir = File::Basename::dirname($dir);
+	    shift(@tmp) if $tmp[0] eq $dir;
+	}
+	my $lib = $dir;
+	$base = File::Basename::basename($dir);
+	$dir = File::Basename::dirname($dir) if $base eq "lib";
+	$area{$name} = ActivePerl::PPM::InstallArea->new(lib => $lib, archlib => $arch, prefix => $dir);
+    }
+
+    # make sure these install areas always show up
+    for my $a (qw(site perl)) {
+	push(@area, $a) unless grep $_ eq $a, @area;
     }
 
     my $self = bless {
@@ -58,8 +92,17 @@ sub new {
 	etc => $etc,
 	area => \%area,
         area_seq => \@area,
+        inc => \@inc,
     }, $class;
     return $self;
+}
+
+sub _known_area {
+    my $path = shift;
+    return "perl" if $path eq $Config{privlib} || $path eq $Config{archlib};
+    return "site" if $path eq $Config{sitelib} || $path eq $Config{sitearch};
+    return "vendor" if $Config{vendorlib} && $path eq $Config{vendorlib} || $path eq $Config{vendorarch};
+    return undef;
 }
 
 sub areas {
@@ -443,8 +486,7 @@ sub feature_have {
     if ($feature =~ /::/) {
 	require ActiveState::ModInfo;
 	require ExtUtils::MakeMaker;
-	my $inc_ref = defined(*main::INC_ORIG) ? \@main::INC_ORIG : \@INC;
-	if (my $path = ActiveState::ModInfo::find_module($feature, $inc_ref)) {
+	if (my $path = ActiveState::ModInfo::find_module($feature, $self->{inc})) {
 	    return MM->parse_version($path) || 0;
 	}
 	ppm_debug("Module $feature not found in \@INC");
