@@ -62,37 +62,15 @@ sub new {
     return $self;
 }
 
-sub current_area {
+sub areas {
     my $self = shift;
-    return $self->area($self->current_area_name);
-}
-
-sub current_area_name {
-    my $self = shift;
-    my $old = $self->{'current-area'}
-        || $self->dbh->selectrow_array("SELECT value FROM config WHERE key = 'current-area'")
-        || "site";
-    if (@_) {
-	my $new = shift;
-	die "Unrecognized install area '$new'" unless grep $_ eq $new, $self->area;
-	$self->{'current-area'} = $new;
-	my $dbh = $self->dbh;
-	$dbh->do("INSERT OR REPLACE INTO config (key, value) VALUES ('current-area', ?)", undef, $new);
-	$dbh->commit;
-	ppm_log("NOTICE", "$new is current install area");
-    }
-    return $old;
+    return @{$self->{area_seq}};
 }
 
 sub area {
-    my $self = shift;
-    if (@_) {
-	my $name = shift;
-	return $self->{area}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
-    }
-    else {
-	return @{$self->{area_seq}};
-    }
+    my($self, $name) = @_;
+    return undef unless $name;
+    return $self->{area}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
 }
 
 sub _init_db {
@@ -150,8 +128,6 @@ EOT
     }
 
     # initial values
-    $dbh->do(qq(INSERT INTO config VALUES ("current-area", "site")));
-
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
     my $repo_uri = "http://ppm.activestate.com/PPMPackages/5.8-$os/";
@@ -455,7 +431,7 @@ sub package_best {
 
 sub feature_have {
     my($self, $feature) = @_;
-    for my $area_name ($self->area) {
+    for my $area_name ($self->areas) {
 	my $area = $self->area($area_name);
 	if (defined(my $have = $area->feature_have($feature))) {
 	    ppm_debug("Feature $feature found in $area_name");
@@ -592,26 +568,14 @@ The constructor creates a new client based on the configuration found
 in $home_dir which defaults to F<$ENV{HOME}/.ActivePerl> directory of the
 current user.  If no such directory is found it is created.
 
-=item $client->current_area
-
-Returns an object representing the current install area.  See
-L<ActivePerl::PPM::InstallArea> for methods available.
-
-=item $client->current_area_name
-
-=item $client->current_area_name( $name )
-
-Get/set the name of the current install area.  This setting persists
-between sessions.
-
-=item $client->area
-
 =item $client->area( $name )
 
-With argument returns an object representing the given named install
-area.  See L<ActivePerl::PPM::InstallArea> for methods available.
+Returns an object representing the given named install area.  See
+L<ActivePerl::PPM::InstallArea> for methods available.
 
-Without argument return list of available names.
+=item $client->areas
+
+Return list of available install area names.
 
 =item $client->repo( $repo_id )
 
@@ -620,7 +584,7 @@ L<ActivePerl::PPM::Repo> for methods available.
 
 =item $client->repos
 
-Returns list of available repos.  The repos are ordered by priority.
+Returns list of available repo identifiers.  The repos are ordered by priority.
 
 =item $client->feature_best( $feature )
 

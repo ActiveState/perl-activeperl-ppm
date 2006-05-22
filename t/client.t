@@ -4,7 +4,7 @@ use strict;
 use Test qw(plan ok);
 use URI::file;
 
-plan tests => 30;
+plan tests => 28;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -18,14 +18,12 @@ sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 use ActivePerl::PPM::Client;
 
 my $client = ActivePerl::PPM::Client->new($prefix);
-ok(j($client->area), "site|perl");
-ok($client->current_area_name("perl"), "site");
+ok(j($client->areas), "site|perl");
 ok(j($client->repos), 1);
 undef($client);
 
 $client = ActivePerl::PPM::Client->new($prefix);
-ok(j($client->area), "site|perl");
-ok($client->current_area_name, "perl");
+ok(j($client->areas), "site|perl");
 ok($client->area("site")->name, "site");
 
 my $repo = $client->repo(1);

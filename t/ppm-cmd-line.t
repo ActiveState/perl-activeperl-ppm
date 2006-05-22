@@ -5,7 +5,7 @@ use Test;
 use ActiveState::Run qw(shell_quote);
 use Config qw(%Config);
 
-plan tests => 20;
+plan tests => 17;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -64,15 +64,9 @@ ok(ppm("help", "foo"), "Sorry, no help for 'foo'\n");
 ok($ppm_err, "");
 
 ppm("area");
-ok($ppm_out, qr/^\s+home\s+0\s+/m);
-ok($ppm_out, qr/^\s*->\s+site\s+(\d+)/m);
-ok($ppm_out, qr/^\s+perl\s+(\d+)/m);
-ok(ppm("area", "--current"), "site\n");
-
-ppm("area", "--current", "home");
-ok($?, 0);
-ok(ppm("area", "--current"), "home\n");
-die unless $ppm_out eq "home\n";  # don't want installs anywhere else
+ok($ppm_out, qr/^home\s+0\s+/m);
+ok($ppm_out, qr/^site\s+(\d+)/m);
+ok($ppm_out, qr/^perl\s+(\d+)/m);
 
 # try installing from our live repo
 my $live_repo = 1;
@@ -80,7 +74,7 @@ $live_repo = 0 if $^O eq "aix";
 $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bsolaris-64\b/;
 if ($live_repo) {
-    ppm("install", "Tie-Log");
+    ppm("install", "Tie-Log", "--area", "home", "--force");
     ok($?, 0);
     ppm("verify", "Tie-Log");
     ok($?, 0);

@@ -65,11 +65,8 @@ sub do_dump {
 	elsif (grep $_ eq $what, $ppm->repos) {
 	    Data::Dump::dump($ppm->repo($what));
 	}
-	elsif (my $pkg = $ppm->current_area->package($what)) {
-	    Data::Dump::dump($pkg);
-	}
 	else {
-	    warn "No area/repo/package called $what\n";
+	    warn "No area/repo called $what\n";
 	}
     }
 }
@@ -135,40 +132,25 @@ sub do_help {
 }
 
 sub do_area {
-    my $current = $ppm->current_area_name;
     my $show_header = 1;
+    my $sync;
     if (@ARGV) {
-	my $new_current;
-	my $sync;
-	$USAGE = "area [--current [<name>]] [--sync] [--no-header]";
+	$USAGE = "area [--sync] [--no-header]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(
-           'current:s' => \$new_current,
 	   'sync' => \$sync,
            'header!' => \$show_header,
         ) || usage();
 	usage() if @ARGV;
-	if (defined $new_current) {
-	    $ppm->current_area_name($new_current) if length($new_current);
-	    $ppm->current_area->sync_db if $sync;
-	    if (length($new_current)) {
-		print "Current install area set to $new_current.\n";
-	    }
-	    else {
-		print "$current\n";
-	    }
-	    return;
-	}
-	$ppm->current_area->sync_db if $sync;
     }
     if ($show_header) {
-	print "cur name   pkg# lib\n";
-	print "--- ------ ---- ------------------------------------\n";
+	print "name   pkg# lib\n";
+	print "------ ---- ------------------------------------\n";
     }
-    for my $area ($ppm->area) {
+    for my $area ($ppm->areas) {
 	my $o = $ppm->area($area);
-	printf "%3s %-6s %4d %s\n",
-	    ($current eq $area ? "->" : ""),
+	$o->sync_db if $sync;
+	printf "%-6s %4d %s\n",
 	    $area,
 	    scalar($o->packages),
 	    $o->lib;
@@ -203,15 +185,12 @@ sub do_list {
     }
     $opt{name}++;
 
-    my $area = $area_name ? $ppm->area($area_name) : $ppm->current_area;
+    my @areas = ($area_name ? ($area_name) : $ppm->areas);
     if (keys %opt == 1) {
 	# just list the names
-	my $count;
-	for my $pkg ($area->packages) {
-	    print "$pkg\n";
-	    $count++;
-	}
-	goto NO_PKG_INSTALLED unless $count;
+	my @pkgs = map $_->packages, map $ppm->area($_), @areas;
+	goto NO_PKG_INSTALLED unless @pkgs;
+	print "$_\n" for sort @pkgs;
     }
     else {
 	my @fields;
@@ -226,35 +205,38 @@ sub do_list {
 	$tab->add_field($_) for @fields;
 	$tab->add_field("files") if $opt{files};
 	$tab->add_field("size") if $opt{size};
-	for my $pkg ($area->packages(@fields)) {
-	    my %row = map {$_ => shift(@$pkg)} @fields;
-	    if ($row{release_date}) {
-		$row{release_date} =~ s/T.*//;  # drop time
+
+	for my $area (map $ppm->area($_), @areas) {
+	    for my $pkg ($area->packages(@fields)) {
+		my %row = map {$_ => shift(@$pkg)} @fields;
+		if ($row{release_date}) {
+		    $row{release_date} =~ s/T.*//;  # drop time
+		}
+		if ($opt{files} || $opt{size}) {
+		    my @files = $area->package_files($row{name});
+		    $row{files} = @files if $opt{files};
+		    $row{size} = do {
+			require ActiveState::DiskUsage;
+			my $size = 0;
+			$size += ActiveState::DiskUsage::du($_) for @files;
+			$size = sprintf "%.0f KB", $size / 1024;
+		    } if $opt{size};
+		}
+		$tab->add_row(\%row);
 	    }
-	    if ($opt{files} || $opt{size}) {
-		my @files = $area->package_files($row{name});
-		$row{files} = @files if $opt{files};
-		$row{size} = do {
-		    require ActiveState::DiskUsage;
-		    my $size = 0;
-		    $size += ActiveState::DiskUsage::du($_) for @files;
-		    $size = sprintf "%.0f KB", $size / 1024;
-		} if $opt{size};
-	    }
-	    $tab->add_row(\%row);
 	}
+
+	my $in = $area_name ? " in '$area_name' area" : "";
 	if (my $rows = $tab->rows) {
 	    print $tab->as_box(null => "", show_trailer => 0, align => {files => "right", size => "right"});
 	    if (1) {
-		$area_name ||= $ppm->current_area_name;
 		my $s = ($rows == 1) ? "" : "s";
-		print " ($rows package$s installed in '$area_name' area)\n";
+		print " ($rows package$s installed$in)\n";
 	    }
 	}
 	else {
 	NO_PKG_INSTALLED:
-	    $area_name ||= $ppm->current_area_name;
-	    print STDERR "*** no packages installed in '$area_name' area ***\n";
+	    print STDERR "*** no packages installed$in ***\n";
 	}
     }
 }
@@ -262,7 +244,19 @@ sub do_list {
 sub do_files {
     $USAGE = "files <pkg>";
     usage() unless @ARGV == 1;
-    print "$_\n" for $ppm->current_area->package_files($ARGV[0]);
+    my $pkg = shift(@ARGV);
+    my $foundit;
+    for my $area (map $ppm->area($_), $ppm->areas) {
+	next unless defined($area->package_id($pkg));
+	$foundit++;
+	print "$_\n" for $area->package_files($pkg);
+    }
+    not_installed($pkg) unless $foundit;
+}
+
+sub not_installed {
+    my $pkg = shift;
+    die "Package '$pkg' is not installed";
 }
 
 sub do_verify {
@@ -276,8 +270,18 @@ sub do_verify {
 	$opt{package} = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
-    my $area = $ppm->current_area;
-    my %status = $area->verify(%opt);
+    my @areas = map $ppm->area($_), $ppm->areas;
+    if ($opt{package}) {
+	@areas = grep $_->package_id($opt{package}), @areas;
+	not_installed($opt{package}) unless @areas;
+    }
+    my %status;
+    for my $area (@areas) {
+	my %s = $area->verify(%opt);
+	while (my($k,$v) = each %s) {
+	    $status{$k} += $v;
+	}
+    }
     for my $v (qw(verified missing modified)) {
 	next if $v ne "verified" && !$status{$v};
 	my $s = $status{$v} == 1 ? "" : "s";
@@ -541,29 +545,31 @@ sub do_describe {
 sub do_install {
     $USAGE = "install [--force] <module> | <url> | <file> | <num>";
     my $force;
+    my $area;
     require Getopt::Long;
     Getopt::Long::GetOptions(
         force => \$force,
+	'area=s' => \$area,
      ) || usage();
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
     if ($feature =~ m,^[a-z][+\w]+:[^:],) {
 	# looks like an absolute URL
-	_install_uri($feature);
+	_install_uri($area, $feature);
     }
     elsif ($feature =~ /\.ppd$/) {
 	require URI::file;
-	_install_uri(URI::file->new_abs($feature));
+	_install_uri($area, URI::file->new_abs($feature));
     }
     elsif ($feature =~ /^\d+$/) {
 	my $pkg = $ppm->search_lookup($feature) ||
 	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	$ppm->package_set_abs_ppd_uri($pkg);
-	_install($pkg);
+	_install($area, $pkg);
     }
     else {
 	# seach for feature in repos
-	_install_repo($feature, 0, force => $force);
+	_install_repo($area, $feature, 0, force => $force);
     }
 }
 
@@ -571,10 +577,11 @@ sub do_upgrade {
     $USAGE = "upgrade <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install_repo($feature, undef);
+    _install_repo(undef, $feature, undef);
 }
 
 sub _install_uri {
+    my $area = shift;
     my $uri = shift;
     my $res = web_ua->get($uri);
     unless ($res->is_success) {
@@ -600,15 +607,17 @@ sub _install_uri {
     # first repo to look for additional packages.  This only works for
     # package features.
 
-    _install($pkg);
+    _install($area, $pkg);
 }
 
 sub _install_repo {
+    my $area = shift;
     $ppm->repo_sync;
-    _install(map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing_for(@_));
+    _install($area, map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing_for(@_));
 }
 
 sub _install {
+    my $area = shift;
     unless (@_) {
 	print "Nothing to install\n";
 	return;
@@ -617,6 +626,19 @@ sub _install {
     $| = 1;
     my $verbose = 0;
     my $ua = web_ua();
+    if ($area) {
+	$area = $ppm->area($area);
+    }
+    else {
+	$area = $ppm->area("site");
+	if ($area->{readonly}) {
+	    ppm_log("NOTICE", "Installing into home");
+	    $area = $ppm->area("home");
+	}
+	else {
+	    ppm_log("NOTICE", "Installing into site");
+	}
+    }
 
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     eval {
@@ -716,7 +738,7 @@ sub _install {
 
 	# install
 	print "Installing...";
-	if (my $summary = $ppm->current_area->install(@_)) {
+	if (my $summary = $area->install(@_)) {
 	    print "done\n";
 	    for my $what (sort keys %$summary) {
 		my $n = $summary->{$what} || 0;
@@ -730,7 +752,7 @@ sub _install {
 
 	# run install scripts
 	for my $pkg (@_) {
-	    _run_script($pkg, "install", $tmpdir);
+	    _run_script($area, $pkg, "install", $tmpdir);
 	}
     };
     my $err = $@;
@@ -739,7 +761,7 @@ sub _install {
 }
 
 sub _run_script {
-    my($pkg, $kind, $tmpdir) = @_;
+    my($area, $pkg, $kind, $tmpdir) = @_;
     my $script = $pkg->{script}{$kind};
     return unless $script;
 
@@ -790,9 +812,9 @@ sub _run_script {
 	require ActiveState::Run;
 	require Cwd;
 	my $old_cwd = Cwd::cwd();
-	local $ENV{PPM_INSTROOT} = $ppm->current_area->prefix;
-	local $ENV{PPM_INSTLIB} = $ppm->current_area->lib;
-	local $ENV{PPM_INSTARCHLIB} = $ppm->current_area->archlib;
+	local $ENV{PPM_INSTROOT} = $area->prefix;
+	local $ENV{PPM_INSTLIB} = $area->lib;
+	local $ENV{PPM_INSTARCHLIB} = $area->archlib;
 	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
 	local $ENV{PPM_ACTION} = $kind;  # XXX 'upgrade'
 	# local $ENV{PPM_PREV_VERSION} = ...;
@@ -825,19 +847,39 @@ sub _expand_exec {
 }
 
 sub do_remove {
-    $USAGE = "remove <package> ...";
+    $USAGE = "remove [--area <area>] <package> ...";
+    my $opt_area;
+    require Getopt::Long;
+    Getopt::Long::GetOptions(
+	'area=s' => \$opt_area,
+     ) || usage();
     usage() unless @ARGV;
 
-    my $area = $ppm->current_area;
     my $removed_count = 0;
     for my $pkg (@ARGV) {
-	my $o = $area->package($pkg);
-	unless ($o) {
+	my $area; ($opt_area ? $ppm->area($opt_area) : ());
+	my $pkg_o;
+	if ($opt_area) {
+	    $area =  $ppm->area($opt_area);
+	    $pkg_o = $area->package($pkg);
+	}
+	else {
+	    for my $a ($ppm->areas) {
+		$area = $ppm->area($a);
+		$pkg_o = $area->package($pkg);
+		if ($pkg_o) {
+		    die "Can't remove from 'perl' area without explicit area specification"
+			if $a eq "perl";
+		    last;
+		}
+	    }
+	}
+	unless ($pkg_o) {
 	    print "$pkg: not installed\n";
 	    next;
 	}
 	eval {
-	    _run_script($o, "uninstall");
+	    _run_script($area, $pkg_o, "uninstall");
 	    print "$pkg: ";
 	    $area->uninstall($pkg);
 	};
@@ -873,20 +915,20 @@ Invoke the graphical shell (not implemented yet):
 
     ppm
 
-Install, upgrade and remove packages from the current install area:
+Install, upgrade and remove packages:
 
-    ppm install [--force] <pkg>
-    ppm install [--force] <module>
-    ppm install [--force] <url>
-    ppm install [--force] <file>.ppd
-    ppm install [--force] <num>
+    ppm install [--force] [--area <area>] <pkg>
+    ppm install [--force] [--area <area>] <module>
+    ppm install [--force] [--area <area>] <url>
+    ppm install [--force] [--area <area>] <file>.ppd
+    ppm install [--force] [--area <area>] <num>
     ppm upgrade <pkg>
     ppm upgrade <module>
-    ppm remove <pkg>
+    ppm remove [--area <area>] <pkg>
 
 Manage and search install areas:
 
-    ppm area [--current <name>] [--sync] [--no-header]
+    ppm area [--sync] [--no-header]
     ppm list [--name] [--version] [--abstract] ...
     ppm list <area> [--name] [--version] [--abstract] ...
     ppm files <pkg>
@@ -958,7 +1000,7 @@ Install a package and its dependencies.
 =item B<ppm list> [ I<area> ] --I<field> ...
 
 List the packages installed.  If I<area> is not provided list the
-content of the current install area.
+content of all install areas.
 
 =item B<ppm query>
 
@@ -966,7 +1008,7 @@ Alias for B<ppm list>.  Provided for PPM version 3 compatiblity.
 
 =item B<ppm remove> I<pkg> ...
 
-Will uninstall the given packages from the current install area.
+Will uninstall the given packages.
 
 =item B<ppm rep> ...
 
