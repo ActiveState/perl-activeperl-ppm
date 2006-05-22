@@ -225,6 +225,8 @@ sub do_list {
 		$tab->add_row(\%row);
 	    }
 	}
+	$tab->sort(sub ($$) { my($a, $b) = @_; $a->[0] cmp $b->[0]})
+	    if @areas > 1 && $tab->can("sort");
 
 	my $in = $area_name ? " in '$area_name' area" : "";
 	if (my $rows = $tab->rows) {
