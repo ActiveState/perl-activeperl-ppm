@@ -134,6 +134,7 @@ sub do_help {
 sub do_area {
     my $cmd = shift(@ARGV) || "list";
     if ($cmd eq "list") {
+	$USAGE = "area list [--no-header]";
 	my $show_header = 1;
 	if (@ARGV) {
 	    require Getopt::Long;
@@ -155,6 +156,8 @@ sub do_area {
 	}
     }
     elsif ($cmd eq "sync") {
+	$USAGE = "area sync";
+	usage() if @ARGV;
 	for my $area (map $ppm->area($_), $ppm->areas) {
 	    $area->sync_db;
 	}
