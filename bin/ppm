@@ -6,7 +6,6 @@ use ActivePerl::PPM::limited_inc;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
-use File::Path qw(mkpath rmtree);
 
 $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 
@@ -808,7 +807,8 @@ sub _install {
 	}
     };
     my $err = $@;
-    rmtree($tmpdir, $verbose);
+    require File::Path;
+    File::Path::rmtree($tmpdir, $verbose);
     die $err if $err;
 }
 
