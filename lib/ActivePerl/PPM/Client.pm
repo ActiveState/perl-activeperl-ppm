@@ -62,7 +62,7 @@ sub new {
 	    push(@area, $name) unless grep $_ eq $name, @area;
 	    next;
 	}
-	my $name = _area_name($dir, @area);
+	my $name = _area_name($dir);
 	while (grep $_ eq $name, @area) {
 	    # make name unique
 	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
