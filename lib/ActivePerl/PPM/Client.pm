@@ -71,15 +71,10 @@ sub new {
 	push(@area, $name);
 	my $base = File::Basename::basename($dir);
 	my $arch;
-	if ($base eq $Config{archname}) {
+	if ($base eq $Config{archname} || $base eq "arch") {
 	    $arch = $dir;
 	    $dir = File::Basename::dirname($dir);
-	    shift(@tmp) if $tmp[0] eq $dir;
-	}
-	elsif ($base eq "arch") {
-	    # blib style area
-	    $arch = $dir;
-	    $dir = join_path(File::Basename::dirname($dir), "lib");
+	    $dir = join_path($dir, "lib") if $base eq "arch";
 	    shift(@tmp) if $tmp[0] eq $dir;
 	}
 	my $lib = $dir;
