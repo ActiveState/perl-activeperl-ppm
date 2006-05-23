@@ -48,12 +48,9 @@ sub new {
             html => $Config{installhtmldir},   # XXX ActivePerl hack
 	);
     }
-    elsif ($name) {
-	die "Unknown install area '$name'";
-    }
     else {
 	my $prefix = delete $opt{prefix}
-	    || croak("Neither name nor prefix specified");
+	    || croak("Neither well known name nor prefix specified");
 	%dirs = (
 	    prefix => $prefix,
 	    archlib => $opt{archlib},
@@ -782,7 +779,7 @@ The following methods are provided:
 =item $area = ActivePerl::PPM::InstallArea->new( %opts )
 
 Constructs a new C<ActivePerl::PPM::InstallArea> object.  If constructed
-based on $name, then the constructor might return C<undef> if no
+based on $name, then the constructor might croak if no
 install area with the given name is known.  The "perl" and "site" install areas
 are always available.  Some perls might also have a "vendor" install area
 

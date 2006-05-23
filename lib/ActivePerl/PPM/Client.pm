@@ -80,7 +80,12 @@ sub new {
 	my $lib = $dir;
 	$base = File::Basename::basename($dir);
 	$dir = File::Basename::dirname($dir) if $base eq "lib";
-	$area{$name} = ActivePerl::PPM::InstallArea->new(lib => $lib, archlib => $arch, prefix => $dir);
+	$area{$name} = ActivePerl::PPM::InstallArea->new(
+            name => $name,
+            prefix => $dir,
+            lib => $lib,
+            archlib => $arch,
+        );
     }
 
     # make sure these install areas always show up
