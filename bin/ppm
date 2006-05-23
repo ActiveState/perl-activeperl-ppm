@@ -161,7 +161,7 @@ sub do_list {
     my %opt;
     my $area_name;
     if (@ARGV) {
-	$USAGE = "list [<area>] [--name] [--version] [--date] [--abstract] [--author] [--ppd] [--files] [--size]";
+	$USAGE = "list [<area>] [--name] [--version] [--date] [--abstract] [--author] [--area] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'id',
@@ -170,6 +170,7 @@ sub do_list {
            'date',
            'abstract',
            'author',
+           'area',
 	   'files',
            'size',
            'ppd',
@@ -178,10 +179,16 @@ sub do_list {
 	usage() if @ARGV;
     }
     unless (%opt) {
+	# fields to show by default
 	$opt{version}++;
-        $opt{date}++;
 	$opt{files}++;
 	$opt{size}++;
+	if ($area_name) {
+	    $opt{date}++;
+	}
+	else {
+	    $opt{area}++;
+	}
     }
     $opt{name}++;
 
@@ -203,6 +210,7 @@ sub do_list {
 	require ActiveState::Table;
 	my $tab = ActiveState::Table->new;
 	$tab->add_field($_) for @fields;
+	$tab->add_field("area") if $opt{area};
 	$tab->add_field("files") if $opt{files};
 	$tab->add_field("size") if $opt{size};
 
@@ -222,6 +230,7 @@ sub do_list {
 			$size = sprintf "%.0f KB", $size / 1024;
 		    } if $opt{size};
 		}
+		$row{area} = $area->name if $opt{area};
 		$tab->add_row(\%row);
 	    }
 	}
