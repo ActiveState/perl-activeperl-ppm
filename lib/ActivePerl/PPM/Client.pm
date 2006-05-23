@@ -132,7 +132,10 @@ sub areas {
 sub area {
     my($self, $name) = @_;
     return undef unless $name;
-    return $self->{area}{$name} ||= ActivePerl::PPM::InstallArea->new($name);
+    return $self->{area}{$name} ||= do {
+	die "Install area '$name' does not exist" unless grep $_ eq $name, @{$self->{area_seq}};
+	ActivePerl::PPM::InstallArea->new($name);
+    }
 }
 
 sub _init_db {
