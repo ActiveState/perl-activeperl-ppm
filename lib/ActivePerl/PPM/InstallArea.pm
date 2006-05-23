@@ -723,14 +723,17 @@ ActivePerl::PPM::InstallArea - Perl installation area
 An C<ActivePerl::PPM::InstallArea> object provide an interface to a
 Perl install area.  Different install areas might have different
 protection policies and each contain a set of installed packages and
-modules.  An install area is divided into the following directories:
+modules.  The concept is the same as C<INSTALLDIRS> provided by
+L<ExtUtils::MakeMaker>.
+
+An install area is divided into the following directories:
 
 =over 8
 
 =item lib
 
 This is where architecture neutral modules go.  Packages that
-implemented in pure perl can be installed here.
+are implemented in pure perl are installed here.
 
 =item archlib
 
@@ -781,7 +784,7 @@ The following methods are provided:
 Constructs a new C<ActivePerl::PPM::InstallArea> object.  If constructed
 based on $name, then the constructor might croak if no
 install area with the given name is known.  The "perl" and "site" install areas
-are always available.  Some perls might also have a "vendor" install area
+are always available.  Some perls might also have a "vendor" install area.
 
 Alternatively the directories to use can be specified directly by
 passing them as key/value pair %opts.  Only C<prefix> is mandatory.
@@ -815,7 +818,7 @@ Returns the corresponding path.
 =item $area->inc
 
 Returns the list of directories to be pushed onto perl's @INC for the
-current installdirs.
+current install area.
 
 =item $area->install( \%pkg1, \%pkg2, ... )
 

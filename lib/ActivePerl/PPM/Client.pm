@@ -614,12 +614,14 @@ ActivePerl::PPM::Client - Client class
 
 =head1 SYNOPSIS
 
-  my $ppm = ActivePerl::PPM::Client->new
+  my $ppm = ActivePerl::PPM::Client->new;
 
 =head1 DESCRIPTION
 
-The C<ActivePerl::PPM::Client> object ties together a set of install areas
-and repositories and allow the installed packages to be managed.
+The C<ActivePerl::PPM::Client> object ties together a set of install
+areas and repositories and allow the installed packages to be managed.
+The install areas are deducted from the values of C<@INC> when the
+object is constructed.
 
 The following methods are provided:
 
@@ -635,41 +637,99 @@ current user.  If no such directory is found it is created.
 
 =item $client->area( $name )
 
-Returns an object representing the given named install area.  See
-L<ActivePerl::PPM::InstallArea> for methods available.
+Returns an object representing the given named install area.  The
+method will croak if no install area with the given $name is known.
+The C<perl> and C<site> areas will always be available.  See
+L<ActivePerl::PPM::InstallArea> for methods available on the returned
+object.
 
 =item $client->areas
 
-Return list of available install area names.
+Return list of available install area names.  The list is ordered to
+match the corresponding entries in C<@INC>.
 
 =item $client->repo( $repo_id )
 
 Returns the repo object with the given identifier.  See
-L<ActivePerl::PPM::Repo> for methods available.
+L<ActivePerl::PPM::Repo> for methods available on the returned object.
 
 =item $client->repos
 
 Returns list of available repo identifiers.  The repos are ordered by priority.
 
+=item $client->repo_add( %attr )
+
+Will add a new repository with the given attributes.  The method will
+croak if a repository with the same C<packlist_uri> already exists.
+
+=item $client->repo_delete( $repo_id )
+
+Will make the client forget about the given repository.
+
+=item $client->repo_enable( $repo_id )
+
+=item $client->repo_enable( $repo_id, $bool )
+
+Makes it possible to enable and disable the given reposiory.  If $bool
+is provided and is FALSE, then the repository is disabled.  The return
+value is TRUE if the given repository was enabled.
+
+=item $client->repo_sync
+
+=item $client->repo_sync( force => 1 )
+
+Will sync the local cache of packages from the enabled repositories.
+Remote repositories are not contacted if the cache is not considered
+stale yet.  Pass the C<force> option with a TRUE value to force state
+to be transfered again from remote repositories.
+
+=item $client->search( $pattern )
+
+=item $client->search( $pattern, $field,... )
+
+Will search for packages matching the given glob style $pattern.
+Without further arguments this will return a list of package names.
+With $field arguments it will return a list of array references, each
+one filled in with the corresponding values for maching packages.
+
+=item $client->search_lookup( $num )
+
+Will look up the given package from the last search() result, where
+$num matches the 1-based index into the list returned by the last
+search.  This will return an L<ActivePerl::PPM::RepoPackage> object.
+
+=item $client->package( $id )
+
+=item $client->package( $name )
+
+=item $client->package( $name, $version )
+
+Returns the L<ActivePerl::PPM::RepoPackage> object matching the
+arguments or C<undef> if none match.  As there can be multiple
+packages with the same name, an arbitrary one is selected if $name but
+no $version is given.
+
 =item $client->feature_best( $feature )
 
-Returns the highest version number provided for the given feature.
+Returns the highest version number provided for the given feature by
+the packages found in all enabled repositories.  The method return
+C<undef> if no package provide this feature.
 
 =item $client->package_best( $feature, $version )
 
-Returns the best package that provide the given feature at or better
-than the given version.
+Returns the best package of all enabled repositories that provide the
+given feature at or better than the given version.
 
 =item $client->feature_have( $feature )
 
 Returns the installed version number of the given feature.  Returns
-C<undef> if none of the installed pacakges provide this feature.
+C<undef> if none of the installed packages provide this feature.
 
 =item $client->packages_missing_for( $feature, $version, %opt )
 
 Returns the list of missing packages to install in order to obtain the
 requested feature at or better than the given version.  The list
-consist of L<ActivePerl::PPM::Package> objects.
+consist of L<ActivePerl::PPM::RepoPackage> objects.
 
 =back
 
