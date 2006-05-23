@@ -132,28 +132,36 @@ sub do_help {
 }
 
 sub do_area {
-    my $show_header = 1;
-    my $sync;
-    if (@ARGV) {
-	$USAGE = "area [--sync] [--no-header]";
-	require Getopt::Long;
-	Getopt::Long::GetOptions(
-	   'sync' => \$sync,
-           'header!' => \$show_header,
-        ) || usage();
-	usage() if @ARGV;
+    my $cmd = shift(@ARGV) || "list";
+    if ($cmd eq "list") {
+	my $show_header = 1;
+	if (@ARGV) {
+	    require Getopt::Long;
+	    Getopt::Long::GetOptions(
+	        'header!' => \$show_header,
+            ) || usage();
+	    usage() if @ARGV;
+	}
+	if ($show_header) {
+	    print "name   pkg# lib\n";
+	    print "------ ---- ------------------------------------\n";
+	}
+	for my $area ($ppm->areas) {
+	    my $o = $ppm->area($area);
+	    printf "%-6s %4d %s\n",
+		$area,
+		scalar($o->packages),
+		$o->lib;
+	}
     }
-    if ($show_header) {
-	print "name   pkg# lib\n";
-	print "------ ---- ------------------------------------\n";
+    elsif ($cmd eq "sync") {
+	for my $area (map $ppm->area($_), $ppm->areas) {
+	    $area->sync_db;
+	}
     }
-    for my $area ($ppm->areas) {
-	my $o = $ppm->area($area);
-	$o->sync_db if $sync;
-	printf "%-6s %4d %s\n",
-	    $area,
-	    scalar($o->packages),
-	    $o->lib;
+    else {
+	$USAGE = "area <cmd> <args>";
+	usage("The area command '$cmd' isn't recognized; try one of list, sync");
     }
 }
 
@@ -970,7 +978,8 @@ Install, upgrade and remove packages:
 
 Manage and search install areas:
 
-    ppm area [--sync] [--no-header]
+    ppm area list
+    ppm area sync
     ppm list [--name] [--version] [--abstract] ...
     ppm list <area> [--name] [--version] [--abstract] ...
     ppm files <pkg>
