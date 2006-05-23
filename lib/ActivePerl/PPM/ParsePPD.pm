@@ -5,8 +5,6 @@ use strict;
 require XML::Parser::Expat;
 our @ISA = qw(XML::Parser::ExpatNB);
 
-use ActiveState::Handy qw(iso_datetime);
-
 my %TEXT_TAG = (
    ABSTRACT => 1,
    AUTHOR => 1,
@@ -73,7 +71,7 @@ sub new {
 		my %attr = @_;
 		$p->xpcroak("Required SOFTPKG attribute NAME and VERSION missing")
 		    unless exists $attr{NAME} && exists $attr{VERSION};
-		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION}, release_date => ($attr{DATE} ? iso_datetime($attr{DATE}) : undef) );
+		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION}, release_date => $attr{DATE} );
 		$p->{ctx} = $p->{softpkg};
 	    }
 	    elsif ($tag =~ /^REPOSITORY(SUMMARY)?$/) {

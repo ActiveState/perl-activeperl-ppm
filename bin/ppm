@@ -210,7 +210,7 @@ sub do_list {
 	    for my $pkg ($area->packages(@fields)) {
 		my %row = map {$_ => shift(@$pkg)} @fields;
 		if ($row{release_date}) {
-		    $row{release_date} =~ s/T.*//;  # drop time
+		    $row{release_date} =~ s/[T ].*//;  # drop time
 		}
 		if ($opt{files} || $opt{size}) {
 		    my @files = $area->package_files($row{name});
@@ -490,7 +490,7 @@ sub do_search {
 		print "   $abstract\n" if $abstract;
 		print "   Version: $version\n";
 		if ($date) {
-		    $date =~ s/T.*//;
+		    $date =~ s/[T ].*//;
 		    print "   Released: ", $date, "\n";
 		}
 	    }
@@ -522,7 +522,7 @@ sub do_describe {
     print "${pad}$pkg->{abstract}\n" if $pkg->{abstract};
     print "${pad}Version: $pkg->{version}\n";
     if (my $date = $pkg->{release_date}) {
-	$date =~ s/T.*//;
+	$date =~ s/[T ].*//;
 	print "${pad}Released: ", $date, "\n";
     }
     print "${pad}Author: $pkg->{author}\n" if $pkg->{author};
