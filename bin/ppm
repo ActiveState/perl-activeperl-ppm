@@ -91,7 +91,7 @@ sub do_help {
 	my $cmd = shift(@ARGV);
 	my $foundit;
 	while (<$fh>) {
-	    if (/^=item B<ppm \Q$cmd\E>/o) {
+	    if (/^=item B<ppm \Q$cmd\E\b/o) {
 		$foundit++;
 		last;
 	    }
@@ -102,7 +102,7 @@ sub do_help {
 	    print $out $_;
 	    my $over_depth = 0;
 	    while (<$fh>) {
-		last if /^=item B<ppm (?!\Q$cmd\E>)/o;
+		last if /^=item B<ppm (?!\Q$cmd\E\b)/o;
 		if (/^=back\b/) {
 		    last if $over_depth == 0;
 		    $over_depth--;
@@ -144,7 +144,7 @@ sub do_area {
 	    usage() if @ARGV;
 	}
 	if ($show_header) {
-	    print "name   pkg# lib\n";
+	    print "name   pkgs lib\n";
 	    print "------ ---- ------------------------------------\n";
 	}
 	for my $area ($ppm->areas) {
@@ -174,7 +174,6 @@ sub do_list {
 	$USAGE = "list [<area>] [--name] [--version] [--date] [--abstract] [--author] [--area] [--ppd] [--files] [--size]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
-           'id',
            'name',
            'version',
            'date',
@@ -1017,9 +1016,19 @@ invoke.  The following sub-commands are recognized (alphabetic order):
 
 =over
 
-=item B<ppm area>
+=item B<ppm area list> [ B<--no-header> ]
 
-Manage install areas.
+Will list the install areas available showing their name, number of
+packages installed into them and the location of their C<lib>
+directory.  The B<--no-header> option suppress printing of the column
+headings.
+
+=item B<ppm area sync> [ I<area> ... ]
+
+Will make ppm look for packages installed by other means than PPM and
+make entries for these in the PPM database.  PPM will also drop
+packages where all files have gone missing.  With argument, only sync
+the given intall areas.  Without argument sync them all.
 
 =item B<ppm dump> [ I<what> ]
 
@@ -1050,10 +1059,52 @@ Will print the documentation for PPM (this file).
 
 Install a package and its dependencies.
 
-=item B<ppm list> [ I<area> ] --I<field> ...
+=item B<ppm list> [ I<area> ] [ --I<field> ... ] [ B<--matching> I<pattern> ]
 
 List the packages installed.  If I<area> is not provided list the
-content of all install areas.
+content of all install areas.  The following fields can be shown:
+
+=over
+
+=item B<--name>
+
+Show the package name.  This field is always shown first, but if
+specified alone just list the package names without any headers or
+other decorations.
+
+=item B<--version>
+
+The version number for the package.
+
+=item B<--date>
+
+The release date for the package.
+
+=item B<--abstract>
+
+Once sentence description of the purpose of the package.
+
+=item B<--author>
+
+Who created or maintains the package.
+
+=item B<--area>
+
+Where is the package installed.
+
+=item B<--files>
+
+The number of files installed for the package.
+
+=item B<--size>
+
+The combinied diskspace used for the package.
+
+=item B<--ppd>
+
+The location of the package description file.
+
+=back
 
 =item B<ppm query> I<pattern>
 
@@ -1075,6 +1126,29 @@ Manage repositories.
 =item B<ppm search> I<pattern>
 
 Search for packages matching I<pattern> in all enabled repositories.
+
+For the I<pattern> use the wildcard C<*> to match any number of
+characters and the wildcard C<?> to match a single character.  For
+instance to find packages starting with the string "List" search for
+C<list*>.  Letter case doesn't matter for the pattern.
+
+If I<pattern> contains C<::> then ppm will search for packages that
+provide modules that match the pattern.
+
+If I<pattern> match the name of a package exactly (case-sensitively),
+only show that package.  A I<pattern> without wildcards that does not
+match any package names exactly will be used for a substring search
+agaist available package names, that is treated the same as if it was
+"B<*>I<pattern>B<*>".
+
+The output format depends on how many packages ends up matching.  If
+only 1 match, then the B<ppm describe> format is used.  If only a few
+match, just show limited information.  If many match only show the
+package names and version numbers, one per line.
+
+The number prefixing each entry in search output can be used to look
+up full information with B<ppm describe> I<num> or to install the
+package with B<ppm install> I<num>.
 
 =item B<ppm uninstall> ...
 
