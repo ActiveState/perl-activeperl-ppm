@@ -11,7 +11,7 @@ use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
 use ActivePerl::PPM::Web qw(web_ua);
 
-use ActiveState::Path qw(is_abs_path);
+use ActiveState::Path qw(is_abs_path join_path);
 use File::Basename;
 
 use base 'ActivePerl::PPM::DBH';
@@ -74,6 +74,12 @@ sub new {
 	if ($base eq $Config{archname}) {
 	    $arch = $dir;
 	    $dir = File::Basename::dirname($dir);
+	    shift(@tmp) if $tmp[0] eq $dir;
+	}
+	elsif ($base eq "arch") {
+	    # blib style area
+	    $arch = $dir;
+	    $dir = join_path(File::Basename::dirname($dir), "lib");
 	    shift(@tmp) if $tmp[0] eq $dir;
 	}
 	my $lib = $dir;
