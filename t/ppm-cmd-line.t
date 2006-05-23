@@ -3,11 +3,13 @@
 use strict;
 use Test;
 use ActiveState::Run qw(shell_quote);
+use ActiveState::Path qw(abs_path);
 use Config qw(%Config);
 
 plan tests => 17;
 
-my $prefix = "xx$$.d";
+my $prefix_base = "xx$$.d";
+my $prefix = abs_path($prefix_base);
 if (-e $prefix) {
     $prefix = undef;
     die;  # prevent accidental clobber
@@ -25,6 +27,7 @@ END {
 }
 
 $ENV{ACTIVEPERL_PPM_HOME} = $prefix;
+$ENV{PERL5LIB} = "$prefix/lib";
 
 my @PPM = ($^X, (-d "blib" ? "-Mblib" : "-Ilib"), "bin/ppm");
 
@@ -64,7 +67,7 @@ ok(ppm("help", "foo"), "Sorry, no help for 'foo'\n");
 ok($ppm_err, "");
 
 ppm("area");
-ok($ppm_out, qr/^home\s+0\s+/m);
+ok($ppm_out, qr/^\Q$prefix_base\E\s+0\s+/m);
 ok($ppm_out, qr/^site\s+(\d+)/m);
 ok($ppm_out, qr/^perl\s+(\d+)/m);
 
@@ -74,11 +77,11 @@ $live_repo = 0 if $^O eq "aix";
 $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bsolaris-64\b/;
 if ($live_repo) {
-    ppm("install", "Tie-Log", "--area", "home", "--force");
+    ppm("install", "Tie-Log", "--area", $prefix_base, "--force");
     ok($?, 0);
     ppm("verify", "Tie-Log");
     ok($?, 0);
-    ok(ppm("files", "Tie-Log"), qr,^\Q$prefix\E/lib/Tie/Log.pm$,m);
+    ok(ppm("files", "Tie-Log") =~ m,^\Q$prefix\E/lib/Tie/Log\.pm$,m); #lib/Tie/Log\.pm$,m);
     ok(ppm("remove", "Tie-Log"), "Tie-Log: uninstalled\n");
 }
 else {
