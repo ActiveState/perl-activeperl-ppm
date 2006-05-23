@@ -174,10 +174,15 @@ sub do_list {
 	   'files',
            'size',
            'ppd',
+	   'matching=s',
         ) || usage();
 	$area_name = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
+    my $matching = delete $opt{matching};
+    my $matching_re = glob2re($matching) if defined($matching);
+    $matching = (defined $matching) ? " matching '$matching'" : "";
+
     unless (%opt) {
 	# fields to show by default
 	$opt{version}++;
@@ -193,9 +198,12 @@ sub do_list {
     $opt{name}++;
 
     my @areas = ($area_name ? ($area_name) : $ppm->areas);
+    my $in = $area_name ? " in '$area_name' area" : "";
+
     if (keys %opt == 1) {
 	# just list the names
 	my @pkgs = map $_->packages, map $ppm->area($_), @areas;
+	@pkgs = grep $_ =~ $matching_re, @pkgs if $matching_re;
 	goto NO_PKG_INSTALLED unless @pkgs;
 	print "$_\n" for sort @pkgs;
     }
@@ -217,6 +225,7 @@ sub do_list {
 	for my $area (map $ppm->area($_), @areas) {
 	    for my $pkg ($area->packages(@fields)) {
 		my %row = map {$_ => shift(@$pkg)} @fields;
+		next if $matching_re && $row{name} !~ $matching_re;
 		if ($row{release_date}) {
 		    $row{release_date} =~ s/[T ].*//;  # drop time
 		}
@@ -237,19 +246,37 @@ sub do_list {
 	$tab->sort(sub ($$) { my($a, $b) = @_; $a->[0] cmp $b->[0]})
 	    if @areas > 1 && $tab->can("sort");
 
-	my $in = $area_name ? " in '$area_name' area" : "";
 	if (my $rows = $tab->rows) {
 	    print $tab->as_box(null => "", show_trailer => 0, align => {files => "right", size => "right"});
 	    if (1) {
 		my $s = ($rows == 1) ? "" : "s";
-		print " ($rows package$s installed$in)\n";
+		print " ($rows package$s installed$in$matching)\n";
 	    }
 	}
 	else {
 	NO_PKG_INSTALLED:
-	    print STDERR "*** no packages installed$in ***\n";
+	    print STDERR "*** no packages installed$in$matching ***\n";
 	}
     }
+}
+
+sub glob2re {
+    my $glob = shift;
+    $glob = "*$glob*" unless $glob =~ /[*?]/;
+    my $re = quotemeta($glob);
+    $re =~ s/\\\?/./g;
+    $re =~ s/\\\*/.*/g;
+    $re = "^$re\\z";
+    $re =~ s/^\^\.\*//;
+    $re =~ s/\.\*\\z\z//;
+    return "(?i:$re)";
+}
+
+sub do_query {
+    $USAGE = "query <pattern>";
+    usage() unless @ARGV == 1;
+    @ARGV = ("--matching", @ARGV, "--name", "--version", "--abstract", "--area");
+    return do_list();
 }
 
 sub do_files {
@@ -913,7 +940,6 @@ sub do_remove {
 
 BEGIN {
     # aliases for PPM3 compatibility (mostly)
-    *do_query = \&do_list;
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
     *do_rep = \&do_repo;
@@ -1018,9 +1044,10 @@ Install a package and its dependencies.
 List the packages installed.  If I<area> is not provided list the
 content of all install areas.
 
-=item B<ppm query>
+=item B<ppm query> I<pattern>
 
-Alias for B<ppm list>.  Provided for PPM version 3 compatiblity.
+Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
+3 compatiblity.
 
 =item B<ppm remove> I<pkg> ...
 
