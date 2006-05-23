@@ -156,9 +156,8 @@ sub do_area {
 	}
     }
     elsif ($cmd eq "sync") {
-	$USAGE = "area sync";
-	usage() if @ARGV;
-	for my $area (map $ppm->area($_), $ppm->areas) {
+	$USAGE = "area sync [<area>...]";
+	for my $area (map $ppm->area($_), @ARGV ? @ARGV : $ppm->areas) {
 	    $area->sync_db;
 	}
     }
