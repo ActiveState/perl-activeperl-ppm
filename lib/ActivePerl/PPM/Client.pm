@@ -62,7 +62,7 @@ sub new {
 	    push(@area, $name) unless grep $_ eq $name, @area;
 	    next;
 	}
-	my $name = "user";
+	my $name = _area_name($dir, @area);
 	while (grep $_ eq $name, @area) {
 	    # make name unique
 	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
@@ -104,6 +104,19 @@ sub _known_area {
     return "site" if $path eq $Config{sitelib} || $path eq $Config{sitearch};
     return "vendor" if $Config{vendorlib} && $path eq $Config{vendorlib} || $path eq $Config{vendorarch};
     return undef;
+}
+
+sub _area_name {
+    my $path = shift;
+    my @path = split(/[\/\\]/, $path);
+    while (@path) {
+	my $segment = pop(@path);
+	next if $segment eq "lib" || $segment eq "arch" || $segment eq $Config{archname};
+	next if $segment eq "perl" || $segment eq "site" || $segment eq "vendor";
+	next unless $segment =~ /^[\w\-.]{1,12}$/;
+	return $segment;
+    }
+    return "user";
 }
 
 sub areas {
