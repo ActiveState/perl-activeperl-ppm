@@ -116,8 +116,9 @@ sub _area_name {
     my @path = split(/[\/\\]/, $path);
     while (@path) {
 	my $segment = pop(@path);
+	my $lc_segment = lc($segment);
 	next if $segment eq "lib" || $segment eq "arch" || $segment eq $Config{archname};
-	next if $segment eq "perl" || $segment eq "site" || $segment eq "vendor";
+	next if $lc_segment eq "perl" || $lc_segment eq "site" || $lc_segment eq "vendor";
 	next unless $segment =~ /^[\w\-.]{1,12}$/;
 	return $segment;
     }
