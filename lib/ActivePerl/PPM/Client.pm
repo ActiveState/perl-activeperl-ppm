@@ -105,10 +105,24 @@ sub new {
 
 sub _known_area {
     my $path = shift;
-    return "perl" if $path eq $Config{privlib} || $path eq $Config{archlib};
-    return "site" if $path eq $Config{sitelib} || $path eq $Config{sitearch};
-    return "vendor" if $Config{vendorlib} && $path eq $Config{vendorlib} || $path eq $Config{vendorarch};
+    return "perl" if _path_eq($path, $Config{privlib}, $Config{archlib});
+    return "site" if _path_eq($path, $Config{sitelib}, $Config{sitearch});
+    return "vendor" if $Config{vendorlib} && _path_eq($path, $Config{vendorlib}, $Config{vendorarch});
     return undef;
+}
+
+sub _path_eq {
+    my @paths = @_;
+    for (@paths) {
+	s,/,\\,g if $^O eq "MSWin32";
+	$_ = lc($_) if $^O eq "MSWin32" || $^O eq "darwin";
+    }
+
+    my $first = shift(@paths);
+    for my $p (@paths) {
+	return 1 if $first eq $p;
+    }
+    return 0;
 }
 
 sub _area_name {
