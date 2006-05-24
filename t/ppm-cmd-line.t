@@ -9,7 +9,8 @@ use Config qw(%Config);
 plan tests => 17;
 
 my $prefix_base = "xx$$.d";
-my $prefix = abs_path($prefix_base);
+(my $prefix = abs_path($prefix_base)) =~ s,\\,/,g;
+
 if (-e $prefix) {
     $prefix = undef;
     die;  # prevent accidental clobber
