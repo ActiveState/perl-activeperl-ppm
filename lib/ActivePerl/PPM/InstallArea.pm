@@ -628,7 +628,7 @@ sub sync_db {
 	for my $f ($pkglists->{$pkg}, sort keys %$pkglist) {
 	    my $path = $self->_relative_path($f);
 	    my $info = _file_info($f);
-	    $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode});
+	    $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) || ppm_log("ERR", "File conflict for $path (package $pkg)");
 
 	    if ($f =~ /\.pm$/) {
 		require ExtUtils::MakeMaker;
