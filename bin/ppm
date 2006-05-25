@@ -1020,30 +1020,31 @@ Obtain version and copyright information about this program:
 
 =head1 DESCRIPTION
 
-The C<ppm> program is the Package Manager for ActivePerl.  It
+The C<ppm> program is the package manager for ActivePerl.  It
 simplifies the task of locating, installing, upgrading and removing
 Perl packages.
 
-Invoking C<ppm> without arguments will bring up the graphical shell
-(not implemented yet), but ppm can also be used as a command line tool
-where the first argument provide the name of the sub-command to
-invoke.  The following sub-commands are recognized (alphabetic order):
+Invoking C<ppm> without arguments brings up the graphical shell (not
+implemented yet), but ppm can also be used as a command line tool where
+the first argument provide the name of the sub-command to invoke.
+The following sub-commands are recognized:
 
 =over
 
 =item B<ppm area list> [ B<--no-header> ]
 
-Will list the install areas available showing their name, number of
-packages installed into them and the location of their C<lib>
-directory.  The B<--no-header> option suppress printing of the column
-headings.
+Lists the available install areas. The list displays the name, number of
+installed packages and C<lib> directory location for each install area.
+The C<--no-header> option suppress printing of the column headings.
 
 =item B<ppm area sync> [ I<area> ... ]
 
-Will make ppm look for packages installed by other means than PPM and
-make entries for these in the PPM database.  PPM will also drop
-packages where all files have gone missing.  With argument, only sync
-the given install areas.  Without argument sync them all.
+Synchronizes installed packages, including those installed by means
+other than ppm (e.g. the CPAN shell), with the ppm database. PPM
+searches the install area(s) for packages, making ppm database entries
+if they do not already exist, or dropping entries for packages that no
+longer exist.  When used without an I<area> argument, all install areas
+are synced. 
 
 =item B<ppm dump> [ I<what> ]
 
@@ -1051,16 +1052,17 @@ Internal debugging tool.
 
 =item B<ppm describe> I<num>
 
-Show all properties for the given package from the last search result.
+Shows all properties for a particular package from the last search
+result.
 
 =item B<ppm files> I<pkg>
 
-Will list the full path name of the files belonging to the given
-package, one line per file.
+Lists the full path name of the files belonging to the given package,
+one line per file.
 
 =item B<ppm help> [ I<subcommand> ]
 
-Will print the documentation for PPM (this file).
+Prints the documentation for ppm (this file).
 
 =item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ]
 
@@ -1074,53 +1076,51 @@ Will print the documentation for PPM (this file).
 
 Install a package and its dependencies.
 
-The argument to B<ppm install> can be the name of a package, the name
-of a module provided by the package or the file name or URL to a PPD
-file.  The package to be installed can also be selected using
-associated number from the last B<ppm search> command.
+The argument to B<ppm install> can be the name of a package, the name of
+a module provided by the package, the file name, the URL to a PPD file,
+or the associated number for the package returned by the last C<ppm
+search>search command. 
 
-If the package or module requests is already installed it installs
+If the package or module requested is already installed, ppm installs
 nothing.  The B<--force> option can be used to make ppm install a
 package even if its already present.
 
-By default new packages are installed in the C<site> area, but if the
-C<site> area is readonly and there are user defined areas set up, then
-the first one of these are the default instead.  Use the B<--area>
-option to tell ppm to install the package into an alternative
-location.
+By default, new packages are installed in the C<site> area, but if the
+C<site> area is read only, and there are user defined areas set up, then
+the first one of these is used as the default instead.  Use the
+B<--area> option to install the package into an alternative location.
 
 =item B<ppm list> [ I<area> ] [ --I<field> ... ] [ B<--matching> I<pattern> ]
 
-List the packages installed.  If I<area> is not provided list the
-content of all install areas.  The following fields can be shown:
+List installed packages.  If the I<area> argument is not provided, list
+the content of all install areas.  The following fields can be shown:
 
 =over
 
 =item B<--name>
 
-Show the package name.  This field is always shown first, but if
-specified alone just list the package names without any headers or
-other decorations.
+The package name.  This field is always shown first, but if specified
+alone just the package names is listed.
 
 =item B<--version>
 
-The version number for the package.
+The version number of the package.
 
 =item B<--date>
 
-The release date for the package.
+The release date of the package.
 
 =item B<--abstract>
 
-Once sentence description of the purpose of the package.
+A one sentence description of the purpose of the package.
 
 =item B<--author>
 
-Who created or maintains the package.
+The package author or maintainer.
 
 =item B<--area>
 
-Where is the package installed.
+Where the package is installed.
 
 =item B<--files>
 
@@ -1138,16 +1138,16 @@ The location of the package description file.
 
 =item B<ppm query> I<pattern>
 
-Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
+Alias for B<ppm list --matching> I<pattern>.  Provided for ppm version
 3 compatibility.
 
 =item B<ppm remove> I<pkg> ...
 
-Will uninstall the given packages.
+Uninstalls the specified package.
 
 =item B<ppm rep> ...
 
-Alias for B<ppm repo>.  Provided for PPM version 3 compatibility.
+Alias for B<ppm repo>.  Provided for ppm version 3 compatibility.
 
 =item B<ppm repo>
 
@@ -1155,11 +1155,11 @@ Alias for B<ppm repo list>.
 
 =item B<ppm repo add> I<url> [ I<name> ] [ B<--username> I<user> [ B<--password> I<password> ]
 
-Set up a new repo for PPM to fetch packages from.
+Set up a new repository for ppm to fetch packages from.
 
 =item B<ppm repo delete> I<num>
 
-Forget about the repo number I<num>.
+Remove repository number I<num>.
 
 =item B<ppm repo describe> I<num>
 
@@ -1167,8 +1167,8 @@ Show all properties for repository number I<num>.
 
 =item B<ppm repo list>
 
-List the repositories that PPM is currently configured to use.
-This is also how you learn what number identify which repository.
+List the repositories that ppm is currently configured to use.  Use this
+to identify which number specifies a particular repository.
 
 =item B<ppm repo> I<num>
 
@@ -1180,13 +1180,12 @@ Alias for B<ppm repo> I<cmd> I<num>.
 
 =item B<ppm repo off> I<num>
 
-Don't use repository number I<num> to resolve packages for B<ppm
-install> or B<ppm search>.
+Disable repository number I<num> for B<ppm install> or B<ppm search>.
 
 =item B<ppm repo on> I<num>
 
-Enable repostiroy number I<num> if it has been disabled with <ppm repo
-off> previously.
+Enable repository number I<num> if it has been previously disabled with
+<ppm repo off>.
 
 =item B<ppm repo search> ...
 
@@ -1194,37 +1193,36 @@ Alias for B<ppm seach>.
 
 =item B<ppm repo suggest>
 
-List some known repositories that you might then tell PPM to fetch
-packages from, by B<ppm add>ing them later.
+List some known repositories that can be added with B<ppm add>.
 
 =item B<ppm repo sync> [ B<--force> ]
 
 Synchronize local cache of packages found in the enabled repositories.
-With B<--force> option download state from remote repositories even if
-the local state has not expired yet.
+With the B<--force> option, download state from remote repositories even
+if the local state has not expired yet.
 
 =item B<ppm search> I<pattern>
 
 Search for packages matching I<pattern> in all enabled repositories.
 
-For the I<pattern> use the wildcard C<*> to match any number of
-characters and the wildcard C<?> to match a single character.  For
-instance to find packages starting with the string "List" search for
-C<list*>.  Letter case doesn't matter for the pattern.
+For I<pattern>, use the wildcard C<*> to match any number of characters
+and the wildcard C<?> to match a single character.  For example, to find
+packages starting with the string "List" search for C<list*>. Searches
+are case insensitive.  
 
-If I<pattern> contains C<::> then ppm will search for packages that
-provide modules that match the pattern.
+If I<pattern> contains C<::>, ppm will search for packages that provide
+modules matching the pattern.
 
-If I<pattern> match the name of a package exactly (case-sensitively),
-only show that package.  A I<pattern> without wildcards that does not
-match any package names exactly will be used for a substring search
-against available package names, that is treated the same as if it was
-"B<*>I<pattern>B<*>".
+If I<pattern> matches the name of a package exactly (case-sensitively),
+only that package is shown.  A I<pattern> without wildcards that does
+not match any package names exactly is used for a substring search
+against available package names (i.e. treated the same as
+"B<*>I<pattern>B<*>").
 
-The output format depends on how many packages ends up matching.  If
-only 1 match, then the B<ppm describe> format is used.  If only a few
-match, just show limited information.  If many match only show the
-package names and version numbers, one per line.
+The output format depends on how many packages match.  If there is only
+one match, the B<ppm describe> format is used.  If only a few packages
+match, limited information is displayed.  If many packages match, only
+the package names and version numbers are displayed, one per line.
 
 The number prefixing each entry in search output can be used to look
 up full information with B<ppm describe> I<num> or to install the
@@ -1242,46 +1240,46 @@ Alias for B<ppm upgrade>.
 
 =item B<ppm upgrade> I<module>
 
-Will look for upgrades for the given package or module from the
-current enabled repositories and install it.
+Upgrades the specified package or module if an upgrade is available in
+one of the currently enabled repositories.
 
 =item B<ppm verify> [ I<pkg> ]
 
-Will check that the installed files are still present and unmodified.
-If the name of a package is given only verify that package.
+Checks that the installed files are still present and unmodified.  If
+the package name is given, only that packages is verified.
 
 =item B<ppm version>
 
-Will print the current version of PPM and a copyright notice.
+Will print the version of ppm and a copyright notice.
 
 =back
 
 =head1 FILES
 
-The following lists files and directories that PPM uses and creates:
+The following lists files and directories that ppm uses and creates:
 
 =over
 
 =item F<$HOME/.ActivePerl/>
 
-Directory where PPM keeps its state.  On Windows this directory is
+Directory where ppm keeps its state.  On Windows this directory is
 F<$APPDATA/ActiveState/ActivePerl/>.  Architecture or version specific
 directories can be created if you need to manage multiple perl
-installation from the same home area.
+installations from the same home area.
 
 =item F<$HOME/.ActivePerl/ppm.db>
 
-SQLite database where PPM keep its configuration and cache meta
+SQLite database where ppm keeps its configuration and caches meta
 information about the content of the enabled repositories.
 
 =item F<$HOME/ppm4.log>
 
-Log file created to record actions that ppm take.
-On Windows this log goes to F<$TEMPDIR/ppm4.log>.
+Log file created to record actions that ppm takes.  On Windows this is
+logged to F<$TEMPDIR/ppm4.log>.
 
 =item F<$PREFIX/etc/ppm-area.db>
 
-SQLite database where PPM keep track of packages installed in the install area
+SQLite database where ppm tracks packages installed in the install area
 under C<$PREFIX>.
 
 =item F<$TEMPDIR/ppm-XXXXXX/>
@@ -1291,45 +1289,45 @@ are unpacked here.
 
 =item F<*.ppd>
 
-The meta information about a single package is represented in XML by a
-PPD file.  See L<ActivePerl::PPM::PPD> for additional information.
+XML files containing meta information about packages. Each package has
+its own .ppd file.  See L<ActivePerl::PPM::PPD> for additional information.
 
 =item F<package.xml>
 
-Meta information about whole repositories are found in F<package.xml>
-files.  When a repository is added then ppm will look for this file
-and if present monitor it too keep itself in sync with the state of
-the repository.
+Meta information about repositories.  When a repository is added, ppm
+looks for this file and if present, monitors it too stay in sync with
+the state of the repository.
 
 =item F<package.lst>
 
-Same as F<package.xml> but PPM 3 compatible.  PPM will use this file
+Same as F<package.xml> but ppm 3 compatible.  ppm will use this file
 if F<package.xml> is not available.
 
 =back
 
 =head1 ENVIRONMENT
 
-The following environment variables affect how PPM behaves:
+The following environment variables affect how ppm behaves:
 
 =over
 
 =item C<ACTIVEPERL_PPM_DEBUG>
 
-If set to a TRUE value make ppm print more internal diagnostics.
+If set to a TRUE value, makes ppm print more internal diagnostics.
 
 =item C<ACTIVEPERL_PPM_HOME>
 
-If set use this directory instead of F<~/.ActivePerl/> to store
-configuration information for PPM.
+If set, use this directory instead of F<~/.ActivePerl/> to store
+configuration information for ppm.
 
 =item C<ACTIVEPERL_PPM_LOG_CONS>
 
-If set to a TRUE value make ppm print any log output to the console as well.
+If set to a TRUE value, make ppm print any log output to the console as
+well.
 
 =item C<DBI_TRACE>
 
-ppm use L<DBI> to access the internal SQLite databases and setting
+PPM uses L<DBI> to access the internal SQLite databases. Setting
 DBI_TRACE allow you to see what queries are performed.  Output goes to
 STDERR.  See L<DBI> for further details.
 
@@ -1337,13 +1335,14 @@ STDERR.  See L<DBI> for further details.
 
 =head1 WHAT'S NEW IN VERSION 4
 
-PPM version 4 is a complete rewrite.  The main changes since ppm version 3 are:
+PPM version 4 is a complete rewrite.  The main changes since PPM version 3 are:
 
 =over
 
 =item *
 
-The command line shell has been replaced with a graphical shell (not implemented yet, but will be in Beta 2).
+The command line shell has been replaced with a graphical shell (not
+implemented yet, but will be in Beta 2).
 
 =item *
 
@@ -1351,26 +1350,29 @@ PPM can now manage different installation areas.
 
 =item *
 
-No more precious packages.  PPM can upgrade itself as well other bundled and core modules.
+No more 'precious' packages.  PPM can upgrade itself as well other
+bundled and core modules.
 
 =item *
 
-Installation of packages and its dependencies happens as an atomic transaction.
+Installation of packages and their dependencies happens as atomic
+transactions.
 
 =item *
 
-PPM tracks what files it has installed and can notice if files has
-been modified or deleted.  The command 'ppm verify' will report on mismatches.
+PPM tracks what files it has installed and can notice if files have been
+modified or deleted.  The command 'ppm verify' will report on
+mismatches.
 
 =item *
 
-State kept in local SQLite databases.  All repository state is kept
+State is kept in local SQLite databases.  All repository state is kept
 local which makes search much faster.
 
 =item *
 
-PPM will pick up and manage packages installed by other means;
-manually or by using the CPAN shell.
+PPM will pick up and manage packages installed by other means (e.g.
+manually or with the CPAN shell).
 
 =item *
 
