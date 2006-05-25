@@ -983,11 +983,11 @@ Invoke the graphical shell (not implemented yet):
 
 Install, upgrade and remove packages:
 
-    ppm install [--force] [--area <area>] <pkg>
-    ppm install [--force] [--area <area>] <module>
-    ppm install [--force] [--area <area>] <url>
-    ppm install [--force] [--area <area>] <file>.ppd
-    ppm install [--force] [--area <area>] <num>
+    ppm install [--area <area>] [--force] <pkg>
+    ppm install [--area <area>] [--force] <module>
+    ppm install [--area <area>] <url>
+    ppm install [--area <area>] <file>.ppd
+    ppm install [--area <area>] <num>
     ppm upgrade <pkg>
     ppm upgrade <module>
     ppm remove [--area <area>] <pkg>
@@ -1024,7 +1024,7 @@ The C<ppm> program is the Package Manager for ActivePerl.  It
 simplifies the task of locating, installing, upgrading and removing
 Perl packages.
 
-Invoking C<ppm> without arguments will bring up the grahical shell
+Invoking C<ppm> without arguments will bring up the graphical shell
 (not implemented yet), but ppm can also be used as a command line tool
 where the first argument provide the name of the sub-command to
 invoke.  The following sub-commands are recognized (alphabetic order):
@@ -1043,7 +1043,7 @@ headings.
 Will make ppm look for packages installed by other means than PPM and
 make entries for these in the PPM database.  PPM will also drop
 packages where all files have gone missing.  With argument, only sync
-the given intall areas.  Without argument sync them all.
+the given install areas.  Without argument sync them all.
 
 =item B<ppm dump> [ I<what> ]
 
@@ -1062,17 +1062,32 @@ package, one line per file.
 
 Will print the documentation for PPM (this file).
 
-=item B<ppm install> I<pkg>
+=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ]
 
-=item B<ppm install> I<module>
+=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ]
 
-=item B<ppm install> I<file>.ppd
+=item B<ppm install> I<file>.ppd [ B<--area> I<area> ]
 
-=item B<ppm install> I<url>
+=item B<ppm install> I<url> [ B<--area> I<area> ]
 
-=item B<ppm install> I<num>
+=item B<ppm install> I<num> [ B<--area> I<area> ]
 
 Install a package and its dependencies.
+
+The argument to B<ppm install> can be the name of a package, the name
+of a module provided by the package or the file name or URL to a PPD
+file.  The package to be installed can also be selected using
+associated number from the last B<ppm search> command.
+
+If the package or module requests is already installed it installs
+nothing.  The B<--force> option can be used to make ppm install a
+package even if its already present.
+
+By default new packages are installed in the C<site> area, but if the
+C<site> area is readonly and there are user defined areas set up, then
+the first one of these are the default instead.  Use the B<--area>
+option to tell ppm to install the package into an alternative
+location.
 
 =item B<ppm list> [ I<area> ] [ --I<field> ... ] [ B<--matching> I<pattern> ]
 
@@ -1113,7 +1128,7 @@ The number of files installed for the package.
 
 =item B<--size>
 
-The combinied diskspace used for the package.
+The combined disk space used for the package.
 
 =item B<--ppd>
 
@@ -1124,7 +1139,7 @@ The location of the package description file.
 =item B<ppm query> I<pattern>
 
 Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
-3 compatiblity.
+3 compatibility.
 
 =item B<ppm remove> I<pkg> ...
 
@@ -1132,11 +1147,61 @@ Will uninstall the given packages.
 
 =item B<ppm rep> ...
 
-Alias for B<ppm repo>.  Provided for PPM version 3 compatiblity.
+Alias for B<ppm repo>.  Provided for PPM version 3 compatibility.
 
 =item B<ppm repo>
 
-Manage repositories.
+Alias for B<ppm repo list>.
+
+=item B<ppm repo add> I<url> [ I<name> ] [ B<--username> I<user> [ B<--password> I<password> ]
+
+Set up a new repo for PPM to fetch packages from.
+
+=item B<ppm repo delete> I<num>
+
+Forget about the repo number I<num>.
+
+=item B<ppm repo describe> I<num>
+
+Show all properties for repository number I<num>.
+
+=item B<ppm repo list>
+
+List the repositories that PPM is currently configured to use.
+This is also how you learn what number identify which repository.
+
+=item B<ppm repo> I<num>
+
+Alias for B<ppm repo describe> I<num>.
+
+=item B<ppm repo> I<num> I<cmd>
+
+Alias for B<ppm repo> I<cmd> I<num>.
+
+=item B<ppm repo off> I<num>
+
+Don't use repository number I<num> to resolve packages for B<ppm
+install> or B<ppm search>.
+
+=item B<ppm repo on> I<num>
+
+Enable repostiroy number I<num> if it has been disabled with <ppm repo
+off> previously.
+
+=item B<ppm repo search> ...
+
+Alias for B<ppm seach>.
+
+=item B<ppm repo suggest>
+
+List some known repositories that you might then tell PPM to fetch
+packages from, by B<ppm add>ing them later.
+
+=item B<ppm repo sync> [ B<--force> ]
+
+Synchronize local cache of packages found in the enabled repositories.
+With B<--force> option download state from remote repositories even if
+the local state has not expired yet.
 
 =item B<ppm search> I<pattern>
 
@@ -1153,7 +1218,7 @@ provide modules that match the pattern.
 If I<pattern> match the name of a package exactly (case-sensitively),
 only show that package.  A I<pattern> without wildcards that does not
 match any package names exactly will be used for a substring search
-agaist available package names, that is treated the same as if it was
+against available package names, that is treated the same as if it was
 "B<*>I<pattern>B<*>".
 
 The output format depends on how many packages ends up matching.  If
