@@ -10,9 +10,21 @@ BEGIN {
 }
 
 use ActiveState::YAML qw(yaml_load_file);
+use ActivePerl;
 my $modules = yaml_load_file("ppm.yml");
 
 my $area_name = shift || "perl";
+
+if ($area_name eq "perl") {
+    # make entry for Perl as well since ppm4 will pick up its .packlist
+    $modules->{Perl} = {
+        title => "Perl",
+        mm_fullext => "Perl",
+        author => 'Larry Wall <larry@wall.org>',
+        abstract => "Practical Extraction and Report Language",
+	version => ActivePerl::perl_version(),
+    };
+}
 
 use File::Path qw(rmtree);
 use ActivePerl::PPM::InstallArea;
