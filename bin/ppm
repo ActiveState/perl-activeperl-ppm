@@ -783,7 +783,22 @@ sub _install {
 	    }
 	}
 
-	# XXX regenerate HTML
+	# generate HTML from the POD
+	if (eval { require ActivePerl::DocTools; }) {
+	    require Cwd;
+	    my $pwd = Cwd::cwd();
+	    chdir($tmpdir) || die "Can't chdir $tmpdir: $!";
+	    eval {
+		for my $pkg (@_) {
+		    my $pname = $pkg->name_version;
+		    print "Generating HTML for $pname...";
+		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => $pname);
+		    print "done\n";
+		}
+	    };
+	    chdir($pwd) || die "Can't chdir back to $pwd: $!";
+	    die $@ if $@;
+	}
 
 	# install
 	my $to = $area->name;
