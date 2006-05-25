@@ -11,7 +11,7 @@ $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 
 (my $PROGNAME = $0) =~ s,.*[\\/],,;
 
-my $CMD = shift || gui();
+my $CMD = shift || 'shell';
 $CMD = "version" if $CMD eq "--version";
 
 my $do_cmd = "do_$CMD";
@@ -47,8 +47,8 @@ sub usage {
     exit 1;
 }
 
-sub gui {
-    usage("The graphical shell has not been implemented yet.");
+sub do_shell {
+    require ActivePerl::PPM::Shell;
 }
 
 sub do_dump {
