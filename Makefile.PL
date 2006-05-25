@@ -15,3 +15,24 @@ WriteMakefile(
                    },
    dist         => { COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
 );
+
+sub MY::postamble {
+    return '' unless -f "ppm.yml";
+    return q(
+
+ppm-$(INSTALLDIRS)-area.db: ppm.yml
+	$(PERL) mk-area-db $(INSTALLDIRS)
+
+install :: db_$(INSTALLDIRS)_install
+	$(NOECHO) $(NOOP)
+
+db_perl_install : ppm-perl-area.db
+	$(MKPATH) $(PERLPREFIX)/etc
+	$(CP) ppm-perl-area.db $(PERLPREFIX)/etc
+
+db_site_install : ppm-site-area.db
+	$(MKPATH) $(SITEPREFIX)/etc
+	$(CP) ppm-site-area.db $(SITEPREFIX)/etc
+
+);
+}

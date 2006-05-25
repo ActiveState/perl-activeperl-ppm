@@ -1,0 +1,53 @@
+#!perl -w
+
+use strict;
+use lib "lib", "../ActiveState-YAML/lib";
+
+BEGIN {
+    # if running from the source tree
+    unshift(@INC, "../../ActiveState-YAML/main/lib")
+	unless -d "../ActiveState-YAML";
+}
+
+use ActiveState::YAML qw(yaml_load_file);
+my $modules = yaml_load_file("ppm.yml");
+
+my $area_name = shift || "perl";
+
+use File::Path qw(rmtree);
+use ActivePerl::PPM::InstallArea;
+use ActivePerl::PPM::Package;
+
+rmtree("dummy", 1);
+mkdir("dummy", 0755);
+my $area = ActivePerl::PPM::InstallArea->new(prefix => "dummy");
+$area->{name} = $area_name;
+my $dbh = $area->dbh;
+
+for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
+    my $name = $mod->{mm_fullext};
+    $name =~ s,/,-,g;
+    warn "Warning: Will use $name for $mod->{title}" if $name ne $mod->{title};
+    my $pkg = ActivePerl::PPM::Package->new(
+        name => $name,
+        version => $mod->{version},
+        author => $mod->{author},
+        abstract => $mod->{abstract},
+    );
+    if (my $dep = $mod->{dependency}) {
+	for my $d (keys %$dep) {
+	    $pkg->{require}{$d} = 0;
+	}
+    }
+    $pkg->dbi_store($dbh);
+}
+$dbh->commit;
+$dbh->disconnect;
+
+#use Data::Dump; Data::Dump::dump($area, $modules);
+rename("dummy/etc/ppm-$area_name-area.db", "ppm-$area_name-area.db");
+#system("sqlite3 ppm-$area_name-area.db .dump");
+
+rmtree("dummy", 0);
+
+1;
