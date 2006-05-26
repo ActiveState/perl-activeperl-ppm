@@ -151,8 +151,10 @@ sub do_area {
 	$tab->add_field("lib");
 	for my $area ($ppm->areas) {
 	    my $o = $ppm->area($area);
+	    my $name = $area;
+	    $name = "($name)" if $o->readonly;
 	    $tab->add_row({
-	        name => $area,
+	        name => $name,
                 pkgs => scalar($o->packages),
                 lib => $o->lib,
             });
@@ -1084,6 +1086,8 @@ The following sub-commands are recognized:
 
 Lists the available install areas. The list displays the name, number of
 installed packages and C<lib> directory location for each install area.
+If the name is shown in parenthesis it means that it is a readonly area.
+You will not be able to install or remove packages from it.
 
 The B<--csv> option selects comma-separated values format for the
 output. The default field separator is a TAB character, but can be

@@ -583,6 +583,12 @@ sub _init_db {
     $self->{readonly}++ unless $dbh->do("UPDATE package SET rowid=0 WHERE 0");
 }
 
+sub readonly {
+    my $self = shift;
+    $self->dbh;  # need to try to open database to know
+    return $self->{readonly};
+}
+
 sub _init_ppm_schema {
     my $dbh = shift;
     for my $create (ActivePerl::PPM::Package->sql_create_tables(name_unique => 1)) {
@@ -814,6 +820,12 @@ Returns the name.  This returns the empty string for nameless I<InstallArea>.
 =item $area->etc
 
 Returns the corresponding path.
+
+=item $area->readonly
+
+Returns TRUE if it is not possible to install or remove packages from
+the area.  This is usually caused by the user does not have permission
+to modify the files of the area.
 
 =item $area->inc
 
