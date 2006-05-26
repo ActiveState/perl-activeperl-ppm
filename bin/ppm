@@ -1185,7 +1185,7 @@ Disable repository number I<num> for B<ppm install> or B<ppm search>.
 =item B<ppm repo on> I<num>
 
 Enable repository number I<num> if it has been previously disabled with
-<ppm repo off>.
+B<ppm repo off>.
 
 =item B<ppm repo search> ...
 
