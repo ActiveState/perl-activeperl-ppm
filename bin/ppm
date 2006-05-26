@@ -1344,11 +1344,12 @@ The following lists files and directories that PPM uses and creates:
 =item F<$HOME/.ActivePerl/>
 
 Directory where PPM keeps its state.  On Windows this directory is
-F<$APPDATA/ActiveState/ActivePerl/>.  Architecture or version specific
-directories can be created if you need to manage multiple perl
-installations from the same home area.
+F<$APPDATA/ActiveState/ActivePerl/>.  Perl version specific
+subdirectories can be created if you don't want the versions to share
+state.  For instance if you create F<$HOME/.ActivePerl/5.8.8.818/> then
+build 818 of ActivePerl will keep its state there.
 
-=item F<$HOME/.ActivePerl/ppm.db>
+=item F<$HOME/.ActivePerl/ppm-$ARCH.db>
 
 SQLite database where ppm keeps its configuration and caches meta
 information about the content of the enabled repositories.
@@ -1358,7 +1359,7 @@ information about the content of the enabled repositories.
 Log file created to record actions that PPM takes.  On Windows this is
 logged to F<$TEMPDIR/ppm4.log>.
 
-=item F<$PREFIX/etc/ppm-*-area.db>
+=item F<$PREFIX/etc/ppm-$NAME-area.db>
 
 SQLite database where PPM tracks packages installed in the install area
 under C<$PREFIX>.

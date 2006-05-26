@@ -33,20 +33,9 @@ sub new {
 		"$ENV{HOME}/.ActivePerl";
 	    }
 	};
-	my @dirs;
-	my $v = ActivePerl::perl_version();
-	push(@dirs, "$home/$v/$Config{archname}");
-	push(@dirs, "$home/$v");
-	push(@dirs, "$home/$Config{archname}");
-	push(@dirs, $home);
 
-	$dir = $home;
-	for my $d (@dirs) {
-	    if (-d $d) {
-		$dir = $d;
-		last;
-	    }
-	}
+	my $vdir = "$home/" . ActivePerl::perl_version();
+	$dir = (-d $vdir) ? $vdir : $home;
     }
 
     unless ($arch) {
@@ -72,7 +61,7 @@ sub new {
 	my $base = File::Basename::basename($dir);
 	my $archlib;
 	if ($base eq $Config{archname} || $base eq "arch") {
-	    $arch = $dir;
+	    $archlib = $dir;
 	    $dir = File::Basename::dirname($dir);
 	    $dir = join_path($dir, "lib") if $base eq "arch";
 	    shift(@tmp) if $tmp[0] eq $dir;
@@ -192,12 +181,14 @@ sub _init_db {
     my $etc = $self->{etc};
     File::Path::mkpath($etc);
     require DBI;
-    my $db_file = "$etc/ppm.db";
+    my $file_arch = $self->{arch};
+    $file_arch =~ s/\./_/g;  # don't confuse version number dots with file extension
+    my $db_file = "$etc/ppm-$file_arch.db";
     my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
         AutoCommit => 0,
         PrintError => 1,
     });
-    die unless $dbh;
+    die $DBI::errstr unless $dbh;
     $self->{dbh} = $dbh;
 
     my $v = $dbh->selectrow_array("PRAGMA user_version");
@@ -210,12 +201,6 @@ sub _init_db {
     }
     elsif ($v != 1) {
 	die "Unrecognized database schema $v for $db_file";
-    }
-    else {
-	my $db_arch = $dbh->selectrow_array("SELECT value from config where key = 'arch'");
-	if ($db_arch && $db_arch ne $self->{arch}) {
-	    die "$db_file was created by a client with $db_arch architecture; this client's architecture is $self->{arch}";
-	}
     }
 }
 
