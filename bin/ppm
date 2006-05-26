@@ -728,7 +728,7 @@ sub _install {
     }
     else {
 	$area = $ppm->area("site");
-	if ($area->{readonly}) {
+	if ($area->readonly) {
 	    my($first_area) = $ppm->areas;
 	    die "Can't install into readonly site" if $first_area eq "site";
 	    ppm_log("NOTICE", "Installing into $first_area");
