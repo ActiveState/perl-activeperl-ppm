@@ -1089,6 +1089,10 @@ installed packages and C<lib> directory location for each install area.
 If the name is shown in parenthesis it means that it is a readonly area.
 You will not be able to install or remove packages from it.
 
+The order the install areas are listed is the order perl will use when
+searching for modules.  Modules installed in an earlier install area
+override modules installed in a later.
+
 The B<--csv> option selects comma-separated values format for the
 output. The default field separator is a TAB character, but can be
 overridden by the argument following B<--cvs>.
