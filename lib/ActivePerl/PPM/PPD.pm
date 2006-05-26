@@ -7,12 +7,7 @@ use ActivePerl::PPM::Logger qw(ppm_log);
 
 sub ActivePerl::PPM::Package::new_ppd {
     my($class, $pkg, $arch) = @_;
-    $arch ||= do {
-	require Config;
-	my $tmp = $Config::Config{archname};
-	$tmp .= sprintf "-%vd", substr($^V, 0, 2) if $] >= 5.008;
-	$tmp;
-    };
+    $arch ||= "noarch";
 
     unless (ref $pkg) {
 	my $data = $pkg;
@@ -100,8 +95,7 @@ return C<undef> if $ppd_document does not contain the expected XML.
 
 The $archname should be specified to select attributes for a specific
 architecture where the PPD describes multiple implementations.  The
-$archname argument defaults to the value $Config{arch} with the major
-version number appended.  Use the value C<noarch> to only select
+value C<noarch> is the default and will only select
 implementation sections without any ARCHITECTURE restriction.
 
 =back

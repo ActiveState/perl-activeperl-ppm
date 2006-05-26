@@ -17,7 +17,8 @@ use File::Basename;
 use base 'ActivePerl::PPM::DBH';
 
 sub new {
-    my($class, $dir) = @_;
+    my($class, $dir, $arch) = @_;
+
     $dir ||= $ENV{ACTIVEPERL_PPM_HOME};
     unless ($dir) {
 	my $home = do {
@@ -48,6 +49,11 @@ sub new {
 	}
     }
 
+    unless ($arch) {
+	$arch =  $Config{archname};
+	$arch .= sprintf "-%vd", substr($^V, 0, 2) if $] >= 5.008;
+    }
+
     my $etc = $dir; # XXX or "$dir/etc";
     my @inc = defined(*main::INC_ORIG) ? @main::INC_ORIG : @INC;
 
@@ -64,7 +70,7 @@ sub new {
 	}
 
 	my $base = File::Basename::basename($dir);
-	my $arch;
+	my $archlib;
 	if ($base eq $Config{archname} || $base eq "arch") {
 	    $arch = $dir;
 	    $dir = File::Basename::dirname($dir);
@@ -87,7 +93,7 @@ sub new {
             name => $name,
             prefix => $dir,
             lib => $lib,
-            archlib => $arch,
+            archlib => $archlib,
         );
     }
 
@@ -99,6 +105,7 @@ sub new {
     my $self = bless {
 	dir => $dir,
 	etc => $etc,
+        arch => $arch,
 	area => \%area,
         area_seq => \@area,
         inc => \@inc,
@@ -161,6 +168,11 @@ sub _area_name {
     return "user";
 }
 
+sub arch {
+    my $self = shift;
+    return $self->{arch};
+}
+
 sub areas {
     my $self = shift;
     return @{$self->{area_seq}};
@@ -180,8 +192,8 @@ sub _init_db {
     my $etc = $self->{etc};
     File::Path::mkpath($etc);
     require DBI;
-    my $db_file = "ppm.db";
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$etc/$db_file", "", "", {
+    my $db_file = "$etc/ppm.db";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
         AutoCommit => 0,
         PrintError => 1,
     });
@@ -191,18 +203,24 @@ sub _init_db {
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
     if ($v == 0) {
-	ppm_log("WARN", "Setting up schema for $etc/$db_file");
-	_init_ppm_schema($dbh);
+	ppm_log("WARN", "Setting up schema for $db_file");
+	_init_ppm_schema($dbh, $self->{arch});
 	$dbh->do("PRAGMA user_version = 1");
 	$dbh->commit;
     }
     elsif ($v != 1) {
-	die "Unrecognized database schema $v for $etc/$db_file";
+	die "Unrecognized database schema $v for $db_file";
+    }
+    else {
+	my $db_arch = $dbh->selectrow_array("SELECT value from config where key = 'arch'");
+	if ($db_arch && $db_arch ne $self->{arch}) {
+	    die "$db_file was created by a client with $db_arch architecture; this client's architecture is $self->{arch}";
+	}
     }
 }
 
 sub _init_ppm_schema {
-    my $dbh = shift;
+    my($dbh, $arch) = @_;
     $dbh->do(<<'EOT');
 CREATE TABLE config (
     key text primary key,
@@ -230,6 +248,7 @@ EOT
     }
 
     # initial values
+    $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
     my $repo_uri = "http://ppm.activestate.com/PPMPackages/5.8-$os/";
@@ -401,7 +420,7 @@ sub repo_sync {
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
 			my $pkg = shift;
-			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg);
+			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, $self->{arch});
 			$pkg->{repo_id} = $repo->{id};
 			$pkg->dbi_store($dbh);
 		    });
@@ -415,7 +434,7 @@ sub repo_sync {
 	}
 
 	for my $ppd (@check_ppd) {
-	    _check_ppd($ppd, $repo, $dbh, \%delete_package);
+	    _check_ppd($ppd, $self->{arch}, $repo, $dbh, \%delete_package);
 	}
 
 	$dbh->do("DELETE FROM package WHERE id IN (" . join(",", sort keys %delete_package) . ")")
@@ -428,7 +447,7 @@ sub repo_sync {
 
 
 sub _check_ppd {
-    my($rel_url, $repo, $dbh, $delete_package) = @_;
+    my($rel_url, $arch, $repo, $dbh, $delete_package) = @_;
 
     my $row = $dbh->selectrow_hashref("SELECT id, ppd_etag, ppd_lastmod, ppd_fresh_until FROM package WHERE repo_id = ? AND ppd_uri = ?", undef, $repo->{id}, $rel_url);
 
@@ -447,7 +466,7 @@ sub _check_ppd {
 	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
     }
     elsif ($ppd_res->is_success) {
-	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content);
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content, $arch);
 	$ppd->{id} = $row->{id} if $row;
 	$ppd->{repo_id} = $repo->{id};
 	$ppd->{ppd_uri} = $rel_url;
@@ -671,6 +690,11 @@ The following methods are provided:
 The constructor creates a new client based on the configuration found
 in $home_dir which defaults to F<$ENV{HOME}/.ActivePerl> directory of the
 current user.  If no such directory is found it is created.
+
+=item $client->arch
+
+A string that identifies the architecture for the current perl.  This
+must match the ARCHITECTURE/NAME attribute of PPDs for them to match.
 
 =item $client->area( $name )
 
