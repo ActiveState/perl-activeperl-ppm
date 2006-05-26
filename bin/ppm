@@ -1085,26 +1085,26 @@ The following sub-commands are recognized:
 
 =item B<ppm area list> [ B<--csv> [ I<sep> ] ] [ B<--no-header> ]
 
-Lists the available install areas. The list displays the name, number of
-installed packages and C<lib> directory location for each install area.
-If the name is shown in parenthesis it means that it is a readonly area.
-You will not be able to install or remove packages from it.
+Lists the available install areas.  The list displays the name, number
+of installed packages and C<lib> directory location for each install
+area.  If that area is read-only, the name appears in parenthesis.  You
+will not be able to install packages or remove packages in these areas. 
 
-The order the install areas are listed is the order perl will use when
-searching for modules.  Modules installed in an earlier install area
-override modules installed in a later.
+The order of the listed install areas is the order perl uses when
+searching for modules.  Modules installed in earlier areas override
+modules installed in later ones.
 
-The B<--csv> option selects comma-separated values format for the
+The B<--csv> option selects CSV (comma-separated values) format for the
 output. The default field separator can be overridden by the argument
 following B<--cvs>.
 
-The B<--no-header> option suppress printing of the column headings.
+The B<--no-header> option suppresses column headings.
 
 =item B<ppm area sync> [ I<area> ... ]
 
 Synchronizes installed packages, including those installed by means
-other than ppm (e.g. the CPAN shell), with the ppm database. PPM
-searches the install area(s) for packages, making ppm database entries
+other than PPM (e.g. the CPAN shell), with the ppm database. PPM
+searches the install area(s) for packages, making PPM database entries
 if they do not already exist, or dropping entries for packages that no
 longer exist.  When used without an I<area> argument, all install areas
 are synced. 
@@ -1142,15 +1142,15 @@ Install a package and its dependencies.
 The argument to B<ppm install> can be the name of a package, the name of
 a module provided by the package, the file name, the URL to a PPD file,
 or the associated number for the package returned by the last C<ppm
-search>search command. 
+search> command. 
 
-If the package or module requested is already installed, ppm installs
-nothing.  The B<--force> option can be used to make ppm install a
+If the package or module requested is already installed, PPM installs
+nothing.  The B<--force> option can be used to make PPM install a
 package even if its already present.
 
 By default, new packages are installed in the C<site> area, but if the
-C<site> area is read only, and there are user defined areas set up, then
-the first one of these is used as the default instead.  Use the
+C<site> area is read only, and there are user-defined areas set up, the
+first user-defined area is used as the default instead.  Use the
 B<--area> option to install the package into an alternative location.
 
 =item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ --I<field> ... ]
@@ -1161,7 +1161,7 @@ the content of all install areas.
 The B<--matching> option limits the output to only include packages
 matching the given I<pattern>.  See B<ppm search> for I<pattern> syntax.
 
-The B<--csv> option selects comma-separated values format for the
+The B<--csv> option selects CSV (comma-separated values) format for the
 output. The default field separator can be overridden by the argument
 following B<--cvs>.
 
@@ -1174,7 +1174,7 @@ The following fields can be shown:
 =item B<--name>
 
 The package name.  This field is always shown first, but if specified
-alone just the package names is listed.
+alone just the package name is listed.
 
 =item B<--version>
 
@@ -1212,7 +1212,7 @@ The location of the package description file.
 
 =item B<ppm query> I<pattern>
 
-Alias for B<ppm list --matching> I<pattern>.  Provided for ppm version
+Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
 3 compatibility.
 
 =item B<ppm remove> I<pkg> ...
@@ -1221,7 +1221,7 @@ Uninstalls the specified package.
 
 =item B<ppm rep> ...
 
-Alias for B<ppm repo>.  Provided for ppm version 3 compatibility.
+Alias for B<ppm repo>.  Provided for PPM version 3 compatibility.
 
 =item B<ppm repo>
 
@@ -1229,7 +1229,7 @@ Alias for B<ppm repo list>.
 
 =item B<ppm repo add> I<url> [ I<name> ] [ B<--username> I<user> [ B<--password> I<password> ]
 
-Set up a new repository for ppm to fetch packages from.
+Set up a new repository for PPM to fetch packages from.
 
 =item B<ppm repo delete> I<num>
 
@@ -1241,7 +1241,7 @@ Show all properties for repository number I<num>.
 
 =item B<ppm repo list> [ B<--csv> [ I<sep> ] ] [ B<--no-header> ]
 
-List the repositories that ppm is currently configured to use.  Use this
+List the repositories that PPM is currently configured to use.  Use this
 to identify which number specifies a particular repository.
 
 The B<--csv> option selects comma-separated values format for the
@@ -1291,7 +1291,7 @@ and the wildcard C<?> to match a single character.  For example, to find
 packages starting with the string "List" search for C<list*>. Searches
 are case insensitive.  
 
-If I<pattern> contains C<::>, ppm will search for packages that provide
+If I<pattern> contains C<::>, PPM will search for packages that provide
 modules matching the pattern.
 
 If I<pattern> matches the name of a package exactly (case-sensitively),
@@ -1331,19 +1331,19 @@ the package name is given, only that packages is verified.
 
 =item B<ppm version>
 
-Will print the version of ppm and a copyright notice.
+Will print the version of PPM and a copyright notice.
 
 =back
 
 =head1 FILES
 
-The following lists files and directories that ppm uses and creates:
+The following lists files and directories that PPM uses and creates:
 
 =over
 
 =item F<$HOME/.ActivePerl/>
 
-Directory where ppm keeps its state.  On Windows this directory is
+Directory where PPM keeps its state.  On Windows this directory is
 F<$APPDATA/ActiveState/ActivePerl/>.  Architecture or version specific
 directories can be created if you need to manage multiple perl
 installations from the same home area.
@@ -1355,12 +1355,12 @@ information about the content of the enabled repositories.
 
 =item F<$HOME/ppm4.log>
 
-Log file created to record actions that ppm takes.  On Windows this is
+Log file created to record actions that PPM takes.  On Windows this is
 logged to F<$TEMPDIR/ppm4.log>.
 
 =item F<$PREFIX/etc/ppm-*-area.db>
 
-SQLite database where ppm tracks packages installed in the install area
+SQLite database where PPM tracks packages installed in the install area
 under C<$PREFIX>.
 
 =item F<$TEMPDIR/ppm-XXXXXX/>
@@ -1370,40 +1370,41 @@ are unpacked here.
 
 =item F<*.ppd>
 
-XML files containing meta information about packages. Each package has
-its own .ppd file.  See L<ActivePerl::PPM::PPD> for additional information.
+XML files containing meta information about packages.  Each package has
+its own .ppd file.  See L<ActivePerl::PPM::PPD> for additional
+information.
 
 =item F<package.xml>
 
-Meta information about repositories.  When a repository is added, ppm
+Meta information about repositories.  When a repository is added, PPM 
 looks for this file and if present, monitors it too stay in sync with
 the state of the repository.
 
 =item F<package.lst>
 
-Same as F<package.xml> but ppm 3 compatible.  ppm will use this file
+Same as F<package.xml> but PPM 3 compatible.  PPM will use this file
 if F<package.xml> is not available.
 
 =back
 
 =head1 ENVIRONMENT
 
-The following environment variables affect how ppm behaves:
+The following environment variables affect how PPM behaves:
 
 =over
 
 =item C<ACTIVEPERL_PPM_DEBUG>
 
-If set to a TRUE value, makes ppm print more internal diagnostics.
+If set to a TRUE value, makes PPM print more internal diagnostics.
 
 =item C<ACTIVEPERL_PPM_HOME>
 
 If set, use this directory instead of F<~/.ActivePerl/> to store
-configuration information for ppm.
+configuration information for PPM.
 
 =item C<ACTIVEPERL_PPM_LOG_CONS>
 
-If set to a TRUE value, make ppm print any log output to the console as
+If set to a TRUE value, make PPM print any log output to the console as
 well.
 
 =item C<DBI_TRACE>
@@ -1436,7 +1437,7 @@ bundled and core modules.
 
 =item *
 
-Installation of packages and their dependencies happens as atomic
+Installation of packages and their dependencies happen as atomic
 transactions.
 
 =item *
@@ -1448,7 +1449,7 @@ mismatches.
 =item *
 
 State is kept in local SQLite databases.  All repository state is kept
-local which makes search much faster.
+local which makes searching much faster.
 
 =item *
 
@@ -1457,7 +1458,7 @@ manually or with the CPAN shell).
 
 =item *
 
-No more SOAP
+No more SOAP.
 
 =item *
 
