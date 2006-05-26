@@ -133,6 +133,7 @@ sub _area_name {
 	my $lc_segment = lc($segment);
 	next if $segment eq "lib" || $segment eq "arch" || $segment eq $Config{archname};
 	next if $lc_segment eq "perl" || $lc_segment eq "site" || $lc_segment eq "vendor";
+	return "pdk" if $segment =~ /\bPerl Dev Kit\b/;
 	next unless $segment =~ /^[\w\-.]{1,12}$/;
 	return $segment;
     }
