@@ -1349,7 +1349,7 @@ information about the content of the enabled repositories.
 Log file created to record actions that ppm takes.  On Windows this is
 logged to F<$TEMPDIR/ppm4.log>.
 
-=item F<$PREFIX/etc/ppm-area.db>
+=item F<$PREFIX/etc/ppm-*-area.db>
 
 SQLite database where ppm tracks packages installed in the install area
 under C<$PREFIX>.

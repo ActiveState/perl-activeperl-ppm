@@ -62,13 +62,7 @@ sub new {
 	    push(@area, $name) unless grep $_ eq $name, @area;
 	    next;
 	}
-	my $name = _area_name($dir);
-	while (grep $_ eq $name, @area) {
-	    # make name unique
-	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
-	    $name .= "_" . ++$num;
-	}
-	push(@area, $name);
+
 	my $base = File::Basename::basename($dir);
 	my $arch;
 	if ($base eq $Config{archname} || $base eq "arch") {
@@ -80,6 +74,15 @@ sub new {
 	my $lib = $dir;
 	$base = File::Basename::basename($dir);
 	$dir = File::Basename::dirname($dir) if $base eq "lib";
+
+	my $name = _area_name($dir);
+	while (grep $_ eq $name, @area) {
+	    # make name unique
+	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
+	    $name .= "_" . ++$num;
+	}
+
+	push(@area, $name);
 	$area{$name} = ActivePerl::PPM::InstallArea->new(
             name => $name,
             prefix => $dir,
@@ -127,6 +130,22 @@ sub _path_eq {
 
 sub _area_name {
     my $path = shift;
+
+    # obtain name from the ppm-*-area.db file if present
+    if (opendir(my $dh, "$path/etc")) {
+	while (defined(my $f = readdir($dh))) {
+	    if ($f =~ /^ppm-(\w+)-area.db$/) {
+		if ($1 eq "perl" || $1 eq "site" || $1 eq "vendor") {
+		    ppm_log("WARN", "Found $f in $path/etc");
+		    last;
+		}
+		return $1;
+	    }
+	}
+	closedir($dh);
+    }
+
+    # try to find a usable name from the $path
     my @path = split(/[\/\\]/, $path);
     while (@path) {
 	my $segment = pop(@path);
@@ -137,6 +156,8 @@ sub _area_name {
 	next unless $segment =~ /^[\w\-.]{1,12}$/;
 	return $segment;
     }
+
+    # last resort
     return "user";
 }
 
