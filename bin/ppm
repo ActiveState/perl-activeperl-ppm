@@ -133,25 +133,36 @@ sub do_help {
 sub do_area {
     my $cmd = shift(@ARGV) || "list";
     if ($cmd eq "list") {
-	$USAGE = "area list [--no-header]";
+	$USAGE = "area list [--csv [ <sep> ]] [--no-header]";
 	my $show_header = 1;
+	my $csv;
 	if (@ARGV) {
 	    require Getopt::Long;
 	    Getopt::Long::GetOptions(
 	        'header!' => \$show_header,
+                'csv:s' => \$csv,
             ) || usage();
 	    usage() if @ARGV;
 	}
-	if ($show_header) {
-	    print "name   pkgs lib\n";
-	    print "------ ---- ------------------------------------\n";
-	}
+	require ActiveState::Table;
+	my $tab = ActiveState::Table->new;
+	$tab->add_field("name");
+	$tab->add_field("pkgs");
+	$tab->add_field("lib");
 	for my $area ($ppm->areas) {
 	    my $o = $ppm->area($area);
-	    printf "%-6s %4d %s\n",
-		$area,
-		scalar($o->packages),
-		$o->lib;
+	    $tab->add_row({
+	        name => $area,
+                pkgs => scalar($o->packages),
+                lib => $o->lib,
+            });
+	}
+	if (defined($csv)) {
+	    $csv = "\t" if $csv eq "";
+	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
+	}
+	else {
+	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0);
 	}
     }
     elsif ($cmd eq "sync") {
@@ -170,7 +181,7 @@ sub do_list {
     my %opt;
     my $area_name;
     if (@ARGV) {
-	$USAGE = "list [<area>] [--name] [--version] [--date] [--abstract] [--author] [--area] [--ppd] [--files] [--size]";
+	$USAGE = "list [<area>] [--name] [--version] [--date] ... [--matching <pattern>] [--csv]";
 	require Getopt::Long;
 	Getopt::Long::GetOptions(\%opt,
            'name',
@@ -183,6 +194,8 @@ sub do_list {
            'size',
            'ppd',
 	   'matching=s',
+	   'header!',
+           'csv:s',
         ) || usage();
 	$area_name = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
@@ -190,6 +203,9 @@ sub do_list {
     my $matching = delete $opt{matching};
     my $matching_re = glob2re($matching) if defined($matching);
     $matching = (defined $matching) ? " matching '$matching'" : "";
+    my $show_header = delete $opt{header};
+    $show_header = 1 unless defined $show_header;
+    my $csv = delete $opt{csv};
 
     unless (%opt) {
 	# fields to show by default
@@ -254,7 +270,11 @@ sub do_list {
 	$tab->sort(sub ($$) { my($a, $b) = @_; $a->[0] cmp $b->[0]})
 	    if @areas > 1 && $tab->can("sort");
 
-	if (my $rows = $tab->rows) {
+	if (defined $csv) {
+	    $csv = "\t" if $csv eq "";
+	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
+	}
+	elsif (my $rows = $tab->rows) {
 	    print $tab->as_box(null => "", show_trailer => 0, align => {files => "right", size => "right"});
 	    if (1) {
 		my $s = ($rows == 1) ? "" : "s";
@@ -350,12 +370,41 @@ sub uri_hide_passwd {
 sub do_repo {
     my $cmd = shift(@ARGV) || "list";
     if ($cmd eq "list") {
-	$USAGE = "repo list";
-	usage() if @ARGV;
+	$USAGE = "repo list [--csv [ <sep> ]] [--no-header]";
+	my $show_header = 1;
+	my $csv;
+	if (@ARGV) {
+	    require Getopt::Long;
+	    Getopt::Long::GetOptions(
+	        'header!' => \$show_header,
+                'csv:s' => \$csv,
+            ) || usage();
+	    usage() if @ARGV;
+	}
+	require ActiveState::Table;
+	my $tab = ActiveState::Table->new;
+	$tab->add_field("id");
+	$tab->add_field("on");
+	$tab->add_field("name");
+	my $count = 0;
 	for my $repo_id ($ppm->repos) {
 	    my $repo = $ppm->repo($repo_id);
-	    my $status = $repo->{enabled} ? "" : "(OFF) ";
-	    print "[$repo_id] $status$repo->{name} <" . uri_hide_passwd($repo->{packlist_uri}) . ">\n";
+	    $tab->add_row({
+	        id => $repo_id,
+                on => $repo->{enabled} ? "yes" : "",
+		name => $repo->{name},
+            });
+	    $count++ if $repo->{enabled};
+	}
+	if (defined($csv)) {
+	    $csv = "\t" if $csv eq "";
+	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
+	}
+	else {
+	    print $tab->as_box(null => "", show_trailer => 0);
+	    my $s = ($count == 1) ? "y" : "ies";
+	    $count ||= "no";
+	    print " ($count enabled repositor$s)\n";
 	}
     }
     elsif ($cmd eq "search") {
@@ -994,7 +1043,7 @@ Install, upgrade and remove packages:
 
 Manage and search install areas:
 
-    ppm area list
+    ppm area list [--csv] [--no-header]
     ppm area sync
     ppm list [--name] [--version] [--abstract] ...
     ppm list <area> [--name] [--version] [--abstract] ...
@@ -1003,7 +1052,7 @@ Manage and search install areas:
 
 Manage and search repositories:
 
-    ppm repo list
+    ppm repo list [--csv] [--no-header]
     ppm repo sync [--force]
     ppm repo on <num>
     ppm repo off <num>
@@ -1031,11 +1080,16 @@ The following sub-commands are recognized:
 
 =over
 
-=item B<ppm area list> [ B<--no-header> ]
+=item B<ppm area list> [ B<--csv> [ I<sep> ] ] [ B<--no-header> ]
 
 Lists the available install areas. The list displays the name, number of
 installed packages and C<lib> directory location for each install area.
-The C<--no-header> option suppress printing of the column headings.
+
+The B<--csv> option selects comma-separated values format for the
+output. The default field separator is a TAB character, but can be
+overridden by the argument following B<--cvs>.
+
+The B<--no-header> option suppress printing of the column headings.
 
 =item B<ppm area sync> [ I<area> ... ]
 
@@ -1090,10 +1144,21 @@ C<site> area is read only, and there are user defined areas set up, then
 the first one of these is used as the default instead.  Use the
 B<--area> option to install the package into an alternative location.
 
-=item B<ppm list> [ I<area> ] [ --I<field> ... ] [ B<--matching> I<pattern> ]
+=item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ --I<field> ... ]
 
 List installed packages.  If the I<area> argument is not provided, list
-the content of all install areas.  The following fields can be shown:
+the content of all install areas.
+
+The B<--matching> option limits the output to only include packages
+matching the given I<pattern>.  See B<ppm search> for I<pattern> syntax.
+
+The B<--csv> option selects comma-separated values format for the
+output. The default field separator is a TAB character, but can be
+overridden by the argument following B<--cvs>.
+
+The B<--no-header> option suppress printing of the column headings.
+
+The following fields can be shown:
 
 =over
 
@@ -1165,10 +1230,17 @@ Remove repository number I<num>.
 
 Show all properties for repository number I<num>.
 
-=item B<ppm repo list>
+=item B<ppm repo list> [ B<--csv> [ I<sep> ] ] [ B<--no-header> ]
 
 List the repositories that ppm is currently configured to use.  Use this
 to identify which number specifies a particular repository.
+
+The B<--csv> option selects comma-separated values format for the
+output. The default field separator is a TAB character, but can be
+overridden by the argument following B<--cvs>.
+
+The B<--no-header> option suppress printing of the column headings.
+
 
 =item B<ppm repo> I<num>
 
