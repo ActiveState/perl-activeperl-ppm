@@ -1,7 +1,7 @@
 #!perl -w
 
 use strict;
-use Test qw(plan ok);
+use Test qw(plan ok skip);
 use URI::file;
 
 plan tests => 28;
@@ -27,17 +27,23 @@ ok(j($client->areas), "site|perl");
 ok($client->area("site")->name, "site");
 
 my $repo = $client->repo(1);
-ok($repo->{enabled});
-ok($repo->{id}, 1);
-ok($repo->{name}, "ActiveState Package Repository");
-ok($repo->{prio}, 1);
-ok($repo->{packlist_uri}, qr,^http://ppm.ActiveState.com/,i);
-ok($repo->{packlist_last_status_code}, undef);
+if ($^O eq "aix") {
+    ok($repo, undef);
+    skip("No ActiveState Package Repository for $^O") for 1..7;
+}
+else {
+    ok($repo->{enabled});
+    ok($repo->{id}, 1);
+    ok($repo->{name}, "ActiveState Package Repository");
+    ok($repo->{prio}, 1);
+    ok($repo->{packlist_uri}, qr,^http://ppm.ActiveState.com/,i);
+    ok($repo->{packlist_last_status_code}, undef);
+    $client->repo_enable(1, 0);
+    ok($client->repo(1)->{enabled}, 0);
+    $client->repo_delete(1);
+    ok(j($client->repos), "");
+}
 
-$client->repo_enable(1, 0);
-ok($client->repo(1)->{enabled}, 0);
-$client->repo_delete(1);
-ok(j($client->repos), "");
 undef($client);
 
 $client = ActivePerl::PPM::Client->new($prefix);
