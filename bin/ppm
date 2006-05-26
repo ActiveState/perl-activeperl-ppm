@@ -262,7 +262,8 @@ sub do_list {
 			require ActiveState::DiskUsage;
 			my $size = 0;
 			$size += ActiveState::DiskUsage::du($_) for @files;
-			$size = sprintf "%.0f KB", $size / 1024;
+			$size = sprintf "%.0f KB", $size / 1024 unless defined($csv);
+			$size;
 		    } if $opt{size};
 		}
 		$row{area} = $area->name if $opt{area};
