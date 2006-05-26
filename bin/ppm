@@ -275,7 +275,7 @@ sub do_list {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	elsif (my $rows = $tab->rows) {
-	    print $tab->as_box(null => "", show_trailer => 0, align => {files => "right", size => "right"});
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {files => "right", size => "right"});
 	    if (1) {
 		my $s = ($rows == 1) ? "" : "s";
 		print " ($rows package$s installed$in$matching)\n";
@@ -401,7 +401,7 @@ sub do_repo {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_trailer => 0);
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header);
 	    my $s = ($count == 1) ? "y" : "ies";
 	    $count ||= "no";
 	    print " ($count enabled repositor$s)\n";
