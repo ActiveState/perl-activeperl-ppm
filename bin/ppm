@@ -160,7 +160,7 @@ sub do_area {
             });
 	}
 	if (defined($csv)) {
-	    $csv = "\t" if $csv eq "";
+	    $csv = "," if $csv eq "";
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
@@ -273,7 +273,7 @@ sub do_list {
 	    if @areas > 1 && $tab->can("sort");
 
 	if (defined $csv) {
-	    $csv = "\t" if $csv eq "";
+	    $csv = "," if $csv eq "";
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	elsif (my $rows = $tab->rows) {
@@ -399,7 +399,7 @@ sub do_repo {
 	    $count++ if $repo->{enabled};
 	}
 	if (defined($csv)) {
-	    $csv = "\t" if $csv eq "";
+	    $csv = "," if $csv eq "";
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
@@ -1094,8 +1094,8 @@ searching for modules.  Modules installed in an earlier install area
 override modules installed in a later.
 
 The B<--csv> option selects comma-separated values format for the
-output. The default field separator is a TAB character, but can be
-overridden by the argument following B<--cvs>.
+output. The default field separator can be overridden by the argument
+following B<--cvs>.
 
 The B<--no-header> option suppress printing of the column headings.
 
@@ -1161,8 +1161,8 @@ The B<--matching> option limits the output to only include packages
 matching the given I<pattern>.  See B<ppm search> for I<pattern> syntax.
 
 The B<--csv> option selects comma-separated values format for the
-output. The default field separator is a TAB character, but can be
-overridden by the argument following B<--cvs>.
+output. The default field separator can be overridden by the argument
+following B<--cvs>.
 
 The B<--no-header> option suppress printing of the column headings.
 
@@ -1244,8 +1244,8 @@ List the repositories that ppm is currently configured to use.  Use this
 to identify which number specifies a particular repository.
 
 The B<--csv> option selects comma-separated values format for the
-output. The default field separator is a TAB character, but can be
-overridden by the argument following B<--cvs>.
+output. The default field separator can be overridden by the argument
+following B<--cvs>.
 
 The B<--no-header> option suppress printing of the column headings.
 
