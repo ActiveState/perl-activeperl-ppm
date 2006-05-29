@@ -68,8 +68,8 @@ ok(ppm("help", "foo"), "Sorry, no help for 'foo'\n");
 ok($ppm_err, "");
 
 ppm("area", "list", "--csv= ");
-ok($ppm_out, qr/^\Q$prefix_base\E\s+0\s+/m);
-ok($ppm_out, qr/^site\s+(\d+)/m);
+ok($ppm_out, qr/^\Q$prefix_base\E\*?\s+0\s+/m);
+ok($ppm_out, qr/^site\*?\s+(\d+)/m);
 ok($ppm_out, qr/^perl\s+(\d+)/m);
 
 # try installing from our live repo
