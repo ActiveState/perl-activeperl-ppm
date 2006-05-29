@@ -183,6 +183,7 @@ sub default_install_area {
 	my @areas = $self->areas;
 	while (defined($area = shift(@areas))) {
 	    next if $area eq "perl" || $area eq "site" || $area eq "vendor";
+	    next if $area eq "pdk";
 	    last unless $self->area($area)->readonly;
 	}
     }
