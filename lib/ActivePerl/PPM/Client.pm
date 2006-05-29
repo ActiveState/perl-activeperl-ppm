@@ -176,6 +176,19 @@ sub area {
     }
 }
 
+sub default_install_area {
+    my $self = shift;
+    my $area = "site";
+    if ($self->area($area)->readonly) {
+	my @areas = $self->areas;
+	while (defined($area = shift(@areas))) {
+	    next if $area eq "perl" || $area eq "site" || $area eq "vendor";
+	    last unless $self->area($area)->readonly;
+	}
+    }
+    return $area;
+}
+
 sub _init_db {
     my $self = shift;
     my $etc = $self->{etc};
@@ -693,6 +706,11 @@ object.
 
 Return list of available install area names.  The list is ordered to
 match the corresponding entries in C<@INC>.
+
+=item $client->default_install_area
+
+Return the name of the area where installations should normally go.
+Might return C<undef> if there is no appropriate default.
 
 =item $client->repo( $repo_id )
 

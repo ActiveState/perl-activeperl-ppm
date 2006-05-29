@@ -149,9 +149,11 @@ sub do_area {
 	$tab->add_field("name");
 	$tab->add_field("pkgs");
 	$tab->add_field("lib");
+	my $default = $ppm->default_install_area;
 	for my $area ($ppm->areas) {
 	    my $o = $ppm->area($area);
 	    my $name = $area;
+	    $name = "$name*" if defined($default) && $name eq $default;
 	    $name = "($name)" if $o->readonly;
 	    $tab->add_row({
 	        name => $name,
@@ -724,22 +726,13 @@ sub _install {
     $| = 1;
     my $verbose = 0;
     my $ua = web_ua();
-    if ($area) {
-	$area = $ppm->area($area);
+    unless ($area) {
+	$area = $ppm->default_install_area;
+	die "No default install area; please specify one with the --area option"
+	    unless $area;
+	ppm_log("NOTICE", "Installing into $area");
     }
-    else {
-	$area = $ppm->area("site");
-	if ($area->readonly) {
-	    my($first_area) = $ppm->areas;
-	    die "Can't install into readonly site" if $first_area eq "site";
-	    ppm_log("NOTICE", "Installing into $first_area");
-	    $area = $ppm->area($first_area);
-	}
-	else {
-	SITE:
-	    ppm_log("NOTICE", "Installing into site");
-	}
-    }
+    $area = $ppm->area($area);
 
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     eval {
@@ -1088,7 +1081,8 @@ The following sub-commands are recognized:
 Lists the available install areas.  The list displays the name, number
 of installed packages and C<lib> directory location for each install
 area.  If that area is read-only, the name appears in parenthesis.  You
-will not be able to install packages or remove packages in these areas. 
+will not be able to install packages or remove packages in these areas.
+The default install area is marked with a C<*> after its name.
 
 The order of the listed install areas is the order perl uses when
 searching for modules.  Modules installed in earlier areas override
