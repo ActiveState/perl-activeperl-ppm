@@ -670,7 +670,7 @@ sub do_install {
     }
     else {
 	# seach for feature in repos
-	_install_repo($area, $feature, 0, force => $force);
+	_install_repo($area, want => [$feature], force => $force);
     }
 }
 
@@ -678,7 +678,7 @@ sub do_upgrade {
     $USAGE = "upgrade <module>";
     usage() unless @ARGV == 1;
     my $feature = shift(@ARGV);
-    _install_repo(undef, $feature, undef);
+    _install_repo(undef, want => [[$feature, undef]]);
 }
 
 sub _install_uri {
@@ -714,13 +714,13 @@ sub _install_uri {
 sub _install_repo {
     my $area = shift;
     $ppm->repo_sync;
-    _install($area, map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing_for(@_));
+    _install($area, map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing(@_));
 }
 
 sub _install {
     my $area = shift;
     unless (@_) {
-	print "Nothing to install\n";
+	print "No missing packages to install\n";
 	return;
     }
 

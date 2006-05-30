@@ -550,8 +550,9 @@ sub package_best {
 }
 
 sub feature_have {
-    my($self, $feature) = @_;
-    for my $area_name ($self->areas) {
+    my $self = shift;
+    my $feature = shift;
+    for my $area_name (@_ ? @_ : $self->areas) {
 	my $area = $self->area($area_name);
 	if (defined(my $have = $area->feature_have($feature))) {
 	    ppm_debug("Feature $feature found in $area_name");
@@ -560,7 +561,7 @@ sub feature_have {
 	ppm_debug("Feature $feature not found in $area_name");
     }
 
-    if ($feature =~ /::/) {
+    if (!@_ && $feature =~ /::/) {
 	require ActiveState::ModInfo;
 	require ExtUtils::MakeMaker;
 	if (my $path = ActiveState::ModInfo::find_module($feature, $self->{inc})) {
@@ -572,40 +573,75 @@ sub feature_have {
     return undef;
 }
 
-sub packages_missing_for {
-    my($self, $feature, $version, %opt) = @_;
-    unless (defined $version) {
-	$version = $self->feature_best($feature);
-	die "No $feature available\n" unless defined($version);
+sub packages_missing {
+    my($self, %args) = @_;
+    my @pkg_have = @{delete $args{have} || []};
+    my @area_have = @{delete $args{area} || []};
+    my @todo = @{delete $args{want} || []};
+    return unless @todo;
+
+    $args{follow_deps} ||= "missing";
+
+    my @missing_upgrade;
+    for my $feature (@todo) {
+	$feature = [$feature, 0] unless ref($feature);
+	my($name, $version) = @$feature;
+	unless (defined $version) {
+	    if (defined($version = $self->feature_best($name))) {
+		$feature->[1] = $version;
+	    }
+	    else {
+		push(@missing_upgrade, $name);
+	    }
+	}
+    }
+    if (@missing_upgrade) {
+	@missing_upgrade = sort @missing_upgrade;
+	my $missing = pop(@missing_upgrade);
+	$missing = join(" or ", join(", ", @missing_upgrade), $missing) if @missing_upgrade;
+	die "No $missing available";
     }
 
-    my @pkg;
-    my @todo;
-    push(@todo, [$feature, $version]);
+    my @pkg_missing;
     while (@todo) {
         my($feature, $want, $needed_by) = @{shift @todo};
 	ppm_debug("Want $feature >= $want");
 
         my $have;
-	for my $pkg (@pkg) {
+	for my $pkg (@pkg_have, @pkg_missing) {
 	    $have = $pkg->{provide}{$feature};
 	    if (defined $have) {
 		if ($have < $want) {
-		    die "Conflict for feature $feature version $have provided by $pkg->{name}, want version $want";
+		    my $msg = "Conflict for feature $feature version $have provided by $pkg->{name}, ";
+		    $msg .= "$needed_by " if $needed_by;
+		    $msg .= "want version $want";
+		    die $msg;
 		}
+		push(@{$pkg->{_needed_by}}, $needed_by) if $needed_by;
 		last;
 	    }
 	}
-	$have = $self->feature_have($feature) unless defined($have);
+	$have = $self->feature_have($feature, @area_have) unless defined($have);
 	ppm_debug("Have $feature $have") if defined($have);
 
-        if ($opt{force} || !defined($have) || $have < $want) {
+        if ((!$needed_by && $args{force}) ||
+	    ($needed_by && $args{follow_deps} eq "all") ||
+            !defined($have) || $have < $want)
+        {
             if (my $pkg = $self->package_best($feature, $want)) {
-		$self->check_downgrade($pkg, $feature) unless $opt{force};
-		push(@pkg, $pkg);
+		$self->check_downgrade($pkg, $feature) unless $args{force};
+		push(@pkg_missing, $pkg);
+		if ($needed_by) {
+		    push(@{$pkg->{_needed_by}}, $needed_by);
+		}
+		else {
+		    $pkg->{_wanted}++;
+		}
 
-		if (my $dep = $pkg->{require}) {
-		    push(@todo, map [$_ => $dep->{$_}, $pkg->{name} ], keys %$dep);
+		if ($args{follow_deps} ne "none") {
+		    if (my $dep = $pkg->{require}) {
+			push(@todo, map [$_ => $dep->{$_}, $pkg->{name} ], keys %$dep);
+		    }
 		}
 	    }
 	    else {
@@ -616,7 +652,7 @@ sub packages_missing_for {
         }
     }
 
-    return @pkg;
+    return @pkg_missing;
 }
 
 sub check_downgrade {
@@ -787,14 +823,63 @@ given feature at or better than the given version.
 
 =item $client->feature_have( $feature )
 
+=item $client->feature_have( $feature, @areas )
+
 Returns the installed version number of the given feature.  Returns
 C<undef> if none of the installed packages provide this feature.
 
-=item $client->packages_missing_for( $feature, $version, %opt )
+If one or more @areas are provided, only look in the areas given by
+these names.
 
-Returns the list of missing packages to install in order to obtain the
-requested feature at or better than the given version.  The list
-consist of L<ActivePerl::PPM::RepoPackage> objects.
+=item $client->packages_missing( %args )
+
+Returns the list of packages to install in order to obtain the
+requested features.  The returned list consist of
+L<ActivePerl::PPM::RepoPackage> objects.  The attribute C<_wanted>
+will be TRUE if a package was requested directly.  The attribute
+C<_needed_by> will be an array reference of package names listing
+packages having resolved dependencies on this package.  These
+attributes do not exclude each other.
+
+The arguments to the functions are passed as key/value pairs:
+
+=over
+
+=item want => \@features
+
+This is the list of features to resolve.  The elements can be plain
+strings denoting feature names, or references to arrays containing a
+$name, $version pair.  If $version is provided as C<undef> then this
+is taken as an upgrade request and the function will try to find the
+packages that provide the best possible version of this feature.
+
+=item have => \@pkgs
+
+List of packages you already have decided to install.  The function
+will check if any of these packages provide needed features before
+looking anywhere else.
+
+=item area => \@areas
+
+List of names of install areas to consider when determining if
+requested features or dependencies are already installed or not.
+
+=item force => $bool
+
+If TRUE then return packages that provide the given features even if
+they are already installed.  Will also disable check for downgrades.
+
+=item follow_deps => $str
+
+In what way should packages dependencies be resolved.  The provided
+$str can take the values C<all>, C<missing>, or C<none>.  The default
+is C<missing>.  If $str is C<all> then dependent packages are returned
+even if they are already installed.  If $str is C<missing> then only
+missing dependencies are returned.  If $str is C<none> then
+dependencies are ignored.
+
+
+=back
 
 =back
 
