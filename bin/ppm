@@ -666,9 +666,6 @@ sub do_install {
 	my $pkg = $ppm->search_lookup($feature) ||
 	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	my @deps = $ppm->packages_missing(want_deps => [$pkg]);
-	for ($pkg, @deps) {
-	    $ppm->package_set_abs_ppd_uri($_);
-	}
 	_install($area, $pkg, @deps);
     }
     else {
@@ -711,18 +708,14 @@ sub _install_uri {
     # XXX follow dependencies with the "directory" of $pkg $uri as the
     # first repo to look for additional packages.  This only works for
     # package features.
-    my @deps = $ppm->packages_missing(want_deps => [$pkg]);
-    for (@deps) {
-	$ppm->package_set_abs_ppd_uri($_);
-    }
 
-    _install($area, $pkg, @deps);
+    _install($area, $pkg, $ppm->packages_missing(want_deps => [$pkg]));
 }
 
 sub _install_repo {
     my $area = shift;
     $ppm->repo_sync;
-    _install($area, map $ppm->package_set_abs_ppd_uri($_), $ppm->packages_missing(@_));
+    _install($area, $ppm->packages_missing(@_));
 }
 
 sub _install {
@@ -745,6 +738,8 @@ sub _install {
 
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     eval {
+	$ppm->package_set_abs_ppd_uri(@_);
+
 	# determine codebase_file
 	for my $pkg (@_) {
 	    my $name = $pkg->name_version;

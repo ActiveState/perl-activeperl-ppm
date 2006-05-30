@@ -670,7 +670,7 @@ sub packages_missing {
         }
     }
 
-    return @pkg_missing;
+    return $self->package_set_abs_ppd_uri(@pkg_missing);
 }
 
 sub check_downgrade {
@@ -700,17 +700,22 @@ sub package {
 }
 
 sub package_set_abs_ppd_uri {
-    my($self, $pkg) = @_;
-    my($uri, $etag, $lastmod) = $self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $pkg->{repo_id});
-    if ($pkg->{ppd_uri}) {
-	$pkg->{ppd_uri} = URI->new_abs($pkg->{ppd_uri}, $uri)->as_string;
+    my($self, @pkgs) = @_;
+    my %repo_cache;
+    for my $pkg (@pkgs) {
+	if (defined(my $repo_id = $pkg->{repo_id})) {
+	    my($uri, $etag, $lastmod) = @{$repo_cache{repo_id} ||= [$self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $repo_id)]};
+	    if ($pkg->{ppd_uri}) {
+		$pkg->{ppd_uri} = URI->new_abs($pkg->{ppd_uri}, $uri)->as_string;
+	    }
+	    else {
+		$pkg->{ppd_uri} = $uri;
+		$pkg->{ppd_etag} = $etag;
+		$pkg->{ppd_lastmod} = $lastmod;
+	    }
+	}
     }
-    else {
-	$pkg->{ppd_uri} = $uri;
-	$pkg->{ppd_etag} = $etag;
-	$pkg->{ppd_lastmod} = $lastmod;
-    }
-    return $pkg;
+    return @pkgs;
 }
 
 1;
