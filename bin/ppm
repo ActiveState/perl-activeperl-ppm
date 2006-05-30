@@ -644,33 +644,39 @@ sub do_describe {
 }
 
 sub do_install {
-    $USAGE = "install [--force] <module> | <url> | <file> | <num>";
+    $USAGE = "install [--force] [--nodeps] [--area <area>] <module> | <url> | <file> | <num>";
     my $force;
+    my $nodeps;
     my $area;
     require Getopt::Long;
     Getopt::Long::GetOptions(
         force => \$force,
 	'area=s' => \$area,
+	nodeps => \$nodeps,
      ) || usage();
     usage() unless @ARGV == 1;
+    my @args;
+    push(@args, force => 1) if $force;
+    push(@args, follow_deps => "none") if $nodeps;
+
     my $feature = shift(@ARGV);
     if ($feature =~ m,^[a-z][+\w]+:[^:],) {
 	# looks like an absolute URL
-	_install_uri($area, $feature);
+	_install_uri($area, $feature, @args);
     }
     elsif ($feature =~ /\.ppd$/) {
 	require URI::file;
-	_install_uri($area, URI::file->new_abs($feature));
+	_install_uri($area, URI::file->new_abs($feature), @args);
     }
     elsif ($feature =~ /^\d+$/) {
 	my $pkg = $ppm->search_lookup($feature) ||
 	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
-	my @deps = $ppm->packages_missing(want_deps => [$pkg]);
+	my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
 	_install($area, $pkg, @deps);
     }
     else {
 	# seach for feature in repos
-	_install_repo($area, want => [$feature], force => $force);
+	_install_repo($area, want => [$feature], @args);
     }
 }
 
@@ -684,6 +690,8 @@ sub do_upgrade {
 sub _install_uri {
     my $area = shift;
     my $uri = shift;
+    my @args = @_;
+
     my $res = web_ua->get($uri);
     unless ($res->is_success) {
 	die $res->status_line;
@@ -709,7 +717,7 @@ sub _install_uri {
     # first repo to look for additional packages.  This only works for
     # package features.
 
-    _install($area, $pkg, $ppm->packages_missing(want_deps => [$pkg]));
+    _install($area, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
 }
 
 sub _install_repo {
@@ -1125,15 +1133,15 @@ one line per file.
 
 Prints the documentation for ppm (this file).
 
-=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ]
+=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
 
-=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ]
+=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
 
-=item B<ppm install> I<file>.ppd [ B<--area> I<area> ]
+=item B<ppm install> I<file>.ppd [ B<--area> I<area> ] [ B<--nodeps> ]
 
-=item B<ppm install> I<url> [ B<--area> I<area> ]
+=item B<ppm install> I<url> [ B<--area> I<area> ] [ B<--nodeps> ]
 
-=item B<ppm install> I<num> [ B<--area> I<area> ]
+=item B<ppm install> I<num> [ B<--area> I<area> ] [ B<--nodeps> ]
 
 Install a package and its dependencies.
 
@@ -1150,6 +1158,9 @@ By default, new packages are installed in the C<site> area, but if the
 C<site> area is read only, and there are user-defined areas set up, the
 first user-defined area is used as the default instead.  Use the
 B<--area> option to install the package into an alternative location.
+
+Use the B<--nodeps> option to tell PPM to try to install the package
+without resolving any dependencies it might have.
 
 =item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ --I<field> ... ]
 
