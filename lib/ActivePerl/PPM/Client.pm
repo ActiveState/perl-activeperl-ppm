@@ -578,9 +578,27 @@ sub packages_missing {
     my @pkg_have = @{delete $args{have} || []};
     my @area_have = @{delete $args{area} || []};
     my @todo = @{delete $args{want} || []};
+
+    my $force = delete $args{force};
+    my $follow_deps = delete $args{follow_deps} || "missing";
+    if (my $want_deps = delete $args{want_deps}) {
+	push(@pkg_have, @$want_deps);
+	for my $pkg (@$want_deps) {
+	    if ($follow_deps ne "none") {
+		if (my $dep = $pkg->{require}) {
+		    push(@todo, map [$_ => $dep->{$_}, $pkg->{name} ], keys %$dep);
+		}
+	    }
+	}
+    }
+
+    if ($^W && %args) {
+	require Carp;
+	Carp::carp("Unknown argument '$_' passed") for sort keys %args;
+    }
+
     return unless @todo;
 
-    $args{follow_deps} ||= "missing";
 
     my @missing_upgrade;
     for my $feature (@todo) {
@@ -624,12 +642,12 @@ sub packages_missing {
 	$have = $self->feature_have($feature, @area_have) unless defined($have);
 	ppm_debug("Have $feature $have") if defined($have);
 
-        if ((!$needed_by && $args{force}) ||
-	    ($needed_by && $args{follow_deps} eq "all") ||
+        if ((!$needed_by && $force) ||
+	    ($needed_by && $follow_deps eq "all") ||
             !defined($have) || $have < $want)
         {
             if (my $pkg = $self->package_best($feature, $want)) {
-		$self->check_downgrade($pkg, $feature) unless $args{force};
+		$self->check_downgrade($pkg, $feature) unless $force;
 		push(@pkg_missing, $pkg);
 		if ($needed_by) {
 		    push(@{$pkg->{_needed_by}}, $needed_by);
@@ -638,7 +656,7 @@ sub packages_missing {
 		    $pkg->{_wanted}++;
 		}
 
-		if ($args{follow_deps} ne "none") {
+		if ($follow_deps ne "none") {
 		    if (my $dep = $pkg->{require}) {
 			push(@todo, map [$_ => $dep->{$_}, $pkg->{name} ], keys %$dep);
 		    }
@@ -859,6 +877,10 @@ List of packages you already have decided to install.  The function
 will check if any of these packages provide needed features before
 looking anywhere else.
 
+=item want_deps => \@pkgs
+
+Resolve any dependencies for the given packages.
+
 =item area => \@areas
 
 List of names of install areas to consider when determining if
@@ -877,7 +899,6 @@ is C<missing>.  If $str is C<all> then dependent packages are returned
 even if they are already installed.  If $str is C<missing> then only
 missing dependencies are returned.  If $str is C<none> then
 dependencies are ignored.
-
 
 =back
 

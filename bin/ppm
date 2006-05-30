@@ -665,8 +665,11 @@ sub do_install {
     elsif ($feature =~ /^\d+$/) {
 	my $pkg = $ppm->search_lookup($feature) ||
 	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
-	$ppm->package_set_abs_ppd_uri($pkg);
-	_install($area, $pkg);
+	my @deps = $ppm->packages_missing(want_deps => [$pkg]);
+	for ($pkg, @deps) {
+	    $ppm->package_set_abs_ppd_uri($_);
+	}
+	_install($area, $pkg, @deps);
     }
     else {
 	# seach for feature in repos
@@ -704,11 +707,16 @@ sub _install_uri {
     else {
 	die "The PPD does not provide code to install for this platform";
     }
+
     # XXX follow dependencies with the "directory" of $pkg $uri as the
     # first repo to look for additional packages.  This only works for
     # package features.
+    my @deps = $ppm->packages_missing(want_deps => [$pkg]);
+    for (@deps) {
+	$ppm->package_set_abs_ppd_uri($_);
+    }
 
-    _install($area, $pkg);
+    _install($area, $pkg, @deps);
 }
 
 sub _install_repo {
