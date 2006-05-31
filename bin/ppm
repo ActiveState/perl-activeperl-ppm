@@ -15,7 +15,27 @@ my $CMD = shift || 'shell';
 $CMD = "version" if $CMD eq "--version";
 
 my $do_cmd = "do_$CMD";
-usage("Unrecognized ppm command '$CMD'") unless defined &$do_cmd;
+unless (defined &$do_cmd) {
+    require Text::Abbrev;
+    my @cmds;
+    for my $name (keys %main::) {
+	push(@cmds, $name) if $name =~ s/^do_//;
+    }
+    my $abbrev = Text::Abbrev::abbrev(@cmds);
+    if (my $cmd = $abbrev->{$CMD}) {
+	$do_cmd = "do_$cmd";
+    }
+    else {
+	@cmds = sort @cmds;
+	require Text::Wrap;
+	my $last = pop(@cmds);
+	usage(Text::Wrap::wrap("", "  ",
+                  "Unrecognized ppm command '$CMD'; try one of " .
+                  join(", or ", join(", ", @cmds), $last)
+	      )
+	);
+    }
+}
 
 my $ppm = ActivePerl::PPM::Client->new;
 
@@ -1023,7 +1043,6 @@ BEGIN {
     # aliases for PPM3 compatibility (mostly)
     *do_update = \&do_upgrade;
     *do_uninstall = \&do_remove;
-    *do_rep = \&do_repo;
 }
 
 __END__
