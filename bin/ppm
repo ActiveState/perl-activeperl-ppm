@@ -167,7 +167,7 @@ sub do_area {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0);
+	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0, align => {pkgs => "right"});
 	}
     }
     elsif ($cmd eq "sync") {
@@ -407,7 +407,7 @@ sub do_repo {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header);
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {id => "right"});
 	    my $s = ($count == 1) ? "y" : "ies";
 	    $count ||= "no";
 	    print " ($count enabled repositor$s)\n";
