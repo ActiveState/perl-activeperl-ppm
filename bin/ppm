@@ -1178,8 +1178,8 @@ C<site> area is read only, and there are user-defined areas set up, the
 first user-defined area is used as the default instead.  Use the
 B<--area> option to install the package into an alternative location.
 
-Use the B<--nodeps> option to tell PPM to try to install the package
-without resolving any dependencies it might have.
+The B<--nodeps> option makes PPM attempt to install the package
+without resolving any dependencies the package might have.
 
 =item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ --I<field> ... ]
 
@@ -1373,8 +1373,8 @@ The following lists files and directories that PPM uses and creates:
 
 Directory where PPM keeps its state.  On Windows this directory is
 F<$APPDATA/ActiveState/ActivePerl/>.  Perl version specific
-subdirectories can be created if you don't want the versions to share
-state.  For instance if you create F<$HOME/.ActivePerl/5.8.8.818/> then
+subdirectories can be created if you do not want the versions to share
+state.  For example, if you create F<$HOME/.ActivePerl/5.8.8.818/>,
 build 818 of ActivePerl will keep its state there.
 
 =item F<$HOME/.ActivePerl/ppm-$ARCH.db>
