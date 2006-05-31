@@ -1146,7 +1146,7 @@ Prints the documentation for ppm (this file).
 Install a package and its dependencies.
 
 The argument to B<ppm install> can be the name of a package, the name of
-a module provided by the package, the file name, the URL to a PPD file,
+a module provided by the package, the file name or the URL of a PPD file,
 or the associated number for the package returned by the last C<ppm
 search> command. 
 
