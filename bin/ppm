@@ -816,7 +816,7 @@ sub _install {
 		my $tar = Archive::Tar->new($codebase_file, 1);
 		for my $file ($tar->get_files) {
 		    next unless $file->is_file;  # don't extract links and other crap
-		    my $fname = $file->name;
+		    my $fname = $file->full_path;
 		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
 		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
 		    my $extract = $fname;
