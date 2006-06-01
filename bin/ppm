@@ -1115,6 +1115,13 @@ area.  If that area is read-only, the name appears in parenthesis.  You
 will not be able to install packages or remove packages in these areas.
 The default install area is marked with a C<*> after its name.
 
+PPM B<install areas> are basically perl library locations.  PPM allows
+for the addition of new install areas, which is useful for shared
+ActivePerl installations where the user does not have write permissions
+for the I<site> and I<perl> librar directories.  New install areas are
+added by specifying the target directory in the PERL5LIB environment
+variable.
+
 The order of the listed install areas is the order perl uses when
 searching for modules.  Modules installed in earlier areas override
 modules installed in later ones.
