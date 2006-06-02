@@ -1309,7 +1309,17 @@ Alias for B<ppm seach>.
 
 =item B<ppm repo suggest>
 
-List some known repositories that can be added with B<ppm add>.
+List some known repositories that can be added with B<ppm add>. PPM
+needs the C<PPM-Repositories> package to be installed in the I<perl>
+install area for this option to work. To install it:
+
+  ppm install PPM-Repositories --area perl
+
+This package supplies PPM with a list of repositories maintained by
+third parties (not by ActiveState). For example, to add the theoryx5
+repository:
+
+  ppm repo add theory58S
 
 =item B<ppm repo sync> [ B<--force> ]
 
