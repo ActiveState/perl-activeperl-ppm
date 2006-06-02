@@ -115,7 +115,8 @@ sub etc {
 
 sub packages {
     my $self = shift;
-    my $dbh = $self->dbh;
+    my $dbh = eval { $self->dbh };
+    return wantarray ? () : 0 unless $dbh;
     if (@_) {
 	return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
 					  " FROM package ORDER BY name")};
@@ -586,7 +587,7 @@ sub _init_db {
 
 sub readonly {
     my $self = shift;
-    $self->dbh;  # need to try to open database to know
+    return 1 unless eval { $self->dbh };  # need to try to open database to know
     return $self->{readonly};
 }
 
