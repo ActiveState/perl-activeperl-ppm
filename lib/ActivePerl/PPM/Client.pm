@@ -203,7 +203,6 @@ sub _init_db {
         PrintError => 1,
     });
     die "$db_file: $DBI::errstr" unless $dbh;
-    $self->{dbh} = $dbh;
 
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
@@ -216,6 +215,8 @@ sub _init_db {
     elsif ($v != 1) {
 	die "Unrecognized database schema $v for $db_file";
     }
+
+    return $dbh;
 }
 
 sub _init_ppm_schema {

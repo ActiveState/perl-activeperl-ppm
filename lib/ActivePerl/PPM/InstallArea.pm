@@ -562,7 +562,6 @@ sub _init_db {
         PrintError => 1,
     });
     die "$etc/$db_file: $DBI::errstr" unless $dbh;
-    $self->{dbh} = $dbh;
 
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
@@ -581,6 +580,8 @@ sub _init_db {
     # suggested in http://article.gmane.org/gmane.comp.db.sqlite.general/5171
     local $dbh->{PrintError} = 0;
     $self->{readonly}++ unless $dbh->do("UPDATE package SET rowid=0 WHERE 0");
+
+    return $dbh;
 }
 
 sub readonly {
