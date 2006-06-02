@@ -580,7 +580,12 @@ sub _init_db {
     # check if we have opened a readonly database based on technique
     # suggested in http://article.gmane.org/gmane.comp.db.sqlite.general/5171
     local $dbh->{PrintError} = 0;
-    $self->{readonly}++ unless $dbh->do("UPDATE package SET rowid=0 WHERE 0");
+    if ($dbh->do("UPDATE package SET rowid=0 WHERE 0")) {
+	$dbh->rollback;
+    }
+    else {
+	$self->{readonly}++;
+    }
 
     return $dbh;
 }
