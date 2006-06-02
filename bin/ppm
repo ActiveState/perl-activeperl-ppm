@@ -14,6 +14,14 @@ $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 my $CMD = shift || 'shell';
 $CMD = "version" if $CMD eq "--version";
 
+my $BOX_CHARS;
+if ($^O eq "MSWin32") {
+    $BOX_CHARS = "dos";
+}
+elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG}) =~ /\bUTF-8\b/)  {
+    $BOX_CHARS = "unicode";
+}
+
 my $do_cmd = "do_$CMD";
 unless (defined &$do_cmd) {
     require Text::Abbrev;
@@ -188,7 +196,7 @@ sub do_area {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0, align => {pkgs => "right"});
+	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0, align => {pkgs => "right"}, box_chars => $BOX_CHARS);
 	}
     }
     elsif ($cmd eq "sync") {
@@ -302,7 +310,7 @@ sub do_list {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	elsif (my $rows = $tab->rows) {
-	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {files => "right", size => "right"});
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {files => "right", size => "right"}, box_chars => $BOX_CHARS);
 	    if (1) {
 		my $s = ($rows == 1) ? "" : "s";
 		print " ($rows package$s installed$in$matching)\n";
@@ -428,7 +436,7 @@ sub do_repo {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {id => "right"});
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {id => "right"}, box_chars => $BOX_CHARS);
 	    my $s = ($count == 1) ? "y" : "ies";
 	    $count ||= "no";
 	    print " ($count enabled repositor$s)\n";
