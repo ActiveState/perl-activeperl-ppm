@@ -2,7 +2,15 @@ package ActivePerl::PPM::DBH;
 
 sub dbh {
     my $self = shift;
-    return $self->{dbh} ||= $self->_init_db;
+    unless ($self->{dbh}) {
+	die $self->{dbh_err} if $self->{dbh_err};
+	$self->{dbh} = eval { $self->_init_db };
+	if ($@) {
+	    $self->{dbh_err} = $@;
+	    die;
+	}
+    }
+    return $self->{dbh};
 }
 
 sub DESTROY {
