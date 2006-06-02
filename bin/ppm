@@ -47,6 +47,7 @@ eval {
 if ($@) {
     ppm_log("ERR", "$PROGNAME $CMD: $@");
     $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
+    $@ =~ s/ _at / at /g; # escape for when you really want "at" in the message
     print STDERR "$PROGNAME $CMD failed: $@";
     exit 1;
 }
@@ -720,7 +721,7 @@ sub _install_uri {
     my $cref = $res->decoded_content(ref => 1);
     my $pkg = ActivePerl::PPM::Package->new_ppd($$cref, $ppm->arch);
     unless ($pkg) {
-	die "No PPD found at $uri";
+	die "No PPD found _at $uri";
     }
     if (my $codebase = $pkg->{codebase}) {
 	# make it absolute
@@ -783,7 +784,7 @@ sub _install {
 	    if ($codebase->scheme eq 'file') {
 		$pkg->{codebase_file} = $codebase->file;
 		unless (-f $pkg->{codebase_file}) {
-		    die "No file at $pkg->{codebase_file}";
+		    die "No file _at $pkg->{codebase_file}";
 		}
 	    }
 	    else {
