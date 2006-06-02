@@ -15,12 +15,17 @@ my $CMD = shift || 'shell';
 $CMD = "version" if $CMD eq "--version";
 
 my $BOX_CHARS;
-if ($^O eq "MSWin32") {
+if ($ENV{ACTIVEPERL_PPM_BOX_CHARS}) {
+    $BOX_CHARS = $ENV{ACTIVEPERL_PPM_BOX_CHARS};
+}
+elsif ($^O eq "MSWin32") {
     $BOX_CHARS = "dos";
 }
 elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG} || "") =~ /\bUTF-8\b/)  {
     $BOX_CHARS = "unicode";
 }
+
+binmode(STDOUT, ":utf8") if ($BOX_CHARS || "") eq "unicode";
 
 my $do_cmd = "do_$CMD";
 unless (defined &$do_cmd) {
@@ -1451,6 +1456,12 @@ The following environment variables affect how PPM behaves:
 =item C<ACTIVEPERL_PPM_DEBUG>
 
 If set to a TRUE value, makes PPM print more internal diagnostics.
+
+=item C<ACTIVEPERL_PPM_BOX_CHARS>
+
+Select what kind of box drawing characters to use for the C<ppm *
+list> outputs.  Valid values are C<ascii>, C<dos> and C<unicode>.  The
+default varies.
 
 =item C<ACTIVEPERL_PPM_HOME>
 
