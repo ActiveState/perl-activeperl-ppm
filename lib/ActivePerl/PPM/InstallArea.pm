@@ -561,7 +561,7 @@ sub _init_db {
         AutoCommit => 0,
         PrintError => 1,
     });
-    die unless $dbh;
+    die "$etc/$db_file: $DBI::errstr" unless $dbh;
     $self->{dbh} = $dbh;
 
     my $v = $dbh->selectrow_array("PRAGMA user_version");
