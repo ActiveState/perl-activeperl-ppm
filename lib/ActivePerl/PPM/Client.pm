@@ -216,7 +216,7 @@ sub _init_db {
 	die "Unrecognized database schema $v for $db_file";
     }
 
-    return $dbh;
+    $self->{dbh} = $dbh;
 }
 
 sub _init_ppm_schema {

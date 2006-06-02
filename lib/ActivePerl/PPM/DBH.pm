@@ -4,12 +4,13 @@ sub dbh {
     my $self = shift;
     return $self->{dbh} ||= do {
 	die $self->{dbh_err} if $self->{dbh_err};
-	my $dbh = eval { $self->_init_db };
+	eval { $self->_init_db };  # will set $self->{dbh}
 	if ($@) {
+	    delete $self->{dbh};
 	    $self->{dbh_err} = $@;
 	    die;
 	}
-	$dbh;
+	$self->{dbh};
     };
 }
 
