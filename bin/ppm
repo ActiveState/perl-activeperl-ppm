@@ -1118,7 +1118,7 @@ The default install area is marked with a C<*> after its name.
 PPM B<install areas> are basically perl library locations.  PPM allows
 for the addition of new install areas, which is useful for shared
 ActivePerl installations where the user does not have write permissions
-for the I<site> and I<perl> librar directories.  New install areas are
+for the I<site> and I<perl> library directories.  New install areas are
 added by specifying the target directory in the PERL5LIB environment
 variable.
 
