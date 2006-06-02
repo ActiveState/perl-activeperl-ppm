@@ -527,7 +527,11 @@ sub do_repo {
 	else {
 	    $name = eval { URI->new($url)->host } || $url;
 	}
-	unless ($url =~ /^[a-z][+\w]+:/) {
+	if ($url =~ /^[a-z][+\w]+:/) {
+	    die "PPM3 SOAP repositories are not supported"
+		if $url =~ m,\?urn:/,;
+	}
+	else {
 	    if (-d $url) {
 		require URI::file;
 		$url = URI::file->new_abs($url);
