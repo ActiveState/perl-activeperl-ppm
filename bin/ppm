@@ -59,9 +59,10 @@ eval {
 };
 if ($@) {
     ppm_log("ERR", "$PROGNAME $CMD: $@");
-    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
+    $@ =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
     $@ =~ s/ _at / at /g; # escape for when you really want "at" in the message
     print STDERR "$PROGNAME $CMD failed: $@";
+    print STDERR "\n" unless $@ =~ /\n\z/;
     exit 1;
 }
 else {
