@@ -76,7 +76,7 @@ ok($ppm_out, qr/^perl\s+(\d+)/m);
 my $live_repo = 1;
 $live_repo = 0 if $^O eq "aix";
 $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
-$live_repo = 0 if $Config{archname} =~ /\bsolaris-64\b/;
+$live_repo = 0 if $Config{archname} =~ /\bsolaris(-\w+)*-64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bx86-solaris\b/;
 if ($live_repo) {
     ppm("install", "Tie-Log", "--area", $prefix_base, "--force");
