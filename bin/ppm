@@ -18,7 +18,7 @@ my $BOX_CHARS;
 if ($^O eq "MSWin32") {
     $BOX_CHARS = "dos";
 }
-elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG}) =~ /\bUTF-8\b/)  {
+elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG} || "") =~ /\bUTF-8\b/)  {
     $BOX_CHARS = "unicode";
 }
 
