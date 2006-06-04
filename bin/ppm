@@ -633,6 +633,7 @@ sub do_search {
     my $pattern = shift(@ARGV);
     $| = 1;
     $ppm->repo_sync;
+    $| = 0;
     my @fields = ("name", "version", "release_date", "abstract");
     my @res = $ppm->search($pattern, @fields);
     if (@res) {
