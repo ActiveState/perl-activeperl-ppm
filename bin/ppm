@@ -481,7 +481,6 @@ sub do_repo {
             ) || usage();
 	    usage() if @ARGV;
 	}
-	$| = 1;
 	$ppm->repo_sync(force => $force);
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
@@ -631,9 +630,7 @@ sub do_search {
     $USAGE = "search <pattern>";
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
-    $| = 1;
     $ppm->repo_sync;
-    $| = 0;
     my @fields = ("name", "version", "release_date", "abstract");
     my @res = $ppm->search($pattern, @fields);
     if (@res) {
@@ -784,7 +781,6 @@ sub _install_uri {
 
 sub _install_repo {
     my $area = shift;
-    $| = 1;
     $ppm->repo_sync;
     _install($area, $ppm->packages_missing(@_));
 }
