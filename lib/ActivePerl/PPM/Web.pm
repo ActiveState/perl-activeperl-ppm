@@ -56,4 +56,30 @@ sub simple_request {
     return $res;
 }
 
+my @animation = ("/", "-", "\\", "|");
+my $animation_index = 0;
+my $last_p;
+
+sub progress {
+    my($self, $status, $response) = @_;
+    if ($status eq "begin") {
+	$animation_index = 0;
+	$last_p = "";
+    }
+    elsif ($status eq "end") {
+	print "     \b\b\b\b\b";
+    }
+    elsif ($status eq "tick") {
+	my $c = $animation[$animation_index];
+	$animation_index = ($animation_index + 1) % @animation;
+	print $c . ("\b" x length($c));
+    }
+    elsif ($status =~ /^\d/) {
+	$status = 1 if $status > 1;
+	my $p = sprintf "%3.0f%%", $status * 100;
+	print $p . ("\b" x length($p)) if $last_p ne $p;
+	$last_p = $p;
+    }
+}
+
 1;
