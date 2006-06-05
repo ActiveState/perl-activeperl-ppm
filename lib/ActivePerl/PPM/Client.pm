@@ -414,6 +414,7 @@ sub repo_sync {
 			 $repo->{id});
 
 		# parse document
+		my $cref = $res->decoded_content(ref => 1);
 		if ($res->content_type eq "text/html") {
 		    my $base = $res->base;
 		    require HTML::Parser;
@@ -424,12 +425,12 @@ sub repo_sync {
 			    push(@check_ppd, URI->new_abs($href,$base)->rel($repo->{packlist_uri})) if $href =~ /\.ppd$/;
 			}, "attr"],
 		    );
-		    $p->parse($res->decoded_content)->eof;
+		    $p->parse($$cref)->eof;
 		    ppm_log("WARN", "No ppds found in $repo->{packlist_uri}") unless @check_ppd;
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 		}
-		elsif ($res->decoded_content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+		elsif ($$cref =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 		    _repo_delete_packages($dbh, $repo->{id});
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
@@ -438,7 +439,7 @@ sub repo_sync {
 			$pkg->{repo_id} = $repo->{id};
 			$pkg->dbi_store($dbh) if $pkg->{codebase};
 		    });
-		    $p->parse_more($res->decoded_content);
+		    $p->parse_more($$cref);
 		    $p->parse_done;
 		}
 		else {
