@@ -561,7 +561,7 @@ sub do_repo {
 		($name, $url) = $ppm->activestate_repo;
 		die "No ActiveState repo for this platform" unless $url;
 	    }
-	    elsif (eval {require PPM::Repositories} and
+	    elsif (eval {local @INC = @main::INC_ORIG; require PPM::Repositories} and
 		   my $repo = $PPM::Repositories::Repositories{$url})
 	    {
 		$name ||= $url;
