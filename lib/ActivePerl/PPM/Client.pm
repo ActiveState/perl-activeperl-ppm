@@ -414,7 +414,7 @@ sub repo_sync {
 		    my $p = HTML::Parser->new(
 	                report_tags => [qw(a)],
 	                start_h => [sub {
-			    my $href = shift->{href};
+			    my $href = shift->{href} || return;
 			    push(@check_ppd, URI->new_abs($href,$base)->rel($repo->{packlist_uri})) if $href =~ /\.ppd$/;
 			}, "attr"],
 		    );
