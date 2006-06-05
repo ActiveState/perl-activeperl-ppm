@@ -273,8 +273,10 @@ sub repo {
     my($self, $id) = @_;
     my $dbh = $self->dbh;
     my $hash = $dbh->selectrow_hashref("SELECT * FROM repo WHERE id = ?", undef, $id);
-    my $pkgs = $dbh->selectrow_array("SELECT count(*) FROM package WHERE repo_id = ?", undef, $id);
-    $hash->{pkgs} = $pkgs;
+    if ($hash) {
+	my $pkgs = $dbh->selectrow_array("SELECT count(*) FROM package WHERE repo_id = ?", undef, $id);
+	$hash->{pkgs} = $pkgs;
+    }
     return $hash;
 }
 
