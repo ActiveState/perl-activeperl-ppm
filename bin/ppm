@@ -590,7 +590,11 @@ sub do_repo {
     }
     elsif ($cmd eq "suggest") {
 	eval {
-	    require PPM::Repositories;
+	    {
+		# allow overrides for this module
+		local @INC = @main::INC_ORIG;
+		require PPM::Repositories;
+	    }
 	    require ActivePerl;
 	    my $count = 0;
 	    for my $id (sort keys %PPM::Repositories::Repositories) {
@@ -1349,10 +1353,10 @@ Alias for B<ppm seach>.
 =item B<ppm repo suggest>
 
 List some known repositories that can be added with B<ppm add>. PPM
-needs the C<PPM-Repositories> package to be installed in the I<perl>
-install area for this option to work. To install it:
+needs the C<PPM-Repositories> package to be installed for this option
+to work. To install it:
 
-  ppm install PPM-Repositories --area perl
+  ppm install PPM-Repositories
 
 This package supplies PPM with a list of repositories maintained by
 third parties (not by ActiveState). For example, to add the theoryx5
