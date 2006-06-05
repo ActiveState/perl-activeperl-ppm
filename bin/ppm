@@ -594,48 +594,49 @@ sub do_repo {
 	do_repo();
     }
     elsif ($cmd eq "suggest") {
+	my $ppm_repo_ok;
 	eval {
-	    {
-		# allow overrides for this module
-		local @INC = @main::INC_ORIG;
-		require PPM::Repositories;
-	    }
-	    require ActivePerl;
-	    my $count = 0;
-	    if (my($as_name, $as_url) = $ppm->activestate_repo) {
-		$PPM::Repositories::Repositories{activestate} = {
-		    Active => 1,
-                    Type => "PPM4",
-                    Notes => $as_name,
-                    location => $as_url,
-		};
-            }
-	    for my $id (sort keys %PPM::Repositories::Repositories) {
-		my $repo = $PPM::Repositories::Repositories{$id};
-		next unless $repo->{Active};
-		next if $repo->{Type} eq "PPMServer";
-		my $o = $repo->{PerlO} || [];
-		next if @$o && !grep $_ eq $^O, @$o;
-		my $v = $repo->{PerlV} || [];
-		my $my_v = ActivePerl::perl_version;
-		next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
-		print "\n$PROGNAME repo add $id\n";
-		print "   $repo->{Notes}\n";
-		print "   $repo->{location}\n";
-		$count++;
-	    }
-	    unless ($count) {
-		die "No suggested repository for this perl";
-	    }
+	    # allow overrides for this module
+	    local @INC = @main::INC_ORIG;
+	    require PPM::Repositories;
+	    $ppm_repo_ok++;
 	};
-	if ($@) {
-	    if ($@ =~ /^Can't locate/) {
-		die "Install the PPM-Repositories package first";
+	require ActivePerl;
+	my $count = 0;
+	if (my($as_name, $as_url) = $ppm->activestate_repo) {
+	    $PPM::Repositories::Repositories{activestate} = {
+		Active => 1,
+                Type => "PPM4",
+                Notes => $as_name,
+                location => $as_url,
+	    };
+	}
+	for my $id (sort keys %PPM::Repositories::Repositories) {
+	    my $repo = $PPM::Repositories::Repositories{$id};
+	    next unless $repo->{Active};
+	    next if $repo->{Type} eq "PPMServer";
+	    my $o = $repo->{PerlO} || [];
+	    next if @$o && !grep $_ eq $^O, @$o;
+	    my $v = $repo->{PerlV} || [];
+	    my $my_v = ActivePerl::perl_version;
+	    next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
+	    print "\n" if $count;
+	    print "$PROGNAME repo add $id\n";
+	    print "   $repo->{Notes}\n";
+	    print "   $repo->{location}\n";
+	    $count++;
+	}
+	if ($count) {
+	    unless ($ppm_repo_ok) {
+		print "\n*** Install PPM-Repositories for more suggestions ***\n";
 	    }
-	    else {
-		die $@;
-	    }
-	};
+	}
+	else {
+	    my $msg = "No suggested repository for this perl";
+	    $msg .= "\nInstalling PPM-Repositories might provide some suggestions"
+		unless $ppm_repo_ok;
+	    die $msg;
+	}
     }
     else {
 	$cmd = _try_abbrev("repo", $cmd, qw(list search sync on off delete describe add suggest));
