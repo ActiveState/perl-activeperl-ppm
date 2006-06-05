@@ -826,6 +826,7 @@ sub _install {
 	ppm_log("NOTICE", "Installing into $area");
     }
     $area = $ppm->area($area);
+    die "Can't install into read-only area" if $area->readonly;
 
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     eval {
