@@ -557,6 +557,10 @@ sub do_repo {
 		require URI::file;
 		$url = URI::file->new_abs($url);
 	    }
+	    elsif ($url eq "activestate") {
+		($name, $url) = $ppm->activestate_repo;
+		die "No ActiveState repo for this platform" unless $url;
+	    }
 	    elsif (eval {require PPM::Repositories} and
 		   my $repo = $PPM::Repositories::Repositories{$url})
 	    {
@@ -598,6 +602,14 @@ sub do_repo {
 	    }
 	    require ActivePerl;
 	    my $count = 0;
+	    if (my($as_name, $as_url) = $ppm->activestate_repo) {
+		$PPM::Repositories::Repositories{activestate} = {
+		    Active => 1,
+                    Type => "PPM4",
+                    Notes => $as_name,
+                    location => $as_url,
+		};
+            }
 	    for my $id (sort keys %PPM::Repositories::Repositories) {
 		my $repo = $PPM::Repositories::Repositories{$id};
 		next unless $repo->{Active};

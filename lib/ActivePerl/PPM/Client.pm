@@ -249,12 +249,20 @@ EOT
 
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
+    if (my @repo = activestate_repo()) {
+	$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
+    }
+}
+
+sub activestate_repo {
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
     my $repo_uri = "http://ppm.activestate.com/PPMPackages/5.8-$os/";
     if ($os =~ /^(windows|linux|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
-	$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES ("ActiveState Package Repository", ?)), undef, $repo_uri);
+	return $repo_uri unless wantarray;
+	return ("ActiveState Package Repository", $repo_uri);
     }
+    return;
 }
 
 sub repos {
