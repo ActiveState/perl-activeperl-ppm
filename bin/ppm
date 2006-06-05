@@ -445,14 +445,14 @@ sub do_repo {
 	require ActiveState::Table;
 	my $tab = ActiveState::Table->new;
 	$tab->add_field("id");
-	$tab->add_field("on");
+	$tab->add_field("pkgs");
 	$tab->add_field("name");
 	my $count = 0;
 	for my $repo_id ($ppm->repos) {
 	    my $repo = $ppm->repo($repo_id);
 	    $tab->add_row({
 	        id => $repo_id,
-                on => $repo->{enabled} ? "yes" : "",
+                pkgs => $repo->{enabled} ? $repo->{pkgs} : "n/a",
 		name => $repo->{name},
             });
 	    $count++ if $repo->{enabled};
@@ -462,7 +462,7 @@ sub do_repo {
 	    print $tab->as_csv(null => "", field_separator => $csv, show_header => $show_header);
 	}
 	else {
-	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {id => "right"}, box_chars => $BOX_CHARS);
+	    print $tab->as_box(null => "", show_trailer => 0, show_header => $show_header, align => {id => "right", pkgs => "right"}, box_chars => $BOX_CHARS);
 	    my $s = ($count == 1) ? "y" : "ies";
 	    $count ||= "no";
 	    print " ($count enabled repositor$s)\n";
