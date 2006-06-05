@@ -436,7 +436,7 @@ sub repo_sync {
 			my $pkg = shift;
 			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, $self->{arch});
 			$pkg->{repo_id} = $repo->{id};
-			$pkg->dbi_store($dbh);
+			$pkg->dbi_store($dbh) if $pkg->{codebase};
 		    });
 		    $p->parse_more($res->decoded_content);
 		    $p->parse_done;
