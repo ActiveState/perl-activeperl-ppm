@@ -61,9 +61,11 @@ my @animation = ("/", "-", "\\", "|");
 my $animation_index = 0;
 my $last_p;
 my $last_t;
+my $is_tty = -t *STDOUT;
 
 sub progress {
     my($self, $status, $response) = @_;
+    return unless $is_tty;
     if ($status eq "begin") {
 	$animation_index = 0;
 	$last_p = "";
