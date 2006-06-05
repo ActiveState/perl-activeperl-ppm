@@ -490,6 +490,7 @@ sub do_repo {
 	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
 	if ($cmd eq "delete") {
 	    $ppm->repo_delete($ARGV[0]);
+	    print "Repo $ARGV[0] deleted.\n";
 	}
 	elsif ($cmd eq "describe") {
 	    require ActiveState::Duration;
