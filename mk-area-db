@@ -43,6 +43,7 @@ for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
     my $pkg = ActivePerl::PPM::Package->new(
         name => $name,
         version => $mod->{version},
+        release_date => $mod->{date},
         author => $mod->{author},
         abstract => $mod->{abstract},
     );
