@@ -3,7 +3,6 @@
   <ABSTRACT>A simple learning module for building neural nets.</ABSTRACT>
   <AUTHOR>Curtis &quot;Ovid&quot; Poe ()</AUTHOR>
   <IMPLEMENTATION>
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
     <CODEBASE HREF="../test1/i686-linux-thread-multi-5.8/AI-NeuralNet-Simple-0.03.tar.gz" />
     <DEPENDENCY NAME="Inline" VERSION="0,0,0,0" />
     <DEPENDENCY NAME="Sub-Uplevel" VERSION="0,0,0,0" />
@@ -15,7 +14,6 @@
   <ABSTRACT>A simple learning module for building neural nets.</ABSTRACT>
   <AUTHOR>Curtis &quot;Ovid&quot; Poe ()</AUTHOR>
   <IMPLEMENTATION>
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
     <CODEBASE HREF="../test1/i686-linux-thread-multi-5.8/AI-NeuralNet-Simple-0.10.tar.gz" />
     <DEPENDENCY NAME="Inline" VERSION="0,0,0,0" />
     <DEPENDENCY NAME="Log-Agent" VERSION="0,0,0,0" />
@@ -27,7 +25,6 @@
 <SOFTPKG NAME="Acme-Bleach" VERSION="1,12,0,0">
   <IMPLEMENTATION>
     <CODEBASE HREF="../test1/i686-linux-thread-multi-5.8/Acme-Bleach.tar.gz" />
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
     <OS NAME="linux" />
   </IMPLEMENTATION>
   <ABSTRACT>For *really* clean programs</ABSTRACT>
@@ -37,7 +34,6 @@
 <SOFTPKG NAME="Acme-Buffy" VERSION="1,3,0,0">
   <IMPLEMENTATION>
     <CODEBASE HREF="../test1/i686-linux-thread-multi-5.8/Acme-Buffy.tar.gz" />
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
   </IMPLEMENTATION>
   <REQUIRE NAME="Blood" VERSION="3.0"/>
   <PROVIDE NAME="Acme::Buffy" VERSION="1.3"/>

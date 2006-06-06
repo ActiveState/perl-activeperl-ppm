@@ -41,6 +41,7 @@ sub new {
     unless ($arch) {
 	$arch =  $Config{archname};
 	$arch .= sprintf "-%vd", substr($^V, 0, 2) if $] >= 5.008;
+	$arch .= "-xxx";
     }
 
     my $etc = $dir; # XXX or "$dir/etc";

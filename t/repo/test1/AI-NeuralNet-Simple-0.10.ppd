@@ -3,7 +3,6 @@
   <ABSTRACT>A simple learning module for building neural nets.</ABSTRACT>
   <AUTHOR>Curtis &quot;Ovid&quot; Poe ()</AUTHOR>
   <IMPLEMENTATION>
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
     <CODEBASE HREF="i686-linux-thread-multi-5.8/AI-NeuralNet-Simple-0.10.tar.gz" />
     <DEPENDENCY NAME="Inline" VERSION="0,0,0,0" />
     <DEPENDENCY NAME="Log-Agent" VERSION="0,0,0,0" />

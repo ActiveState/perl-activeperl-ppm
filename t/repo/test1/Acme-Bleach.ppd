@@ -2,8 +2,6 @@
 <SOFTPKG NAME="Acme-Bleach" VERSION="1,12,0,0">
   <IMPLEMENTATION>
     <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Bleach.tar.gz" />
-    <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
-    <OS NAME="linux" />
     <INSTALL EXEC="PPM_PERL">print "Clean programs rock!\n"</INSTALL>
     <UNINSTALL HREF="sorry.sh"/>
   </IMPLEMENTATION>
