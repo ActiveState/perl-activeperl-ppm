@@ -468,8 +468,10 @@ sub _check_ppd {
 
     my @h;
     if ($row) {
-	delete $delete_package->{$row->{id}} if $delete_package;
-	return if $row->{ppd_fresh_until} && $row->{ppd_fresh_until} > time;
+	if ($row->{ppd_fresh_until} && $row->{ppd_fresh_until} > time) {
+	    delete $delete_package->{$row->{id}} if $delete_package;
+	    return;
+	}
 	push(@h, "If-None-Match", $row->{ppd_etag}) if $row->{ppd_etag};
 	push(@h, "If-Modified-Since", $row->{ppd_lastmod}) if $row->{ppd_lastmod};
     }
@@ -479,25 +481,29 @@ sub _check_ppd {
     print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
     if ($row && $ppd_res->code == 304) {  # not modified
 	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
+	delete $delete_package->{$row->{id}} if $delete_package;
     }
     elsif ($ppd_res->is_success) {
 	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content, $arch);
-	$ppd->{id} = $row->{id} if $row;
-	$ppd->{repo_id} = $repo->{id};
-	$ppd->{ppd_uri} = $rel_url;
-	$ppd->{ppd_etag} = $ppd_res->header("ETag");
-	$ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
-	$ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
+	if ($ppd->{codebase}) {
+	    $ppd->{id} = $row->{id} if $row;
+	    $ppd->{repo_id} = $repo->{id};
+	    $ppd->{ppd_uri} = $rel_url;
+	    $ppd->{ppd_etag} = $ppd_res->header("ETag");
+	    $ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
+	    $ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
 
-	# make URL attributes relative to $abs_url
-	my $ppd_base = $ppd_res->base;
-	for my $attr (qw(codebase)) {
-	    next unless exists $ppd->{$attr};
-	    my $url = URI->new_abs($ppd->{$attr}, $ppd_base)->rel($abs_url);
-	    $ppd->{$attr} = $url->as_string;
+	    # make URL attributes relative to $abs_url
+	    my $ppd_base = $ppd_res->base;
+	    for my $attr (qw(codebase)) {
+		next unless exists $ppd->{$attr};
+		my $url = URI->new_abs($ppd->{$attr}, $ppd_base)->rel($abs_url);
+		$ppd->{$attr} = $url->as_string;
+	    }
+
+	    $ppd->dbi_store($dbh);
+	    delete $delete_package->{$row->{id}} if $delete_package && $row;
 	}
-
-	$ppd->dbi_store($dbh);
     }
 }
 
