@@ -521,7 +521,7 @@ sub search {
  SEARCH: {
 	if ($pattern =~ /::/) {
 	    my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
-	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE id IN (SELECT package_id FROM feature WHERE name $op ? AND role = 'p') ORDER BY name", undef, $pattern);
+	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE id IN (SELECT package_id FROM feature WHERE lower(name) $op ? AND role = 'p') ORDER BY name", undef, lc($pattern));
 	}
 
 	if ($pattern eq '*') {
