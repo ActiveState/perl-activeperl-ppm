@@ -70,9 +70,11 @@ sub progress {
 	$animation_index = 0;
 	$last_p = "";
 	$last_t = time;
+	print "$self->{progress_what}..." if $self->{progress_what};
     }
     elsif ($status eq "end") {
 	print "     \b\b\b\b\b";
+	print "done\n" if $self->{progress_what};
     }
     elsif ($status eq "tick") {
 	my $c = $animation[$animation_index];

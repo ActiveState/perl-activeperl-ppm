@@ -353,6 +353,7 @@ sub repo_sync {
 	}
 	else {
 	    my $ua = web_ua();
+	    local $ua->{progress_what} = "Syncing $repo->{name}";
 	    my $res;
 	    if ($repo->{packlist_last_status_code}) {
 		# if we continue to get errors from repo, only hit it occasionally
@@ -477,7 +478,11 @@ sub _check_ppd {
     }
 
     my $abs_url = URI->new_abs($rel_url, $repo->{packlist_uri});
-    my $ppd_res = web_ua()->get($abs_url, @h);
+    my $ua = web_ua();
+    (my $base_url = $rel_url) =~ s,.*/,,;
+    $base_url =~ s,\.ppd$,,;
+    local $ua->{progress_what} = "Syncing $repo->{name} $base_url";
+    my $ppd_res = $ua->get($abs_url, @h);
     print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
     if ($row && $ppd_res->code == 304) {  # not modified
 	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
