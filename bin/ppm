@@ -1090,7 +1090,7 @@ sub do_remove {
 	}
 	eval {
 	    _run_script($area, $pkg_o, "uninstall");
-	    print "$pkg: ";
+	    print "$pkg_o->{name}: ";
 	    $area->uninstall($pkg);
 	};
 	if ($@) {
