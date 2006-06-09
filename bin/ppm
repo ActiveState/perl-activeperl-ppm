@@ -480,16 +480,16 @@ sub do_repo {
 	do_search();
     }
     elsif ($cmd eq "sync") {
-	$USAGE = "repo sync [--force]";
+	$USAGE = "repo sync [--force] [<id>]";
 	my $force;
 	if (@ARGV) {
 	    require Getopt::Long;
 	    Getopt::Long::GetOptions(
 	        force => \$force,
             ) || usage();
-	    usage() if @ARGV;
+	    usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^\d+$/);
 	}
-	$ppm->repo_sync(force => $force);
+	$ppm->repo_sync(force => $force, (@ARGV ? ("repo" => $ARGV[0]) : ()));
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";
@@ -1172,7 +1172,7 @@ Manage and search install areas:
 Manage and search repositories:
 
     ppm repo list [--csv] [--no-header]
-    ppm repo sync [--force]
+    ppm repo sync [--force] [<num>]
     ppm repo on <num>
     ppm repo off <num>
     ppm repo describe <num>
@@ -1413,11 +1413,12 @@ repository:
 
   ppm repo add theory58S
 
-=item B<ppm repo sync> [ B<--force> ]
+=item B<ppm repo sync> [ B<--force> ] [ I<num> ]
 
 Synchronize local cache of packages found in the enabled repositories.
 With the B<--force> option, download state from remote repositories even
-if the local state has not expired yet.
+if the local state has not expired yet.  If I<num> is provided, only sync
+the given repository.
 
 =item B<ppm search> I<pattern>
 

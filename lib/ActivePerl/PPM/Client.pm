@@ -338,10 +338,20 @@ sub repo_sync {
     my($self, %opt) = @_;
     my @repos;
     my $dbh = $self->dbh;
-    my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1 ORDER BY prio, name");
-    $sth->execute;
+    my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1" .
+			    ($opt{repo} ? " AND id = $opt{repo}" : "") .
+			    " ORDER BY prio, name");
+    $sth->execute();
     while (my $h = $sth->fetchrow_hashref) {
 	push(@repos, $h);
+    }
+    if ($opt{repo} && !@repos) {
+	if ($dbh->selectrow_array("SELECT count(*) FROM repo WHERE id = $opt{repo}")) {
+	    die "Repo $opt{repo} is not enabled";
+	}
+	else {
+	    die "Repo $opt{repo} does not exist";
+	}
     }
 
     for my $repo (@repos) {
