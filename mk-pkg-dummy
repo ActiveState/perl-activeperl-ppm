@@ -1,0 +1,46 @@
+#!/usr/bin/perl -w
+
+# Script that create (and publish) dummy packages that can be used
+# for testing various install and upgrade scenarios.
+
+use strict;
+use Archive::Tar;
+use File::Path qw(mkpath);
+
+my $pkg = shift || usage();
+$pkg =~ /^[a-zA-Z]\w*(-\w+)*/ || usage();;
+my $vers = shift || usage();
+my $repo = shift || "repo";
+
+sub usage {
+    (my $progname = $0) =~ s,.*/,,;
+    die "Usage: $progname <pkg-name> <pkg-version> [<repo-dir>]\n";
+}
+
+(my $mod = $pkg) =~ s/-/::/g;
+(my $mod_fname = $mod) =~ s/::/\//g;
+$mod_fname .= ".pm";
+
+my $tarball = Archive::Tar->new;
+$tarball->add_data("blib/lib/$mod_fname.pm", <<EOT);
+package $mod;
+our \$VERSION = "$vers";
+1;
+EOT
+
+unless (-d $repo) {
+    mkpath($repo) || die "Can't mkpath($repo): $!";
+}
+
+$tarball->write("$repo/$pkg-$vers.tar.gz", 1) || die;
+
+my $ppd = "$repo/$pkg-$vers.ppd";
+open(my $fh, ">", $ppd) || die "Can't create $ppd: $!";
+print $fh <<"EOT";
+<SOFTPKG NAME="$pkg" VERSION="$vers-beta">
+   <CODEBASE HREF="$pkg-$vers.tar.gz"/>
+   <PROVIDE NAME="$pkg" VERSION="$vers"/>
+</SOFTPKG>
+EOT
+close($fh) || die "Can't write $repo/$pkg-$vers.ppd: $!";;
+print "$ppd\n";
