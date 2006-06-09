@@ -766,35 +766,58 @@ sub do_install {
 }
 
 sub do_upgrade {
-    $USAGE = "upgrade <module>";
-    usage() if @ARGV > 1;
+    $USAGE = "upgrade [<pkg> | --install]";
+    my $install;
     if (@ARGV) {
-	my $feature = shift(@ARGV);
-	_install_repo(undef, want => [[$feature, undef]]);
+	require Getopt::Long;
+	Getopt::Long::GetOptions(
+	    'install' => \$install,
+	) || usage();
+	usage() if @ARGV > 1;
     }
-    else {
-	my $count;
-	my %shaddow;
-	$ppm->repo_sync;
-	for my $area_name ($ppm->areas) {
-	    my $area = $ppm->area($area_name);
-	    for ($area->packages("id", "name", "version")) {
-		my($pkg_id, $pkg_name, $pkg_version) = @$_;
-		next if $shaddow{$pkg_name}++;
-		if (my $best = $ppm->package_best($pkg_name, 0)) {
-		    if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
-			my $pkg = $area->package($pkg_id);
-			if ($best->better_than($pkg)) {
-			    print "$pkg_name $best->{version} (have $pkg_version)\n";
-			    $count++;
+    if (@ARGV && $ARGV[0] =~ /::/) {
+	return _install_repo(undef, want => [[$ARGV[0], undef]]);
+    }
+
+    $install++ if @ARGV;
+    my $pkg_count = 0;
+    my $upgrade_count = 0;
+    my %shaddow;
+    $ppm->repo_sync;
+    for my $area_name ($ppm->areas) {
+	my $area = $ppm->area($area_name);
+	for ($area->packages("id", "name", "version")) {
+	    my($pkg_id, $pkg_name, $pkg_version) = @$_;
+	    next if @ARGV && lc($ARGV[0]) ne lc($pkg_name);
+	    $pkg_count++;
+	    next if $shaddow{$pkg_name}++;
+	    if (my $best = $ppm->package_best($pkg_name, 0)) {
+		if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
+		    my $pkg = $area->package($pkg_id);
+		    if ($best->better_than($pkg)) {
+			print "$pkg_name $best->{version} (have v$pkg_version)\n";
+			$upgrade_count++;
+			if ($install) {
+			    my $install_area = $area_name;
+			    if ($install_area eq "perl" || $area->readonly) {
+				$install_area = $ppm->default_install_area;
+				unless ($install_area) {
+				    die "No writable install area for the upgrade";
+				}
+			    }
+			    _install($install_area, $best);
 			}
 		    }
 		}
 	    }
 	}
-	unless ($count) {
-	    print STDERR "*** no upgrades available ***\n";
-	}
+    }
+    if (@ARGV && !$pkg_count) {
+	print STDERR "*** package $ARGV[0] not installed ***\n";
+    }
+    elsif (!$upgrade_count) {
+	my $for = @ARGV ? " for $ARGV[0]" : "";
+	print STDERR "*** no upgrades available$for ***\n";
     }
 }
 
@@ -1157,6 +1180,7 @@ Install, upgrade and remove packages:
     ppm install [--area <area>] <url>
     ppm install [--area <area>] <file>.ppd
     ppm install [--area <area>] <num>
+    ppm upgrade [--install]
     ppm upgrade <pkg>
     ppm upgrade <module>
     ppm remove [--area <area>] <pkg>
@@ -1456,9 +1480,10 @@ Alias for B<ppm remove>.
 
 Alias for B<ppm upgrade>.
 
-=item B<ppm upgrade>
+=item B<ppm upgrade> [ B<--install> ]
 
-List packages that there are upgrades available for.
+List packages that there are upgrades available for.  With
+B<--install> option install the upgrades as well.
 
 =item B<ppm upgrade> I<pkg>
 
