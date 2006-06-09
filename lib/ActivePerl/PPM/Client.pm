@@ -701,7 +701,7 @@ sub packages_missing {
 	    }
 	    else {
 		die "Can't find any package that provide $feature" .
-		    ($want && $have ? "version $want" : "") .
+		    ($want && $have ? " version $want" : "") .
 		    ($needed_by ? " for $needed_by" : "");
 	    }
         }
