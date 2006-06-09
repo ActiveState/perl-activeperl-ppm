@@ -36,10 +36,11 @@ $tarball->write("$repo/$pkg-$vers.tar.gz", 1) || die;
 
 my $ppd = "$repo/$pkg-$vers.ppd";
 open(my $fh, ">", $ppd) || die "Can't create $ppd: $!";
+$mod .= "::" unless $mod =~ /::/;
 print $fh <<"EOT";
 <SOFTPKG NAME="$pkg" VERSION="$vers-beta">
    <CODEBASE HREF="$pkg-$vers.tar.gz"/>
-   <PROVIDE NAME="$pkg" VERSION="$vers"/>
+   <PROVIDE NAME="$mod" VERSION="$vers"/>
 </SOFTPKG>
 EOT
 close($fh) || die "Can't write $repo/$pkg-$vers.ppd: $!";;
