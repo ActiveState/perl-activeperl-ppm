@@ -332,7 +332,12 @@ sub _repo_delete_packages {
     $dbh->do("DELETE FROM package WHERE repo_id = ?", undef, $id);
 }
 
-
+sub repo_set_name {
+    my($self, $id, $name) = @_;
+    my $dbh = $self->dbh;
+    $dbh->do("UPDATE repo SET name = ? WHERE id = ?", undef, $name, $id);
+    $dbh->commit;
+}
 
 sub repo_sync {
     my($self, %opt) = @_;
@@ -834,6 +839,10 @@ Will make the client forget about the given repository.
 Makes it possible to enable and disable the given reposiory.  If $bool
 is provided and is FALSE, then the repository is disabled.  The return
 value is TRUE if the given repository was enabled.
+
+=item $client->repo_set_name( $repo_id, $name )
+
+Will update the name by which the given repo is known.
 
 =item $client->repo_sync
 

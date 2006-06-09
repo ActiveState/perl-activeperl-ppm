@@ -591,6 +591,13 @@ sub do_repo {
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
     }
+    elsif ($cmd eq "rename") {
+	$USAGE = "repo rename <num> <name>";
+	usage() if @ARGV < 2;
+	my $repo = $ppm->repo(shift(@ARGV));
+	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
+	$ppm->repo_set_name($repo->{id}, join(" ", @ARGV));
+    }
     elsif ($cmd =~ /^\d+$/) {
 	@ARGV = ("describe") unless @ARGV;
 	if ($ARGV[0] =~ /^\d+$/) {
@@ -647,7 +654,7 @@ sub do_repo {
 	}
     }
     else {
-	$cmd = _try_abbrev("repo", $cmd, qw(list search sync on off delete describe add suggest));
+	$cmd = _try_abbrev("repo", $cmd, qw(list search sync on off delete describe add rename suggest));
 	goto AGAIN;
     }
 }
@@ -1202,6 +1209,7 @@ Manage and search repositories:
     ppm repo off <num>
     ppm repo describe <num>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
+    ppm repo rename <num> <name>
     ppm repo suggest
     ppm search <pattern>
     ppm describe <num>
@@ -1419,6 +1427,10 @@ Disable repository number I<num> for B<ppm install> or B<ppm search>.
 
 Enable repository number I<num> if it has been previously disabled with
 B<ppm repo off>.
+
+=item B<ppm repo rename> I<num> I<name>
+
+Change name by which the given repo is known.
 
 =item B<ppm repo search> ...
 
