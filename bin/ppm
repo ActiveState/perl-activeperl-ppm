@@ -960,6 +960,7 @@ sub _install {
 	    eval {
 		for my $pkg (@_) {
 		    my $pname = $pkg->name_version;
+		    next unless -d $pname;
 		    print "Generating HTML for $pname...";
 		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => $pname);
 		    print "done\n";
