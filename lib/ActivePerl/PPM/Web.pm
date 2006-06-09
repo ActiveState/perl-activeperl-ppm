@@ -77,9 +77,14 @@ sub progress {
 	print "done\n" if $self->{progress_what};
     }
     elsif ($status eq "tick") {
-	my $c = $animation[$animation_index];
-	$animation_index = ($animation_index + 1) % @animation;
-	print $c . ("\b" x length($c));
+	my $t = time;
+	my $d = $t - $last_t;
+	if ($d > 0.1) {
+	    my $c = $animation[$animation_index];
+	    $animation_index = ($animation_index + 1) % @animation;
+	    print $c . ("\b" x length($c));
+	    $last_t = $t;
+	}
     }
     elsif ($status =~ /^\d/) {
 	$status = 1 if $status > 1;
