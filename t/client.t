@@ -4,7 +4,7 @@ use strict;
 use Test qw(plan ok skip);
 use URI::file;
 
-plan tests => 28;
+plan tests => 27;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -19,7 +19,6 @@ use ActivePerl::PPM::Client;
 
 my $client = ActivePerl::PPM::Client->new($prefix);
 ok(j($client->areas), "site|perl");
-ok(j($client->repos), 1);
 undef($client);
 
 $client = ActivePerl::PPM::Client->new($prefix);
@@ -27,9 +26,13 @@ ok(j($client->areas), "site|perl");
 ok($client->area("site")->name, "site");
 
 my $repo = $client->repo(1);
-if ($^O eq "aix") {
-    ok($repo, undef);
-    skip("No ActiveState Package Repository for $^O") for 1..7;
+if (!$repo) {
+    if ($^O ne "linux" && $^O ne "MSWin32") {
+	skip("No ActiveState Package Repository for $^O") for 1..8;
+    }
+    else {
+	die "No ActiveState Package Repository set up";
+    }
 }
 else {
     ok($repo->{enabled});
