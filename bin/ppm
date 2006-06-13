@@ -1158,7 +1158,7 @@ sub do_remove {
 	eval {
 	    _run_script($area, $pkg_o, "uninstall");
 	    print "$pkg_o->{name}: ";
-	    $area->uninstall($pkg);
+	    $area->uninstall($pkg_o->{name});
 	};
 	if ($@) {
 	    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
