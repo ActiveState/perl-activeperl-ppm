@@ -304,6 +304,7 @@ sub do_list {
 	$tab->add_field("area") if $opt{area};
 	$tab->add_field("files") if $opt{files};
 	$tab->add_field("size") if $opt{size};
+	unshift(@fields, "id") if $opt{files} || $opt{size};
 
 	for my $area (map $ppm->area($_), @areas) {
 	    for my $pkg ($area->packages(@fields)) {
@@ -313,17 +314,22 @@ sub do_list {
 		    $row{release_date} =~ s/[T ].*//;  # drop time
 		}
 		if ($opt{files} || $opt{size}) {
-		    my @files = $area->package_files($row{name});
-		    $row{files} = @files if $opt{files};
-		    $row{size} = do {
+		    if ($opt{size}) {
+			my @files = $area->package_files($row{id});
+			$row{files} = @files if $opt{files};
+
 			require ActiveState::DiskUsage;
 			my $size = 0;
 			$size += ActiveState::DiskUsage::du($_) for @files;
 			$size = sprintf "%.0f KB", $size / 1024 unless defined($csv);
-			$size;
-		    } if $opt{size};
+			$row{size} = $size
+		    }
+		    else {
+			$row{files} = $area->package_files($row{id});
+		    }
 		}
 		$row{area} = $area->name if $opt{area};
+		delete $row{id};
 		$tab->add_row(\%row);
 	    }
 	}
@@ -381,9 +387,10 @@ sub do_files {
     my $pkg = shift(@ARGV);
     my $foundit;
     for my $area (map $ppm->area($_), $ppm->areas) {
-	next unless defined($area->package_id($pkg));
+	my $id = $area->package_id($pkg, sloppy => 1);
+	next unless defined($id);
 	$foundit++;
-	print "$_\n" for $area->package_files($pkg);
+	print "$_\n" for $area->package_files($id);
     }
     not_installed($pkg) unless $foundit;
 }
@@ -1128,12 +1135,12 @@ sub do_remove {
 	my $pkg_o;
 	if ($opt_area) {
 	    $area =  $ppm->area($opt_area);
-	    $pkg_o = $area->package($pkg);
+	    $pkg_o = $area->package($pkg, sloppy => 1);
 	}
 	else {
 	    for my $a ($ppm->areas) {
 		$area = $ppm->area($a);
-		$pkg_o = $area->package($pkg);
+		$pkg_o = $area->package($pkg, sloppy => 1);
 		if ($pkg_o) {
 		    die "Can't remove from 'perl' area without explicit area specification"
 			if $a eq "perl";
@@ -1144,6 +1151,9 @@ sub do_remove {
 	unless ($pkg_o) {
 	    print "$pkg: not installed\n";
 	    next;
+	}
+	if (lc($pkg_o->{name}) ne lc(do{my $p = $pkg; $p =~ s/::/-/g; $p})) {
+	    die "'ppm remove $pkg_o->{name}' will uninstall package providing $pkg";
 	}
 	eval {
 	    _run_script($area, $pkg_o, "uninstall");

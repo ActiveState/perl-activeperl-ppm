@@ -195,17 +195,31 @@ sub verify {
 }
 
 sub package_id {
-    my($self, $pkg) = @_;
-    my $id = $self->dbh->selectrow_array("SELECT id FROM package WHERE name = ?", undef, $pkg);
-    $id = $self->dbh->selectrow_array("SELECT id FROM package WHERE lower(name) = lower(?)", undef, $pkg)
-	unless defined($id);
+    my $self = shift;
+    my $pkg = shift;
+    my $dbh = $self->dbh;
+    my $id = $dbh->selectrow_array("SELECT id FROM package WHERE name = ?", undef, $pkg);
+    if (!defined($id) && @_) {
+	my %opt = @_;
+	if ($opt{sloppy}) {
+	    # Since the package name is always a feature there is no need for
+	    # caseless search for it explictly
+	    my $ids = $dbh->selectcol_arrayref("SELECT package_id FROM feature WHERE lower(name) = lower(?) AND role = 'p'", undef, $pkg);
+	    if (@$ids > 1) {
+		my @p = map $dbh->selectrow_array("SELECT name FROM package WHERE id = ?", undef, $_), @$ids;
+		die "The name $pkg is ambiguous; please select one of " . join(", ", @p);
+	    }
+	    $id = $ids->[0];
+	}
+    }
     return $id;
 }
 
 sub package {
-    my($self, $id) = @_;
+    my $self = shift;
+    my $id = shift;
     unless ($id =~ /^\d+$/) {
-	$id = $self->package_id($id);
+	$id = $self->package_id($id, @_);
 	return undef unless defined($id);
     }
     return ActivePerl::PPM::Package->new_dbi($self->dbh, $id);
@@ -213,12 +227,10 @@ sub package {
 
 sub package_files {
     my($self, $id) = @_;
-    unless ($id =~ /^\d+$/) {
-	my $name = $id;
-	$id = $self->package_id($name);
-	die "Package $name isn't installed" unless defined($id);
-    }
-    return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = $id ORDER BY path")}
+    my $dbh = shift;
+    return $self->dbh->selectrow_array("SELECT count(*) FROM file WHERE package_id = ?", undef, $id)
+	unless wantarray;
+    return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = ? ORDER BY path", undef, $id)}
 }
 
 sub feature_have {
@@ -934,14 +946,24 @@ L<ActivePerl::PPM::Package> for what field names are available.
 
 =item $area->package( $name )
 
+=item $area->package( $name, sloppy => 1 )
+
 Return an package object (see L<ActivePerl::PPM::Package>) for the
 given package.  Returns C<undef> if no such package is installed.
 
 =item $area->package_id( $name )
 
-Returns the internal identifier for the given package.  Returns
-C<undef> if no such package is installed.  This is the cheapest
-way to check if a package is installed.
+Returns the internal identifier for the given package.  The package
+name much match exactly; case matters.  Returns C<undef> if no such
+package is installed.  This is the cheapest way to check if a package
+is installed.
+
+=item $area->package_id( $name, sloppy => 1 )
+
+Find package even if the name does not match exactly.  The package
+will be found if the name match without regard to case or if it
+provide the given name as a feature.  Will croak if multiple packages
+match.
 
 =item $area->feature_have( $feature )
 
@@ -951,11 +973,8 @@ package provide the given feature.
 
 =item $area->package_files( $id )
 
-=item $area->package_files( $name )
-
 Returns the list of names for the files that belong to the given
-package.  This method will croak if the given package is not
-installed.
+package.  In scalar context return the number of files.
 
 =item $area->packlists
 
