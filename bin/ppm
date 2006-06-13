@@ -774,6 +774,7 @@ sub do_install {
     }
     else {
 	# seach for feature in repos
+	$feature = $ppm->feature_fixup_case($feature);
 	_install_repo($area, want => [$feature], @args);
     }
 }
@@ -789,7 +790,8 @@ sub do_upgrade {
 	usage() if @ARGV > 1;
     }
     if (@ARGV && $ARGV[0] =~ /::/) {
-	return _install_repo(undef, want => [[$ARGV[0], undef]]);
+	my $mod = $ppm->feature_fixup_case($ARGV[0]);
+	return _install_repo(undef, want => [[$mod, undef]]);
     }
 
     $install++ if @ARGV;
