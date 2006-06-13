@@ -267,7 +267,7 @@ sub activestate_repo {
 
 sub repos {
     my $self = shift;
-    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo ORDER BY prio, name")};}
+    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo ORDER BY id")};}
 
 sub repo {
     my($self, $id) = @_;
@@ -345,7 +345,7 @@ sub repo_sync {
     my $dbh = $self->dbh;
     my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1" .
 			    ($opt{repo} ? " AND id = $opt{repo}" : "") .
-			    " ORDER BY prio, name");
+			    " ORDER BY id");
     $sth->execute();
     while (my $h = $sth->fetchrow_hashref) {
 	push(@repos, $h);
@@ -821,7 +821,7 @@ L<ActivePerl::PPM::Repo> for methods available on the returned object.
 
 =item $client->repos
 
-Returns list of available repo identifiers.  The repos are ordered by priority.
+Returns list of available repo identifiers.
 
 =item $client->repo_add( %attr )
 
