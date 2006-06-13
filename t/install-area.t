@@ -53,7 +53,7 @@ ok($dir->install({
 ok($dir->packages, 2);
 ok(j($dir->packages), "Foo|Foo2");
 
-my @pkg = $dir->packages("name", "version", "abstract");
+my @pkg = $dir->packages("name", "version", "abstract", "id");
 ok(@pkg, 2);
 ok($pkg[0][0], "Foo");
 ok($pkg[0][1], "1.0a");
@@ -63,7 +63,7 @@ ok(-f "$prefix/lib/install-area.t");
 ok(file_eq("t/install-area.t", "$prefix/lib/install-area.t"));
 ok(-f "$prefix/lib/logger.t");
 ok(file_eq("t/logger.t", "$prefix/lib/logger.t"));
-ok(j($dir->package_files("Foo2")), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/install-area.t|$prefix/lib/logger.t");
+ok(j($dir->package_files($pkg[1][3])), "$prefix/lib/auto/Foo2/.packlist|$prefix/lib/install-area.t|$prefix/lib/logger.t");
 ok($dir->verify);
 
 ok($dir->install({
