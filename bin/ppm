@@ -758,24 +758,31 @@ sub do_install {
     push(@args, follow_deps => "none") if $nodeps;
 
     my $feature = shift(@ARGV);
-    if ($feature =~ m,^[a-z][+\w]+:[^:],) {
-	# looks like an absolute URL
-	_install_uri($area, $feature, @args);
-    }
-    elsif ($feature =~ /\.ppd$/) {
-	require URI::file;
-	_install_uri($area, URI::file->new_abs($feature), @args);
-    }
-    elsif ($feature =~ /^\d+$/) {
-	my $pkg = $ppm->search_lookup($feature) ||
-	    die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
-	my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
-	_install($area, $pkg, @deps);
-    }
-    else {
-	# seach for feature in repos
-	$feature = $ppm->feature_fixup_case($feature);
-	_install_repo($area, want => [$feature], @args);
+    eval {
+	if ($feature =~ m,^[a-z][+\w]+:[^:],) {
+	    # looks like an absolute URL
+	    _install_uri($area, $feature, @args);
+	}
+	elsif ($feature =~ /\.ppd$/) {
+	    require URI::file;
+	    _install_uri($area, URI::file->new_abs($feature), @args);
+	}
+	elsif ($feature =~ /^\d+$/) {
+	    my $pkg = $ppm->search_lookup($feature) ||
+		die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
+	    my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
+	    _install($area, $pkg, @deps);
+	}
+	else {
+	    # seach for feature in repos
+	    $feature = $ppm->feature_fixup_case($feature);
+	    _install_repo($area, want => [$feature], @args);
+	}
+    };
+    if ($@) {
+	$@ =~ s/( at )/; use --force to install regardless$1/
+	    if $@ =~ /\bwould downgrade\b/;
+	die;
     }
 }
 
