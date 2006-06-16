@@ -11,7 +11,7 @@ $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 
 (my $PROGNAME = $0) =~ s,.*[\\/],,;
 
-my $CMD = shift || 'shell';
+my $CMD = shift || 'gui';
 $CMD = "version" if $CMD eq "--version";
 
 my $BOX_CHARS;
@@ -50,7 +50,8 @@ unless (defined &$do_cmd) {
     }
 }
 
-my $ppm = ActivePerl::PPM::Client->new;
+# This must be initialized before PPM::GUI is used
+our $ppm = ActivePerl::PPM::Client->new;
 
 eval {
     no strict 'refs';
@@ -82,8 +83,13 @@ sub usage {
     exit 1;
 }
 
-sub do_shell {
-    require ActivePerl::PPM::Shell;
+sub do_gui {
+    eval { require ActivePerl::PPM::GUI; };
+    if ($@) {
+	my $err = $@;
+	do_help() if ($err =~ /no display name/);
+	die $err;
+    }
 }
 
 sub do_dump {
@@ -1194,7 +1200,7 @@ ppm - Perl Package Manager, version 4
 
 =head1 SYNOPSIS
 
-Invoke the graphical shell (not implemented yet):
+Invoke the graphical user interface:
 
     ppm
 
@@ -1243,10 +1249,10 @@ The C<ppm> program is the package manager for ActivePerl.  It
 simplifies the task of locating, installing, upgrading and removing
 Perl packages.
 
-Invoking C<ppm> without arguments brings up the graphical shell (not
-implemented yet), but ppm can also be used as a command line tool where
-the first argument provide the name of the sub-command to invoke.
-The following sub-commands are recognized:
+Invoking C<ppm> without arguments brings up the graphical user interface,
+but ppm can also be used as a command line tool where the first argument
+provide the name of the sub-command to invoke.  The following sub-commands
+are recognized:
 
 =over
 
@@ -1628,8 +1634,7 @@ PPM version 4 is a complete rewrite.  The main changes since PPM version 3 are:
 
 =item *
 
-The command line shell has been replaced with a graphical shell (not
-implemented yet, but will be in Beta 2).
+The command line shell has been replaced with a graphical user interface.
 
 =item *
 
