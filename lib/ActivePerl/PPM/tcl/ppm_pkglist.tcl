@@ -195,14 +195,21 @@ snit::widgetadaptor pkglist {
 	}
 	$tree configure -itemheight $height
 
-	$tree column create -width  20 -text "Action" -tag action
+	$tree column create -width  20 -text "Action" -tag action \
+	    -borderwidth 1
 	$tree column create -width 100 -text "Package Name" -tag name \
-	    -arrow up -itembackground $sortcolor
-	$tree column create -width  40 -text "Area" -tag area
-	$tree column create -width  60 -text "Installed Version" -tag installed
-	$tree column create -width  60 -text "Available Version" -tag available
-	$tree column create -width 200 -text "Abstract" -tag abstract
-	$tree column create -width 100 -text "Author" -tag author
+	    -arrow up -itembackground $sortcolor \
+	    -borderwidth 1
+	$tree column create -width  40 -text "Area" -tag area \
+	    -borderwidth 1
+	$tree column create -width  60 -text "Installed Version" \
+	    -tag installed -borderwidth 1
+	$tree column create -width  60 -text "Available Version" \
+	    -tag available -borderwidth 1
+	$tree column create -width 200 -text "Abstract" -tag abstract \
+	    -borderwidth 1
+	$tree column create -width 100 -text "Author" -tag author \
+	    -borderwidth 1
 
 	set w [listbox $win.l]
 	set selbg [$w cget -selectbackground]
