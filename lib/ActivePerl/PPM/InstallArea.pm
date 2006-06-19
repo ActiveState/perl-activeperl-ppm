@@ -85,6 +85,7 @@ sub new {
         name => $name,
         dirs => \%dirs,
     }, $class;
+    $self->dirty_cleanup;
     return $self;
 }
 
@@ -274,6 +275,15 @@ sub install {
 	summary => {},
     );
     eval {
+	my $dirty = $self->_dirty_file;
+	die "Previous install did not clean up properly" if -e $dirty;
+	{
+	    open(my $fh, ">", $dirty) || die "Can't create '$dirty': $!";
+	    print $fh "$$\n";
+	    close($fh) || die "Can't write to '$dirty': $!";
+	    ppm_debug("Created $dirty");
+	}
+	_on_rollback(\%state, "unlink", $dirty);
 	$dbh->{RaiseError} = 1;
 	for my $pkg (@packages) {
 	    $pkg = ActivePerl::PPM::Package->new($pkg);
@@ -331,6 +341,7 @@ sub install {
 	    _on_commit(\%state, "unlink", $self->_expand_path($_));
 	    $state{summary}{deleted}++;
 	}
+	_on_commit(\%state, "unlink", $dirty);  # must be last
     };
 
     if ($@) {
@@ -346,6 +357,29 @@ sub install {
 	return $state{summary} || {};
     }
     $dbh->{RaiseError} = 0;
+}
+
+sub dirty_cleanup {
+    my $self = shift;
+    my $dirty = $self->_dirty_file;
+    if (-e $dirty) {
+	my $prefix = $self->prefix;
+	ppm_log("WARN", "Cleaning up dirty install attempt in $prefix");
+	my $count = 0;
+	require File::Find;
+	File::Find::find(sub {
+	    return unless /\.ppmbak\z/;
+	    my $base = substr($File::Find::name, 0, -7);
+	    unlink($base);
+	    rename("$base.ppmbak", $base)
+		|| die "Can't restore $base: $!";
+	    ppm_log("WARN", "$base restored");
+	    $count++;
+	}, $prefix);
+	unlink($dirty) || die "Can't unlink '$dirty': $!";
+	my $s = ($count == 1) ? "" : "s";
+	ppm_log("WARN", "$count file$s restored");
+    }
 }
 
 sub _do_action {
@@ -695,6 +729,10 @@ sub sync_db {
     }
     ppm_status("");
 }
+
+sub _dirty_file {
+    my $self = shift;
+    return $self->_expand_path("etc:ppm-dirty");}
 
 sub _relative_path {
     my($self, $path) = @_;
