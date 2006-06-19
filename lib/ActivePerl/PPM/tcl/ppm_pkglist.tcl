@@ -84,9 +84,26 @@ snit::widgetadaptor pkglist {
 	    eval [linsert [lrange $config 0 end-1] 0 \
 		      $tree item element configure $item]
 	}
-	if {$new} { incr visible }
+	if {$new} {
+	    set img [::ppm::img default]
+	    incr visible
+	} else {
+	    set img [::ppm::img install]
+	}
+	$tree item element configure $item action elemImg -image $img
 	# should we schedule a sort, or make the user force it?
 	# currently the user must request it.
+    }
+
+    method identify {id} {
+	if {[info exists NAMES($id)]} {
+	    return $id
+	}
+	if {[info exists ITEMS($id)]} {
+	    array set opts $ITEMS($id)
+	    return $ITEMS(name)
+	}
+	return ""
     }
 
     method data {id} {
@@ -97,6 +114,10 @@ snit::widgetadaptor pkglist {
 	    return $ITEMS($NAMES($id))
 	}
 	return ""
+    }
+
+    method state {id} {
+	# This should return the selected install state
     }
 
     method clear {} {
@@ -130,19 +151,27 @@ snit::widgetadaptor pkglist {
 		incr count 1
 	    }
 	} elseif {[info exists NAMES($ptn)]} {
-	    # exact match on one item
+	    # exact match on one item - case sensitive
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 0
 	    }
 	    $tree item configure $NAMES($ptn) -visible 1
 	    set count 1
 	} elseif {$what eq "name"} {
+	    if {[string first "*" $ptn] == -1} {
+		# no wildcard in pattern - add to each end
+		set ptn *$ptn*
+	    }
 	    foreach {name} [array names NAMES] {
 		set vis [string match -nocase $ptn $name]
 		$tree item configure $NAMES($name) -visible $vis
 		incr count $vis
 	    }
 	} else {
+	    if {[string first "*" $ptn] == -1} {
+		# no wildcard in pattern - add to each end
+		set ptn *$ptn*
+	    }
 	    foreach {item} [array names ITEMS] {
 		array set opts $ITEMS($item)
 		set vis [expr {[info exists opts($what)] &&

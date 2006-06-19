@@ -14,11 +14,11 @@ my @areas;
 my @repos;
 
 my $mw = Tkx::widget->new(".");
+$mw->g_wm_withdraw();
 Tkx::tk(appname => "Perl Package Manager");
 
 my $dir = abs_path(dirname($INC{'ActivePerl/PPM/GUI.pm'}));
 Tkx::lappend('::auto_path', $dir . "/tcl");
-
 
 if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
     Tkx::package_require('comm');
@@ -31,8 +31,11 @@ if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 
 Tkx::package_require('tile');
 Tkx::package_require('tooltip');
+Tkx::package_require('widget::dialog');
+Tkx::package_require('ppm::themes');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('style::as');
+Tkx::package_require('img::png');
 Tkx::package_require('BWidget');
 Tkx::Widget__theme(1);
 
@@ -43,6 +46,9 @@ my $AQUA = ($windowingsystem eq "aqua");
 if ($AQUA) {
     Tkx::set("::tk::mac::useThemedToplevel" => 1);
 }
+
+# get 'tooltip' as toplevel command
+Tkx::namespace_import("::tooltip::tooltip");
 
 Tkx::style_default('Slim.Toolbutton', -padding => 2);
 
@@ -62,14 +68,20 @@ if ($AQUA) {
     #Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
 }
 
-my $last_filter = "";
-
 menus();
+
+my %IMG;
+$IMG{'refresh'} = Tkx::ppm__img('refresh');
+$IMG{'filter'} = Tkx::ppm__img('search');
 
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $details = $pw->new_text(-height => 7, -width => 60, -borderwidth => 1);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item]);
+my $toolbar = $mw->new_ttk__frame();
+
+$details->tag('configure', 'title',
+	      -font => 'Helvetica 16 bold');
 
 my $statusbar = $mw->new_StatusBar();
 
@@ -89,19 +101,23 @@ $area_cbx->set("ALL");
 $statusbar->add($albl, -separator => 0);
 $statusbar->add($area_cbx, -separator => 0);
 
-my $flbl = $statusbar->new_ttk__label(-text => "Filter:");
+my $last_filter = "";
+my $filter_type = "name";
+my $filter_menu = $statusbar->new_menu(-name => "filter_menu");
+my $flbl = $statusbar->new_ttk__menubutton(-text => "Filter:",
+					   -image => $IMG{'filter'},
+					   -menu => $filter_menu);
 my $filter = $statusbar->new_ttk__entry(-width => 10);
-my $filter_cbx = $statusbar->new_ttk__combobox(-width => 8,
-					       -values =>
-					       ["Name", "Abstract", "Author"]);
-$filter_cbx->set("Name");
-$statusbar->add($flbl, -separator => 0);
+Tkx::tooltip($filter, "Filter search results");
+$statusbar->add($flbl, -separator => 1);
 $statusbar->add($filter, -weight => 2, -separator => 0);
-$statusbar->add($filter_cbx, -separator => 0);
-
-Tkx::bind($filter_cbx, "<<ComboboxSelected>>", sub {
-    filter();
-});
+$filter_menu->add('radiobutton', -label => "Name", -value => "name",
+		  -variable => \$filter_type, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
+		  -variable => \$filter_type, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Author", -value => "author",
+		  -variable => \$filter_type, -command => [\&filter]);
+$filter->g_bind('<Return>', [\&filter]);
 
 my $numitems = 0;
 my $ilbl = $statusbar->new_ttk__label(-text => "Items");
@@ -111,24 +127,34 @@ $statusbar->add($items_lbl, -separator => 0, -pad => [4, 0]);
 $statusbar->add($ilbl, -separator => 0);
 
 my $sync = $statusbar->new_ttk__button(-text => "Sync",
-				       -style => "Slim.Toolbutton",
-				       -command => sub {
-					   sync();
-					   refresh();
-				       });
+				       -image => $IMG{'refresh'},
+				       -style => "Toolbutton",
+				       -command => [\&full_refresh]);
+Tkx::tooltip($sync, "Refresh data");
 $statusbar->add($sync, -separator => 1, -pad => [4, 0]);
 
 my $config = $statusbar->new_ttk__button(-text => "Config",
-					 -style => "Slim.Toolbutton");
+					 -style => "Toolbutton");
+Tkx::tooltip($config, "Configure something");
 $statusbar->add($config, -separator => 0);
+
+my $sync_dialog = $mw->new_widget__dialog(-title => 'Synchronize Database',
+					  -parent => $mw, -place => 'over',
+					  -type => 'ok',  -modal => 'local',
+					  -synchronous => 0);
+# Not all platforms have -topmost attribute
+eval { $sync_dialog->g_wm_attributes(-topmost => 1); };
+my $sfrm = $sync_dialog->new_ttk__frame();
+my $slbl = $sfrm->new_ttk__label(-text => "We are sync'ing");
+$sync_dialog->setwidget($sfrm);
+Tkx::grid($slbl, -sticky => "ew");
 
 Tkx::update();
 
-Tkx::bind($filter, "<Return>", [\&filter]);
-
 Tkx::after(idle => sub {
-    sync();
-    refresh();
+	       $mw->g_wm_deiconify();
+	       Tkx::focus(-force => $mw);
+	       full_refresh();
 });
 
 Tkx::MainLoop();
@@ -152,6 +178,14 @@ sub sync {
     $area_cbx->configure(-values => ["ALL", @areas]);
 }
 
+sub full_refresh {
+    $sync_dialog->display();
+    Tkx::update();
+    sync();
+    refresh();
+    $sync_dialog->close('ok');
+}
+
 sub merge_area_items {
     for my $area_name ($ppm->areas) {
 	my $area = $ppm->area($area_name);
@@ -168,7 +202,7 @@ sub merge_area_items {
     }
 }
 
-sub merge_repo_items() {
+sub merge_repo_items {
     my($pattern, @fields) = @_;
 
     @fields = ("name", "version", "release_date", "abstract", "author") unless @fields;
@@ -189,8 +223,7 @@ sub merge_repo_items() {
 
 sub filter {
     my $fltr = $filter->get();
-    my $fltr_type = lc($filter_cbx->get());
-    my $count = $pkglist->filter($fltr, $fltr_type);
+    my $count = $pkglist->filter($fltr, $filter_type);
     if ($count == -1) {
 	$filter->delete(0, "end");
 	$filter->insert(0, $last_filter);
@@ -246,9 +279,17 @@ sub select_item {
     my $item = shift;
     # We need to figure out how we want details formatted
     $details->delete('1.0', 'end');
-    my @data = $pkglist->data($item);
-    $details->insert('1.0', @data);
+    my %data = Tkx::SplitList($pkglist->data($item));
+    my $name = delete $data{'name'};
+    $details->insert('1.0', $name . "\n", 'title');
+    for my $key (sort keys %data) {
+	$details->insert('end', $key . ":\t");
+	$details->insert('end', $data{$key} . "\n");
+    }
 }
 
 sub about {
+    Tkx::tk___messageBox(-title => "About Perl Package Manager",
+			 -icon => "info", -type => "ok",
+			 -message => "Tell me about it");
 }
