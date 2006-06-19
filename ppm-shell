@@ -1,0 +1,18 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Term::ReadLine ();
+use Text::ParseWords qw(shellwords);
+
+my $term = new Term::ReadLine 'PPM';
+my $prompt = "ppm> ";
+my $OUT = $term->OUT || \*STDOUT;
+while ( defined ($_ = $term->readline($prompt)) ) {
+    last if /^(quit|exit)$/;
+    my @w = shellwords($_);
+    if (@w) {
+	system("ppm", @w);
+        $term->addhistory($_);
+    }
+}
+print "\n";
