@@ -203,11 +203,9 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my($pattern, @fields) = @_;
 
-    $pattern = "*" unless defined $pattern;
-    @fields = ("name", "version", "release_date", "abstract", "author") unless @fields;
-    my @res = $ppm->search($pattern, @fields);
+    my @fields = ("name", "version", "release_date", "abstract", "author");
+    my @res = $ppm->packages(@fields);
 
     #require Data::Dump;
     #Data::Dump::dump(@res);
