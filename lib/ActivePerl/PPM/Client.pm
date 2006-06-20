@@ -396,7 +396,7 @@ sub repo_sync {
 		    my $try;
 		    for $try (@try) {
 			my $try_res = $ua->get($try);
-			if ($try_res->is_success && $try_res->decoded_content =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+			if ($try_res->is_success && $try_res->decoded_content(default_charset => "none") =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 			    $repo->{packlist_uri} = $try->as_string;
 			    $dbh->do("UPDATE repo SET packlist_uri = ? WHERE id = ?", undef, $repo->{packlist_uri}, $repo->{id});
 			    $res = $try_res;
@@ -430,7 +430,7 @@ sub repo_sync {
 			 $repo->{id});
 
 		# parse document
-		my $cref = $res->decoded_content(ref => 1);
+		my $cref = $res->decoded_content(ref => 1, default_charset => "none");
 		if ($res->content_type eq "text/html") {
 		    my $base = $res->base;
 		    require HTML::Parser;
@@ -504,7 +504,7 @@ sub _check_ppd {
 	delete $delete_package->{$row->{id}} if $delete_package;
     }
     elsif ($ppd_res->is_success) {
-	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content, $arch);
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content(default_charset => "none"), $arch);
 	if ($ppd->{codebase}) {
 	    $ppd->{id} = $row->{id} if $row;
 	    $ppd->{repo_id} = $repo->{id};
