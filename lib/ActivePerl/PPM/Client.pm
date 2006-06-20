@@ -531,8 +531,21 @@ sub packages {
     my $self = shift;
     my $dbh = $self->dbh;
     if (@_) {
-	return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
-					  " FROM package")};
+	my $aref = $dbh->selectall_arrayref("SELECT " . join(",", @_) .
+					    " FROM package");
+	my $i = 0;
+	for my $f (@_) {
+	    if ($f eq "abstract" || $f eq "author") {
+		# Potential Unicode field
+		for my $row (@$aref) {
+		    if (($row->[$i] || "") =~ /[^\x00-\x7F]/) {
+			utf8::decode($row->[$i]);
+		    }
+		}
+	    }
+	    $i++;
+	}
+	return @$aref;
     }
     return @{$dbh->selectcol_arrayref("SELECT id FROM package")}
 	if wantarray;
