@@ -199,11 +199,12 @@ sub _init_db {
     $file_arch =~ s/\./_/g;  # don't confuse version number dots with file extension
     my $db_file = "$etc/ppm-$file_arch.db";
     my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
-        AutoCommit => 0,
-        PrintError => 1,
+        AutoCommit => 1,
+        RaiseError => 1,
     });
     die "$db_file: $DBI::errstr" unless $dbh;
 
+    local $dbh->{AutoCommit} = 0;
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
     if ($v == 0) {
@@ -288,10 +289,10 @@ sub repo_enable {
     my $dbh = $self->dbh;
     if ($self->dbh->do("UPDATE repo SET enabled = ?, packlist_etag = NULL, packlist_lastmod = NULL, packlist_size = NULL, packlist_fresh_until = NULL WHERE id = ?", undef, $enabled, $id)) {
 	if ($enabled) {
-	    $dbh->commit;
 	    $self->repo_sync;
 	}
 	else {
+	    local $dbh->{AutoCommit} = 0;
 	    _repo_delete_packages($dbh, $id);
 	    $dbh->commit;
 	}
@@ -301,12 +302,11 @@ sub repo_enable {
 sub repo_add {
     my($self, %attr) = @_;
     my $dbh = $self->dbh;
-    local $dbh->{PrintError} = 0;
+    local $dbh->{RaiseError} = 0;
     if ($dbh->do("INSERT INTO repo (name, packlist_uri, prio) VALUES (?, ?, ?)", undef,
 	         $attr{name}, $attr{packlist_uri}, ($attr{prio} || 0)))
     {
 	my $id = $dbh->func('last_insert_rowid');
-	$dbh->commit;
 	$self->repo_sync;
 	return $id;
     }
@@ -320,6 +320,7 @@ sub repo_add {
 sub repo_delete {
     my($self, $id) = @_;
     my $dbh = $self->dbh;
+    local $dbh->{AutoCommit} = 0;
     _repo_delete_packages($dbh, $id);
     $dbh->do("DELETE FROM repo WHERE id = ?", undef, $id);
     $dbh->commit;
@@ -336,13 +337,13 @@ sub repo_set_name {
     my($self, $id, $name) = @_;
     my $dbh = $self->dbh;
     $dbh->do("UPDATE repo SET name = ? WHERE id = ?", undef, $name, $id);
-    $dbh->commit;
 }
 
 sub repo_sync {
     my($self, %opt) = @_;
     my @repos;
     my $dbh = $self->dbh;
+    local $dbh->{AutoCommit} = 0;
     my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1" .
 			    ($opt{repo} ? " AND id = $opt{repo}" : "") .
 			    " ORDER BY id");
@@ -560,7 +561,7 @@ sub search {
     my $dbh = $self->dbh;
 
     $dbh->do("DROP TABLE IF EXISTS search");
-    $dbh->commit;
+    local $dbh->{AutoCommit} = 0;
 
  SEARCH: {
 	if ($pattern =~ /::/) {

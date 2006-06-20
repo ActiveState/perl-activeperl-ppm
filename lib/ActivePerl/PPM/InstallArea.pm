@@ -274,6 +274,7 @@ sub install {
 	old_files => {},
 	summary => {},
     );
+    local $dbh->{AutoCommit} = 0;
     eval {
 	my $dirty = $self->_dirty_file;
 	die "Previous install did not clean up properly" if -e $dirty;
@@ -284,7 +285,6 @@ sub install {
 	    ppm_debug("Created $dirty");
 	}
 	_on_rollback(\%state, "unlink", $dirty);
-	$dbh->{RaiseError} = 1;
 	for my $pkg (@packages) {
 	    $pkg = ActivePerl::PPM::Package->new($pkg);
 	    my $pkg_id = $self->package_id($pkg->{name});
@@ -356,7 +356,6 @@ sub install {
 	_do_action(@{$state{commit}});
 	return $state{summary} || {};
     }
-    $dbh->{RaiseError} = 0;
 }
 
 sub dirty_cleanup {
@@ -552,6 +551,7 @@ sub uninstall {
     my $dbh = $self->dbh;
     die "Can't uninstall from read-only area"
 	if $self->{readonly};
+    local $dbh->{AutoCommit} = 0;
 
     my $sth = $dbh->prepare("SELECT path FROM file WHERE package_id = ?");
     $sth->execute($pkg_id);
@@ -605,12 +605,13 @@ sub _init_db {
 	$db_file = "ppm-$name-area.db";
     }
     my $dbh = DBI->connect("dbi:SQLite:dbname=$etc/$db_file", "", "", {
-        AutoCommit => 0,
-        PrintError => 1,
+        AutoCommit => 1,
+        RaiseError => 1,
     });
     die "$etc/$db_file: $DBI::errstr" unless $dbh;
     $self->{dbh} = $dbh;
 
+    local $dbh->{AutoCommit} = 0;
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
     if ($v == 0) {
@@ -660,6 +661,7 @@ EOT
 sub sync_db {
     my $self = shift;
     my $dbh = $self->dbh;
+    local $dbh->{AutoCommit} = 0;
     ppm_status("Syncing PPM database with .packlists");
     require ExtUtils::Packlist;
     my $pkglists = $self->packlists;
