@@ -191,6 +191,7 @@ sub merge_area_items {
 	my $area = $ppm->area($area_name);
 	my @fields = ("name", "version", "release_date", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
+	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
 	    $pkglist->add($name,
 		       area => $area_name,
@@ -211,6 +212,7 @@ sub merge_repo_items {
     #Data::Dump::dump(@res);
 
     for (@res) {
+	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	my ($name, $version, $release_date, $abstract, $author) = @$_;
 	$pkglist->add($name,
 		   available => $version,
