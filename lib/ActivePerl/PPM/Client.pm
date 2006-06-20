@@ -527,6 +527,17 @@ sub _check_ppd {
     }
 }
 
+sub packages {
+    my $self = shift;
+    my $dbh = $self->dbh;
+    if (@_) {
+	return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
+					  " FROM package")};
+    }
+    return @{$dbh->selectcol_arrayref("SELECT id FROM package")}
+	if wantarray;
+    return $dbh->selectrow_array("SELECT count(*) FROM package");
+}
 
 sub search {
     my($self, $pattern, @fields) = @_;
@@ -882,6 +893,18 @@ one filled in with the corresponding values for maching packages.
 Will look up the given package from the last search() result, where
 $num matches the 1-based index into the list returned by the last
 search.  This will return an L<ActivePerl::PPM::RepoPackage> object.
+
+=item $client->packages
+
+=item $client->packages( $field,... )
+
+Without arguments returns the ids of packages available.  In scalar
+context returns the number of packages.
+
+With arguments return a list of array references each one representing
+one package.  The elements of each array are the fields requested.
+See L<ActivePerl::PPM::RepoPackage> for what field names are
+available.
 
 =item $client->package( $id )
 
