@@ -20,13 +20,21 @@ Tkx::tk(appname => "Perl Package Manager");
 my $dir = abs_path(dirname($INC{'ActivePerl/PPM/GUI.pm'}));
 Tkx::lappend('::auto_path', $dir . "/tcl");
 
+my $windowingsystem = Tkx::tk('windowingsystem');
+my $AQUA = ($windowingsystem eq "aqua");
+
 if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
     Tkx::package_require('comm');
     print "DEBUG COMM PORT: " . Tkx::comm__comm('self') . "\n";
 
     Tkx::package_require('tkcon');
-    $mw->g_bind("<F12>", 'catch {tkcon show}');
-    $mw->g_bind("<F11>", 'catch {tkcon hide}');
+    if ($AQUA) {
+	$mw->g_bind("<Command-F12>", 'catch {tkcon show}');
+	$mw->g_bind("<Command-F11>", 'catch {tkcon hide}');
+    } else {
+	$mw->g_bind("<F12>", 'catch {tkcon show}');
+	$mw->g_bind("<F11>", 'catch {tkcon hide}');
+    }
 }
 
 Tkx::package_require('tile');
@@ -36,6 +44,7 @@ Tkx::package_require('tooltip');
 Tkx::package_require('widget::dialog');
 Tkx::package_require('widget::statusbar');
 Tkx::package_require('widget::toolbar');
+#Tkx::package_require('widget::menuentry');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('style::as');
 Tkx::package_require('BWidget');
@@ -43,8 +52,6 @@ Tkx::Widget__theme(1);
 
 Tkx::style__as__init();
 
-my $windowingsystem = Tkx::tk('windowingsystem');
-my $AQUA = ($windowingsystem eq "aqua");
 if ($AQUA) {
     Tkx::set("::tk::mac::useThemedToplevel" => 1);
 }
@@ -65,14 +72,19 @@ Tkx::interp(alias => "", "ppm", "", [\&::ppm]);
 # Use Tk scroll on OS X, but Ttk scrollbar elsewhere by default
 if ($AQUA) {
     Tkx::interp("alias", "", "::ttk::scrollbar", "", "::scrollbar");
+    Tkx::option('add', "*Scrollbar.borderWidth", 0);
 } else {
     # Wait until 8.4.14 for this
     #Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
 }
 
 # These variables are tied to UI elements
-my $last_filter = "";
-my $filter_type = "name";
+my %FILTER;
+$FILTER{'last'} = "";
+$FILTER{'type'} = "name";
+$FILTER{'id'} = "";
+$FILTER{'delay'} = 500; # filter delay on key in millisecs
+
 my %VIEW;
 $VIEW{'name'} = 1;
 $VIEW{'area'} = 1;
@@ -84,12 +96,14 @@ $VIEW{'author'} = 0;
 $VIEW{'toolbar'} = 1;
 $VIEW{'statusbar'} = 1;
 
-menus();
-
 my %IMG;
 $IMG{'refresh'} = Tkx::ppm__img('refresh');
 $IMG{'filter'} = Tkx::ppm__img('search');
 
+# Create the menu structure
+menus();
+
+# Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $details = $pw->new_text(-height => 7, -width => 60, -borderwidth => 1);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
@@ -115,29 +129,33 @@ Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
 my $flbl = $toolbar->new_ttk__menubutton(-text => "Filter:",
-					   -image => $IMG{'filter'},
-					   -menu => $filter_menu);
+					 -image => $IMG{'filter'},
+					 -style => "Toolbutton",
+					 -menu => $filter_menu);
 my $filter = $toolbar->new_ttk__entry(-width => 10);
+#my $filter = $toolbar->new_widget__menuentry(-width => 1,
+#					     -menu => $filter_menu);
 Tkx::tooltip($filter, "Filter search results");
 $toolbar->add($flbl, -separator => 1);
 $toolbar->add($filter, -weight => 2, -separator => 0);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
-		  -variable => \$filter_type, -command => [\&filter]);
+		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
-		  -variable => \$filter_type, -command => [\&filter]);
+		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Name and Abstract",
 		  -value => "name abstract",
-		  -variable => \$filter_type, -command => [\&filter]);
+		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Author", -value => "author",
-		  -variable => \$filter_type, -command => [\&filter]);
+		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter->g_bind('<Return>', [\&filter]);
+$filter->g_bind('<Key>', [\&filter_onkey]);
 
 my $sync = $toolbar->new_ttk__button(-text => "Sync",
 				     -image => $IMG{'refresh'},
 				     -style => "Toolbutton",
 				     -command => [\&full_refresh]);
 Tkx::tooltip($sync, "Refresh all data");
-$toolbar->add($sync, -pad => [4, 0]);
+$toolbar->add($sync, -separator => 1, -pad => [4, 0]);
 
 my $config = $toolbar->new_ttk__button(-text => "Config",
 				       -style => "Toolbutton");
@@ -270,15 +288,22 @@ sub merge_repo_items {
 
 sub filter {
     my $fltr = $filter->get();
-    my $count = $pkglist->filter($fltr, $filter_type);
+    Tkx::after('cancel', $FILTER{'id'});
+    return if ($fltr eq $FILTER{'last'});
+    my $count = $pkglist->filter($fltr, $FILTER{'type'});
     if ($count == -1) {
 	$filter->delete(0, "end");
-	$filter->insert(0, $last_filter);
+	$filter->insert(0, $FILTER{'last'});
 	# No need to refilter - should not have changed
     } else {
-	$last_filter = $fltr;
+	$FILTER{'last'} = $fltr;
 	$NUM{'listed'} = $count;
     }
+}
+
+sub filter_onkey {
+    Tkx::after('cancel', $FILTER{'id'});
+    $FILTER{'id'} = Tkx::after($FILTER{'delay'}, [\&filter]);
 }
 
 sub ppm {
@@ -352,9 +377,19 @@ sub menus {
 			  -command => [$colcmd, 'author']);
 
     # Help menu
-    $sm = $menu->new_menu(-name => "help");
+    $sm = $menu->new_menu(-name => "help"); # must be named "help"
     $menu->add_cascade(-label => "Help", -menu => $sm);
     $sm->add_command(-label => "About", -command => sub { about(); });
+
+    # Special menu on OS X
+    if ($AQUA) {
+	$sm = $menu->new_menu(-name => 'apple'); # must be named "apple"
+	$menu->add_cascade(-label => "PPM", -menu => $sm);
+	$sm->add_command(-label => "About PPM");
+	$sm->add_separator();
+	$sm->add_command(-label => "Preferences...",
+			 -accelerator => "Command-,");
+    }
 
     return $menu;
 }
