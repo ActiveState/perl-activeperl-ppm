@@ -1172,6 +1172,11 @@ sub _run_script {
 
 sub _expand_exec {
     my $exec = shift;
+    my @args;
+    if ($exec =~ /\W/) {
+	require Text::ParseWords;
+	($exec, @args) = Text::ParseWords::shellwords($exec);
+    }
     if (uc($exec) eq "SELF") {
 	$exec = shift;
 	$exec = "./$exec" if $^O ne "MSWin32";
@@ -1180,7 +1185,7 @@ sub _expand_exec {
 	$exec = $^X;
     }
     $exec = '@' . $exec;  # silence command echo
-    return [$exec, @_];
+    return [$exec, @args, @_];
 }
 
 sub do_remove {
