@@ -361,7 +361,9 @@ sub install {
 sub dirty_cleanup {
     my $self = shift;
     my $dirty = $self->_dirty_file;
-    if (-e $dirty) {
+    if (-e $dirty && time - (stat _)[9] > 60) {
+	# The dirty flag file is more than a minute old.  Likely to be
+	# left over from a crashed install.
 	my $prefix = $self->prefix;
 	ppm_log("WARN", "Cleaning up dirty install attempt in $prefix");
 	my $count = 0;
@@ -377,7 +379,8 @@ sub dirty_cleanup {
 	}, $prefix);
 	unlink($dirty) || die "Can't unlink '$dirty': $!";
 	my $s = ($count == 1) ? "" : "s";
-	ppm_log("WARN", "$count file$s restored");
+	$count ||= "no";
+	ppm_log("WARN", "$count file$s needed to be restored");
     }
 }
 
