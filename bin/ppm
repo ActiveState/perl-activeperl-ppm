@@ -1069,9 +1069,11 @@ sub _install {
 	print "Installing$to...";
 	if (my $summary = $area->install(@_)) {
 	    print "done\n";
-	    for my $what (sort keys %$summary) {
-		my $n = $summary->{$what} || 0;
-		printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
+	    if (my $count = $summary->{count}) {
+		for my $what (sort keys %$count) {
+		    my $n = $count->{$what} || 0;
+		    printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
+		}
 	    }
 	}
 	else {

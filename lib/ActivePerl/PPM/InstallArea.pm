@@ -339,7 +339,7 @@ sub install {
 	}
 	for (keys %{$state{old_files}}) {
 	    _on_commit(\%state, "unlink", $self->_expand_path($_));
-	    $state{summary}{deleted}++;
+	    $state{summary}{count}{deleted}++;
 	}
 	_on_commit(\%state, "unlink", $dirty);  # must be last
     };
@@ -429,7 +429,7 @@ sub _copy_file {
             File::Compare::compare($from, $to) == 0)               # same content
         {
 	    $copy_to = undef;
-	    $state->{summary}{unchanged}++;
+	    $state->{summary}{count}{unchanged}++;
 	    ppm_log("INFO", "$to already present");
 	}
 	else {
@@ -438,11 +438,11 @@ sub _copy_file {
 	    rename($to, $bak) || die "Can't rename as $bak: $!";
 	    _on_rollback($state, "rename", $bak, $to);
 	    _on_commit($state, "unlink", $bak);
-	    $state->{summary}{updated}++;
+	    $state->{summary}{count}{updated}++;
 	}
     }
     else {
-	$state->{summary}{installed}++;
+	$state->{summary}{count}{installed}++;
     }
 
     if ($copy_to) {
