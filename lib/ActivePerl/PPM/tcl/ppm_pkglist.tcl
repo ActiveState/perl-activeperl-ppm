@@ -17,7 +17,9 @@ snit::widgetadaptor pkglist {
 
     component tree
 
-    delegate option {-borderwidth -relief} to hull
+    delegate option -borderwidth to hull
+    delegate option -relief to hull
+    delegate option -padding to hull
     delegate option * to tree
     delegate method * to tree
 
@@ -71,6 +73,12 @@ snit::widgetadaptor pkglist {
 	}
 	array set opts $args
 	set opts(name) $name
+	if {0 && [info exists opts(author)]} {
+	    # Crazy broken encoding ...
+	    set opts(author) [encoding convertfrom utf-8 \
+				  [encoding convertfrom utf-8 \
+				       [encoding convertfrom utf-8 $opts(author)]]]
+	}
 	set ITEMS($item) [array get opts]
 	if {1} {
 	    eval [linsert [array get opts] 0 $tree item text $item]
@@ -95,7 +103,7 @@ snit::widgetadaptor pkglist {
 	# currently the user must request it.
     }
 
-    method identify {id} {
+    method name {id} {
 	if {[info exists NAMES($id)]} {
 	    return $id
 	}
@@ -137,14 +145,14 @@ snit::widgetadaptor pkglist {
 	return [array size ITEMS]
     }
 
-    method filter {ptn {what name}} {
+    method filter {ptn {fields name}} {
 	set count 0
-	if {[catch {string match $ptn $what} err]} {
+	if {[catch {string match $ptn $fields} err]} {
 	    tk_messageBox -icon error -title "Invalid Search Pattern" \
 		-message "Invalid search pattern: $ptn\n$err" -type ok
 	    return -1
 	}
-	if {$ptn eq ""} {
+	if {$ptn eq "" || $ptn eq "*"} {
 	    # make everything visible
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 1
@@ -157,32 +165,41 @@ snit::widgetadaptor pkglist {
 	    }
 	    $tree item configure $NAMES($ptn) -visible 1
 	    set count 1
-	} elseif {$what eq "name"} {
-	    if {[string first "*" $ptn] == -1} {
-		# no wildcard in pattern - add to each end
-		set ptn *$ptn*
-	    }
-	    foreach {name} [array names NAMES] {
-		set vis [string match -nocase $ptn $name]
-		$tree item configure $NAMES($name) -visible $vis
-		incr count $vis
-	    }
 	} else {
+	    # Fields-based searches
 	    if {[string first "*" $ptn] == -1} {
 		# no wildcard in pattern - add to each end
 		set ptn *$ptn*
 	    }
-	    foreach {item} [array names ITEMS] {
-		array set opts $ITEMS($item)
-		set vis [expr {[info exists opts($what)] &&
-			       [string match -nocase $ptn $opts($what)]}]
-		$tree item configure $item -visible $vis
-		incr count $vis
-		unset opts
+	    if {$fields eq "name"} {
+		foreach {name} [array names NAMES] {
+		    set vis [string match -nocase $ptn $name]
+		    $tree item configure $NAMES($name) -visible $vis
+		    incr count $vis
+		}
+	    } else {
+		foreach {item} [array names ITEMS] {
+		    array set opts $ITEMS($item)
+		    foreach field $fields {
+			set vis [expr {[info exists opts($field)] &&
+				       [string match -nocase $ptn $opts($field)]}]
+			if {$vis} { break }
+		    }
+		    $tree item configure $item -visible $vis
+		    incr count $vis
+		    unset opts
+		}
 	    }
 	}
 	set visible $count
 	return $count
+    }
+
+    method view {col {show {}}} {
+	if {$show ne ""} {
+	    $tree column configure $col -visible $show
+	}
+	return [$tree column cget $col -visible]
     }
 
     method sort {} {
@@ -224,8 +241,8 @@ snit::widgetadaptor pkglist {
 	}
 	$tree configure -itemheight $height
 
-	$tree column create -width  20 -text "Action" -tag action \
-	    -borderwidth 1
+	$tree column create -image [::ppm::img default] -tag action \
+	    -borderwidth 1 -button 0 -resize 0
 	$tree column create -width 100 -text "Package Name" -tag name \
 	    -arrow up -itembackground $sortcolor \
 	    -borderwidth 1
@@ -235,10 +252,10 @@ snit::widgetadaptor pkglist {
 	    -tag installed -borderwidth 1
 	$tree column create -width  60 -text "Available Version" \
 	    -tag available -borderwidth 1
-	$tree column create -width 200 -text "Abstract" -tag abstract \
-	    -borderwidth 1
-	$tree column create -width 100 -text "Author" -tag author \
-	    -borderwidth 1
+	$tree column create -text "Abstract" -tag abstract \
+	    -borderwidth 1 -expand 1 -squeeze 1
+	$tree column create -width 120 -text "Author" -tag author \
+	    -borderwidth 1 -visible 0
 
 	set w [listbox $win.l]
 	set selbg [$w cget -selectbackground]
@@ -255,7 +272,7 @@ snit::widgetadaptor pkglist {
 	set S [$tree style create styAction]
 	$tree style elements $S {selRect elemImg}
 	$tree style layout $S selRect -union [list elemImg] -iexpand news
-	$tree style layout $S elemImg -expand ns
+	$tree style layout $S elemImg -expand news
 
 	# column 1: text (Package)
 	set S [$tree style create styName]
@@ -267,6 +284,14 @@ snit::widgetadaptor pkglist {
 	$tree notify bind $tree <Header-invoke> [mymethod _headerinvoke %T %C]
 
 	$tree notify bind $tree <Selection> [mymethod _select %T %c %D %S]
+
+	$tree column dragconfigure -enable 1
+	$tree notify install <ColumnDrag-begin>
+	$tree notify install <ColumnDrag-end>
+	$tree notify install <ColumnDrag-receive>
+	$tree notify bind DontDelete <ColumnDrag-receive> {
+	    %T column move %C %b
+	}
 
 	if {0} {
 	    TreeCtrl::SetSensitive $tree {
