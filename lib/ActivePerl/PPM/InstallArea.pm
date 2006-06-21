@@ -234,6 +234,14 @@ sub package_files {
     return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = ? ORDER BY path", undef, $id)}
 }
 
+sub package_packlist {
+    my($self, $id) = @_;
+    my $dbh = $self->dbh;
+    my $packlist = $dbh->selectrow_array("SELECT path FROM file WHERE package_id = ? AND path like '%/.packlist'", undef, $id);
+    $packlist = $self->_expand_path($packlist) if $packlist;
+    return $packlist;
+}
+
 sub feature_have {
     my($self, $feature) = @_;
     my $vers = $self->dbh->selectrow_array("SELECT max(version) FROM feature WHERE name = ? AND role = 'p'", undef, $feature);
@@ -287,6 +295,7 @@ sub install {
 	_on_rollback(\%state, "unlink", $dirty);
 	for my $pkg (@packages) {
 	    $pkg = ActivePerl::PPM::Package->new($pkg);
+	    $state{summary}{pkg}{$pkg->{name}}{new_version} = $pkg->{version};
 	    my $pkg_id = $self->package_id($pkg->{name});
 	    if (defined $pkg_id) {
 		for (@{$dbh->selectcol_arrayref("SELECT path FROM file where package_id = $pkg_id")}) {
@@ -294,6 +303,8 @@ sub install {
 		}
 	        $dbh->do("DELETE FROM file WHERE package_id = $pkg_id");
 		$pkg->{id} = $pkg_id;
+		my $old_pkg = $self->package($pkg_id);
+		$state{summary}{pkg}{$pkg->{name}}{old_version} = $old_pkg->{version};
             }
 	    else {
 		delete $pkg->{id};  # might be left over from the RepoPackage
@@ -334,6 +345,7 @@ sub install {
 		# XXX rollback
 	    }
 	    $state{packlist}->write($packlist_file) || die "Can't write '$packlist_file': $!";
+	    $state{summary}{pkg}{$pkg->{name}}{packlist} = $packlist_file;
 	    _on_rollback(\%state, "unlink", $packlist_file);
 	    _save_file_info(\%state, $packlist_file);
 	}
@@ -1018,6 +1030,11 @@ package provide the given feature.
 
 Returns the list of names for the files that belong to the given
 package.  In scalar context return the number of files.
+
+=item $area->package_packlist( $id )
+
+Returns the F<.packlist> file for the given package.  See
+L<ExtUtils::Packlist>.
 
 =item $area->packlists
 

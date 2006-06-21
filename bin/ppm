@@ -1067,7 +1067,8 @@ sub _install {
 	my $to = $area->name;
 	$to = " to $to area" if $to;
 	print "Installing$to...";
-	if (my $summary = $area->install(@_)) {
+	my $summary = $area->install(@_);
+	if ($summary) {
 	    print "done\n";
 	    if (my $count = $summary->{count}) {
 		for my $what (sort keys %$count) {
@@ -1083,7 +1084,7 @@ sub _install {
 
 	# run install scripts
 	for my $pkg (@_) {
-	    _run_script($area, $pkg, "install", $tmpdir);
+	    _run_script($area, $pkg, "install", $tmpdir, $summary->{pkg}{$pkg->{name}});
 	}
     };
     my $err = $@;
@@ -1093,7 +1094,7 @@ sub _install {
 }
 
 sub _run_script {
-    my($area, $pkg, $kind, $tmpdir) = @_;
+    my($area, $pkg, $kind, $tmpdir, $pkg_info) = @_;
     my $script = $pkg->{script}{$kind};
     return unless $script;
 
@@ -1148,10 +1149,14 @@ sub _run_script {
 	local $ENV{PPM_INSTLIB} = $area->lib;
 	local $ENV{PPM_INSTARCHLIB} = $area->archlib;
 	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
-	local $ENV{PPM_ACTION} = $kind;  # XXX 'upgrade'
-	# local $ENV{PPM_PREV_VERSION} = ...;
-	# local $ENV{PPM_NEW_VERSION} = ...;
-	# local $ENV{PPM_INSTPACKLIST} = ....;
+	local $ENV{PPM_ACTION} = $kind;
+	local $ENV{PPM_NEW_VERSION} = $pkg_info->{new_version} if exists $pkg_info->{new_version};
+	local $ENV{PPM_PREV_VERSION};
+	if (exists $pkg_info->{old_version}) {
+	    $ENV{PPM_ACTION} = "upgrade" if $ENV{PPM_ACTION} eq "install";
+	    $ENV{PPM_PREV_VERSION} = $pkg_info->{old_version};
+	}
+	local $ENV{PPM_INSTPACKLIST} = $pkg_info->{packlist} if exists $pkg_info->{packlist};;
 	local $ENV{PPM_PERL} = $^X;
 	eval {
 	    chdir $tmpdir;
@@ -1214,7 +1219,10 @@ sub do_remove {
 	    die "'ppm remove $pkg_o->{name}' will uninstall package providing $pkg";
 	}
 	eval {
-	    _run_script($area, $pkg_o, "uninstall");
+	    _run_script($area, $pkg_o, "uninstall", undef, {
+	        old_version => $pkg_o->{version},
+                packlist => $area->package_packlist($pkg_o->{id}),
+            });
 	    print "$pkg_o->{name}: ";
 	    $area->uninstall($pkg_o->{name});
 	};
