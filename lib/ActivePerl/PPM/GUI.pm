@@ -30,12 +30,14 @@ if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 }
 
 Tkx::package_require('tile');
+Tkx::package_require('img::png');
+Tkx::package_require('ppm::themes');
 Tkx::package_require('tooltip');
 Tkx::package_require('widget::dialog');
-Tkx::package_require('ppm::themes');
+Tkx::package_require('widget::statusbar');
+Tkx::package_require('widget::toolbar');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('style::as');
-Tkx::package_require('img::png');
 Tkx::package_require('BWidget');
 Tkx::Widget__theme(1);
 
@@ -68,6 +70,20 @@ if ($AQUA) {
     #Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
 }
 
+# These variables are tied to UI elements
+my $last_filter = "";
+my $filter_type = "name";
+my %VIEW;
+$VIEW{'name'} = 1;
+$VIEW{'area'} = 1;
+$VIEW{'installed'} = 1;
+$VIEW{'available'} = 1;
+$VIEW{'abstract'} = 1;
+$VIEW{'author'} = 0;
+
+$VIEW{'toolbar'} = 1;
+$VIEW{'statusbar'} = 1;
+
 menus();
 
 my %IMG;
@@ -77,67 +93,94 @@ $IMG{'filter'} = Tkx::ppm__img('search');
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $details = $pw->new_text(-height => 7, -width => 60, -borderwidth => 1);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
-			       -selectcommand => [\&select_item]);
-my $toolbar = $mw->new_ttk__frame();
+			       -selectcommand => [\&select_item],
+			       -borderwidth => 1, -relief => 'sunken');
+my $toolbar = $mw->new_widget__toolbar();
 
 $details->tag('configure', 'title',
 	      -font => 'Helvetica 16 bold');
 
-my $statusbar = $mw->new_StatusBar();
+my $statusbar = $mw->new_widget__statusbar();
 
 $pw->add($pkglist, -weight => 3);
 $pw->add($details, -weight => 1);
 
-Tkx::grid($pw, -sticky => "news");
+Tkx::grid($toolbar, -sticky => "ew");
+Tkx::grid($pw, -sticky => "news", -padx => 4, -pady => 4);
 Tkx::grid($statusbar, -sticky => "ew");
 
-Tkx::grid(rowconfigure => $mw, 0, -weight => 1);
+Tkx::grid(rowconfigure => $mw, 1, -weight => 1);
 Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
-my $albl = $statusbar->new_ttk__label(-text => "Area:");
-my $area_cbx = $statusbar->new_ttk__combobox(-width => 6,
-					     -values => ["ALL"]);
-$area_cbx->set("ALL");
-$statusbar->add($albl, -separator => 0);
-$statusbar->add($area_cbx, -separator => 0);
-
-my $last_filter = "";
-my $filter_type = "name";
-my $filter_menu = $statusbar->new_menu(-name => "filter_menu");
-my $flbl = $statusbar->new_ttk__menubutton(-text => "Filter:",
+## Toolbar items
+my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
+my $flbl = $toolbar->new_ttk__menubutton(-text => "Filter:",
 					   -image => $IMG{'filter'},
 					   -menu => $filter_menu);
-my $filter = $statusbar->new_ttk__entry(-width => 10);
+my $filter = $toolbar->new_ttk__entry(-width => 10);
 Tkx::tooltip($filter, "Filter search results");
-$statusbar->add($flbl, -separator => 1);
-$statusbar->add($filter, -weight => 2, -separator => 0);
+$toolbar->add($flbl, -separator => 1);
+$toolbar->add($filter, -weight => 2, -separator => 0);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
 		  -variable => \$filter_type, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
+		  -variable => \$filter_type, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Name and Abstract",
+		  -value => "name abstract",
 		  -variable => \$filter_type, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 		  -variable => \$filter_type, -command => [\&filter]);
 $filter->g_bind('<Return>', [\&filter]);
 
-my $numitems = 0;
-my $ilbl = $statusbar->new_ttk__label(-text => "Items");
-my $items_lbl = $statusbar->new_ttk__label(-width => 4,
-					   -textvariable => \$numitems);
-$statusbar->add($items_lbl, -separator => 0, -pad => [4, 0]);
-$statusbar->add($ilbl, -separator => 0);
+my $sync = $toolbar->new_ttk__button(-text => "Sync",
+				     -image => $IMG{'refresh'},
+				     -style => "Toolbutton",
+				     -command => [\&full_refresh]);
+Tkx::tooltip($sync, "Refresh all data");
+$toolbar->add($sync, -pad => [4, 0]);
 
-my $sync = $statusbar->new_ttk__button(-text => "Sync",
-				       -image => $IMG{'refresh'},
-				       -style => "Toolbutton",
-				       -command => [\&full_refresh]);
-Tkx::tooltip($sync, "Refresh data");
-$statusbar->add($sync, -separator => 1, -pad => [4, 0]);
-
-my $config = $statusbar->new_ttk__button(-text => "Config",
-					 -style => "Toolbutton");
+my $config = $toolbar->new_ttk__button(-text => "Config",
+				       -style => "Toolbutton");
 Tkx::tooltip($config, "Configure something");
-$statusbar->add($config, -separator => 0);
+$toolbar->add($config);
 
+## Statusbar items
+my $albl = $statusbar->new_ttk__label(-text => "Area:");
+my $area_cbx = $statusbar->new_ttk__combobox(-width => 6,
+					     -values => ["ALL"]);
+$area_cbx->set("ALL");
+$statusbar->add($albl);
+$statusbar->add($area_cbx);
+
+my %NUM;
+$NUM{'total'} = 0;
+$NUM{'listed'} = 0;
+$NUM{'installed'} = 0;
+$NUM{'install'} = 0;
+$NUM{'remove'} = 0;
+my $lbl;
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'total'});
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-text => "packages,");
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'});
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-text => "installed.");
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'listed'});
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-text => "listed,");
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'});
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-text => "to install/upgrade,");
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'});
+$statusbar->add($lbl);
+$lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
+$statusbar->add($lbl, -weight => 1);
+
+## Wait dialog for when we sync
 my $sync_dialog = $mw->new_widget__dialog(-title => 'Synchronize Database',
 					  -parent => $mw, -place => 'over',
 					  -type => 'ok',  -modal => 'local',
@@ -149,7 +192,8 @@ my $slbl = $sfrm->new_ttk__label(-text => "We are sync'ing");
 $sync_dialog->setwidget($sfrm);
 Tkx::grid($slbl, -sticky => "ew");
 
-Tkx::update();
+# Now let's get started ...
+Tkx::update('idletasks');
 
 Tkx::after(idle => sub {
 	       $mw->g_wm_deiconify();
@@ -163,11 +207,13 @@ Tkx::MainLoop();
 
 sub refresh {
     $pkglist->clear();
-    $numitems = 0;
+    $NUM{'listed'} = 0;
     merge_area_items();
+    $NUM{'installed'} = $pkglist->numitems();
     merge_repo_items();
+    $NUM{'total'} = $pkglist->numitems();
     filter();
-    $numitems = $pkglist->numitems('visible');
+    $NUM{'listed'} = $pkglist->numitems('visible');
     $pkglist->sort();
 }
 
@@ -231,7 +277,7 @@ sub filter {
 	# No need to refilter - should not have changed
     } else {
 	$last_filter = $fltr;
-	$numitems = $count;
+	$NUM{'listed'} = $count;
     }
 }
 
@@ -264,14 +310,51 @@ sub menus {
     # View menu
     $sm = $menu->new_menu(-name => "view");
     $menu->add_cascade(-label => "View", -menu => $sm);
-    $sm->add_checkbutton(-label => "Status Bar", -state => "disabled");
-    $sm->add_checkbutton(-label => "Toolbar", -state => "disabled");
+    $sm->add_checkbutton(-label => "Toolbar",
+			 -variable => \$VIEW{'toolbar'},
+			 -command => sub {
+			     if ($VIEW{'toolbar'}) {
+				 Tkx::grid($toolbar);
+			     } else {
+				 Tkx::grid('remove', $toolbar);
+			     }
+			 });
+    $sm->add_checkbutton(-label => "Status Bar",
+			 -variable => \$VIEW{'statusbar'},
+			 -command => sub {
+			     if ($VIEW{'statusbar'}) {
+				 Tkx::grid($statusbar);
+			     } else {
+				 Tkx::grid('remove', $statusbar);
+			     }
+			 });
+    $sm->add_separator();
+    my $ssm = $sm->new_menu(-name => "fields");
+    $sm->add_cascade(-label => "Fields", -menu => $ssm);
+    my $colcmd = sub {
+	my $col = shift;
+	$pkglist->view($col, $VIEW{$col});
+    };
+    $ssm->add_checkbutton(-label => "Area",
+			  -variable => \$VIEW{'area'},
+			  -command => [$colcmd, 'area']);
+    $ssm->add_checkbutton(-label => "Installed Version",
+			  -variable => \$VIEW{'installed'},
+			  -command => [$colcmd, 'installed']);
+    $ssm->add_checkbutton(-label => "Available Version",
+			  -variable => \$VIEW{'available'},
+			  -command => [$colcmd, 'available']);
+    $ssm->add_checkbutton(-label => "Abstract",
+			  -variable => \$VIEW{'abstract'},
+			  -command => [$colcmd, 'abstract']);
+    $ssm->add_checkbutton(-label => "Author",
+			  -variable => \$VIEW{'author'},
+			  -command => [$colcmd, 'author']);
 
     # Help menu
     $sm = $menu->new_menu(-name => "help");
     $menu->add_cascade(-label => "Help", -menu => $sm);
-    $sm->add_command(-label => "About", -state => "disabled",
-		     -command => sub { about(); });
+    $sm->add_command(-label => "About", -command => sub { about(); });
 
     return $menu;
 }
