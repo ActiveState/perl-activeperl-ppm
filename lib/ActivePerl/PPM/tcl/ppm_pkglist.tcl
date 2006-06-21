@@ -73,12 +73,6 @@ snit::widgetadaptor pkglist {
 	}
 	array set opts $args
 	set opts(name) $name
-	if {0 && [info exists opts(author)]} {
-	    # Crazy broken encoding ...
-	    set opts(author) [encoding convertfrom utf-8 \
-				  [encoding convertfrom utf-8 \
-				       [encoding convertfrom utf-8 $opts(author)]]]
-	}
 	set ITEMS($item) [array get opts]
 	if {1} {
 	    eval [linsert [array get opts] 0 $tree item text $item]
@@ -158,7 +152,8 @@ snit::widgetadaptor pkglist {
 		$tree item configure $item -visible 1
 		incr count 1
 	    }
-	} elseif {[info exists NAMES($ptn)]} {
+	} elseif {0 && [info exists NAMES($ptn)]} {
+	    # Don't do exact match for PPM::GUI
 	    # exact match on one item - case sensitive
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 0
