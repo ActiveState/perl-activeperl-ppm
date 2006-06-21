@@ -127,6 +127,32 @@ sub do_dump {
     }
 }
 
+sub do_log {
+    $USAGE = "log [<minutes>]";
+    usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^[1-9]\d*\z/);
+    my $min = shift(@ARGV) || 10;
+
+    my $logfile = ActivePerl::PPM::Logger::ppm_logger()->logfile;
+    open(my $fh, "<", $logfile) || die "Can't open $logfile: $!";
+
+    print "Last $min minutes of $logfile\n\n";
+
+    my @t = (localtime time - $min * 60)[reverse 0..5];
+    $t[0] += 1900; # year
+    $t[1] ++;      # month
+    my $ts = sprintf "%04d-%02d-%02dT%02d:%02d:%02d", @t;
+
+    while (<$fh>) {
+	if ($_ gt $ts) {
+	    print;
+	    last;
+	}
+    }
+    while (<$fh>) {
+	print;
+    }
+}
+
 sub do_version {
     if (@ARGV) {
 	$USAGE = "version";
@@ -1411,6 +1437,11 @@ The location of the package description file.
 
 =back
 
+=item B<ppm log> [ I<minutes> ]
+
+Print entries from the log for the last few minutes.  By default print
+log lines for the last 10 minutes.
+
 =item B<ppm query> I<pattern>
 
 Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
@@ -1575,10 +1606,9 @@ build 818 of ActivePerl will keep its state there.
 SQLite database where ppm keeps its configuration and caches meta
 information about the content of the enabled repositories.
 
-=item F<$HOME/ppm4.log>
+=item F<$TEMPDIR/ppm4.log>
 
-Log file created to record actions that PPM takes.  On Windows this is
-logged to F<$TEMPDIR/ppm4.log>.
+Log file created to record actions that PPM takes.
 
 =item F<$PREFIX/etc/ppm-$NAME-area.db>
 

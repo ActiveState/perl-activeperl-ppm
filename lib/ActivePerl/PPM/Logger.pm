@@ -48,9 +48,10 @@ sub ppm_status {
 sub new {
     my($class, %opt) = shift;
 
-    my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} ||
-	($ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
-	 ($^O eq "MSWin32" ? "$ENV{TEMP}\\ppm4.log" : "$ENV{HOME}/ppm4.log"));
+    my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} || do {
+	require File::Spec;
+	File::Spec->catfile(File::Spec->tmpdir(), "ppm4.log");
+    };
     my $fh;
     if ($ENV{HARNESS_ACTIVE}) {
 	# suppress logging when running under Test::Harness
@@ -70,6 +71,7 @@ sub new {
         level => _num_prio($opt{level} || $ENV{ACTIVEPERL_PPM_LOG_LEVEL} || LOG_DEBUG()),
         cons => ($opt{cons} || $ENV{ACTIVEPERL_PPM_LOG_CONS}),
         callinfo => 1, #($opt{callinfo} || $ENV{ACTIVEPERL_PPM_LOG_CALLINFO}),
+	logfile => $logfile,
 	fh => $fh,
     }, $class;
 }
@@ -114,6 +116,11 @@ sub status {
     my($self, $msg) = @_;
     $msg = "done" unless $msg;
     $self->log(LOG_INFO, $msg);
+}
+
+sub logfile {
+    my $self = shift;
+    return $self->{logfile};
 }
 
 sub _num_prio {
