@@ -87,7 +87,23 @@ sub do_gui {
     eval { require ActivePerl::PPM::GUI; };
     if ($@) {
 	my $err = $@;
-	do_help() if ($err =~ /no display name/);
+	if ($err =~ /^no display name/) {
+	    ppm_log("ERR", "$PROGNAME $CMD: $err");
+	    $err =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
+	    $err =~ s/ _at / at /g; # escape for when you really want "at" in the message
+	    
+    	    print STDERR <<EOT;
+ppm gui failed: $err
+
+The PPM grahpical interface can't be used unless the DISPLAY environment
+variable is set up.  Either set it to the name of the X server to connect
+to or use $PROGNAME as a command line tool.
+
+Run '$PROGNAME help' to learn more about to to use this program as a command
+line tool.
+EOT
+	    exit 1;
+	};
 	die $err;
     }
 }
@@ -1203,6 +1219,7 @@ ppm - Perl Package Manager, version 4
 Invoke the graphical user interface:
 
     ppm
+    ppm gui
 
 Install, upgrade and remove packages:
 
