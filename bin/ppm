@@ -283,53 +283,38 @@ sub _try_abbrev {
 }
 
 sub do_list {
-    my %opt;
     my $area_name;
+    my $matching;
+    my $show_header = 1;
+    my $csv;
+    my @fields;
     if (@ARGV) {
-	$USAGE = "list [<area>] [--name] [--version] [--date] ... [--matching <pattern>] [--csv]";
+	$USAGE = "list [<area>] [--field <field>] [--matching <pattern>] [--csv]";
 	require Getopt::Long;
-	Getopt::Long::GetOptions(\%opt,
-           'name',
-           'version',
-           'date',
-           'abstract',
-           'author',
-           'area',
-	   'files',
-           'size',
-           'ppd',
-	   'matching=s',
-	   'header!',
-           'csv:s',
+	Getopt::Long::GetOptions(
+	   'matching=s' => \$matching,
+	   'header!' => \$show_header,
+           'fields:s' => sub { push(@fields, split(/\s*,\s*/, $_[1])) },
+           'csv:s' => \$csv,
         ) || usage();
 	$area_name = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
-    my $matching = delete $opt{matching};
+
     my $matching_re = glob2re($matching) if defined($matching);
     $matching = (defined $matching) ? " matching '$matching'" : "";
-    my $show_header = delete $opt{header};
-    $show_header = 1 unless defined $show_header;
-    my $csv = delete $opt{csv};
 
-    unless (%opt) {
+    unless (@fields) {
 	# fields to show by default
-	$opt{version}++;
-	$opt{files}++;
-	$opt{size}++;
-	if ($area_name) {
-	    $opt{date}++;
-	}
-	else {
-	    $opt{area}++;
-	}
+	push(@fields, "version", "files", "size");
+	push(@fields, $area_name ? "date" : "area");
     }
-    $opt{name}++;
+    unshift(@fields, "name") unless grep $_ eq "name", @fields;
 
     my @areas = ($area_name ? ($area_name) : $ppm->areas);
     my $in = $area_name ? " in '$area_name' area" : "";
 
-    if (keys %opt == 1) {
+    if (@fields == 1) {
 	# just list the names
 	my @pkgs = map $_->packages, map $ppm->area($_), @areas;
 	@pkgs = grep $_ =~ $matching_re, @pkgs if $matching_re;
@@ -337,32 +322,26 @@ sub do_list {
 	print "$_\n" for sort @pkgs;
     }
     else {
-	my @fields;
-	push(@fields, "name");
-	push(@fields, "version") if $opt{version};
-	push(@fields, "release_date") if $opt{date};
-	push(@fields, "abstract") if $opt{abstract};
-	push(@fields, "author") if $opt{author};
-	push(@fields, "ppd_uri") if $opt{ppd};
 	require ActiveState::Table;
 	my $tab = ActiveState::Table->new;
 	$tab->add_field($_) for @fields;
-	$tab->add_field("area") if $opt{area};
-	$tab->add_field("files") if $opt{files};
-	$tab->add_field("size") if $opt{size};
-	unshift(@fields, "id") if $opt{files} || $opt{size};
+
+	my %field = map { $_ => 1 } @fields;
+	my %db_column = map { $_ => 1 } qw(id name version release_date abstract author ppd_uri);
+	my @db_fields = grep $db_column{$_}, @fields;
+	unshift(@db_fields, "id") if !$field{id} && $field{files} || $field{size};
 
 	for my $area (map $ppm->area($_), @areas) {
-	    for my $pkg ($area->packages(@fields)) {
-		my %row = map {$_ => shift(@$pkg)} @fields;
+	    for my $pkg ($area->packages(@db_fields)) {
+		my %row = map {$_ => shift(@$pkg)} @db_fields;
 		next if $matching_re && $row{name} !~ $matching_re;
 		if ($row{release_date}) {
 		    $row{release_date} =~ s/[T ].*//;  # drop time
 		}
-		if ($opt{files} || $opt{size}) {
-		    if ($opt{size}) {
+		if ($field{files} || $field{size}) {
+		    if ($field{size}) {
 			my @files = $area->package_files($row{id});
-			$row{files} = @files if $opt{files};
+			$row{files} = @files if $field{files};
 
 			require ActiveState::DiskUsage;
 			my $size = 0;
@@ -374,8 +353,8 @@ sub do_list {
 			$row{files} = $area->package_files($row{id});
 		    }
 		}
-		$row{area} = $area->name if $opt{area};
-		delete $row{id};
+		$row{area} = $area->name if $field{area};
+		delete $row{id} unless $field{id};
 		$tab->add_row(\%row);
 	    }
 	}
@@ -423,7 +402,7 @@ sub terminal_width {
 sub do_query {
     $USAGE = "query <pattern>";
     usage() unless @ARGV == 1;
-    @ARGV = ("--matching", @ARGV, "--name", "--version", "--abstract", "--area");
+    @ARGV = ("--matching", @ARGV, "--fields", "name,version,abstract,area");
     return do_list();
 }
 
@@ -1283,8 +1262,8 @@ Manage and search install areas:
 
     ppm area list [--csv] [--no-header]
     ppm area sync
-    ppm list [--name] [--version] [--abstract] ...
-    ppm list <area> [--name] [--version] [--abstract] ...
+    ppm list [--fields <fieldnames>] [--csv]
+    ppm list <area> [--fields <fieldnames>] [--csv]
     ppm files <pkg>
     ppm verify [<pkg>]
 
@@ -1401,7 +1380,7 @@ B<--area> option to install the package into an alternative location.
 The B<--nodeps> option makes PPM attempt to install the package
 without resolving any dependencies the package might have.
 
-=item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ --I<field> ... ]
+=item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ ---fields B<fieldlist> ]
 
 List installed packages.  If the I<area> argument is not provided, list
 the content of all install areas.
@@ -1415,44 +1394,45 @@ following B<--cvs>.
 
 The B<--no-header> option suppress printing of the column headings.
 
-The following fields can be shown:
+The B<--fields> argument can be used to select what fields to show.
+The argument is a comma separated list of the following field names:
 
 =over
 
-=item B<--name>
+=item B<name>
 
-The package name.  This field is always shown first, but if specified
-alone just the package name is listed.
+The package name.  This field is always shown, but if specified
+alone get rid of the decorative box.
 
-=item B<--version>
+=item B<version>
 
 The version number of the package.
 
-=item B<--date>
+=item B<release_date>
 
 The release date of the package.
 
-=item B<--abstract>
+=item B<abstract>
 
 A one sentence description of the purpose of the package.
 
-=item B<--author>
+=item B<author>
 
 The package author or maintainer.
 
-=item B<--area>
+=item B<area>
 
 Where the package is installed.
 
-=item B<--files>
+=item B<files>
 
 The number of files installed for the package.
 
-=item B<--size>
+=item B<size>
 
 The combined disk space used for the package.
 
-=item B<--ppd>
+=item B<ppd_uri>
 
 The location of the package description file.
 
