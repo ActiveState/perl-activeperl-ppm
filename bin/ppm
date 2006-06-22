@@ -954,8 +954,15 @@ sub _install {
     my $ua = web_ua();
     unless ($area) {
 	$area = $ppm->default_install_area;
-	die "No default install area; please specify one with the --area option"
-	    unless $area;
+	unless ($area) {
+	    my $msg = "All available install areas are readonly.
+Run 'ppm help area' to learn how to set up private areas.";
+	    require ActiveState::Path;
+	    if (ActiveState::Path::find_prog("sudo")) {
+		$msg .= "\nYou might also try 'sudo ppm' to raise your privileges.";
+	    }
+	    die $msg;
+	}
 	ppm_log("NOTICE", "Installing into $area");
     }
     $area = $ppm->area($area);
