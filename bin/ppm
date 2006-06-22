@@ -65,10 +65,7 @@ eval {
 };
 if ($@) {
     ppm_log("ERR", "$PROGNAME $CMD: $@");
-    $@ =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
-    $@ =~ s/ _at / at /g; # escape for when you really want "at" in the message
-    print STDERR "$PROGNAME $CMD failed: $@";
-    print STDERR "\n" unless $@ =~ /\n\z/;
+    print STDERR "$PROGNAME $CMD failed: " . clean_err($@) . "\n";
     exit 1;
 }
 else {
@@ -94,8 +91,7 @@ sub do_gui {
 	my $err = $@;
 	if ($err =~ /^no display name/) {
 	    ppm_log("ERR", "$PROGNAME $CMD: $err");
-	    $err =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
-	    $err =~ s/ _at / at /g; # escape for when you really want "at" in the message
+	    $err = clean_err($err);
 
     	    print STDERR <<EOT;
 ppm gui failed: $err
@@ -1216,8 +1212,7 @@ sub do_remove {
 	    $area->uninstall($pkg_o->{name});
 	};
 	if ($@) {
-	    $@ =~ s/ at .*// unless $ENV{ACTIVEPERL_PPM_DEBUG};
-	    print $@;
+	    print clean_err($@) . "\n";
 	}
 	else {
 	    print "uninstalled\n";
@@ -1225,6 +1220,14 @@ sub do_remove {
 	}
     }
     die "No packages uninstalled" unless $removed_count;
+}
+
+sub clean_err {
+    my $err = shift;
+    $err =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
+    $err =~ s/ _at / at /g; # escape for when you really want "at" in the message
+    $err =~ s/\n*\z//;
+    return $err;
 }
 
 BEGIN {
