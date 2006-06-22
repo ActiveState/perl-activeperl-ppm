@@ -1,11 +1,11 @@
 package ActivePerl::PPM::GUI;
 
 use strict;
-use Tkx;
+use Tkx ();
 
 # get our cwd for Tcl files
-use File::Basename;
-use Cwd 'abs_path';
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
 
 my $ppm = $::ppm;
 
@@ -17,8 +17,7 @@ my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
 Tkx::tk(appname => "Perl Package Manager");
 
-my $dir = abs_path(dirname($INC{'ActivePerl/PPM/GUI.pm'}));
-Tkx::lappend('::auto_path', $dir . "/tcl");
+Tkx::lappend('::auto_path', abs_path(dirname(__FILE__)) . "/tcl");
 
 my $windowingsystem = Tkx::tk('windowingsystem');
 my $AQUA = ($windowingsystem eq "aqua");
