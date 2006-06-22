@@ -228,7 +228,6 @@ sub package {
 
 sub package_files {
     my($self, $id) = @_;
-    my $dbh = shift;
     return $self->dbh->selectrow_array("SELECT count(*) FROM file WHERE package_id = ?", undef, $id)
 	unless wantarray;
     return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = ? ORDER BY path", undef, $id)}
