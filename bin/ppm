@@ -108,25 +108,6 @@ EOT
     }
 }
 
-sub do_dump {
-    require Data::Dump;
-    push(@ARGV, "client") unless @ARGV;
-    for my $what (@ARGV) {
-	if ($what eq "client") {
-	    Data::Dump::dump($ppm);
-	}
-	elsif (grep $_ eq $what,$ppm->area) {
-	    Data::Dump::dump($ppm->area($what));
-	}
-	elsif (grep $_ eq $what, $ppm->repos) {
-	    Data::Dump::dump($ppm->repo($what));
-	}
-	else {
-	    warn "No area/repo called $what\n";
-	}
-    }
-}
-
 sub do_log {
     $USAGE = "log [--errors] [<minutes>]";
     my $errors;
@@ -1371,10 +1352,6 @@ searches the install area(s) for packages, making PPM database entries
 if they do not already exist, or dropping entries for packages that no
 longer exist.  When used without an I<area> argument, all install areas
 are synced. 
-
-=item B<ppm dump> [ I<what> ]
-
-Internal debugging tool.
 
 =item B<ppm describe> I<num>
 
