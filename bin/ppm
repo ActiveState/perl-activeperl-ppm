@@ -1341,13 +1341,6 @@ area.  If that area is read-only, the name appears in parenthesis.  You
 will not be able to install packages or remove packages in these areas.
 The default install area is marked with a C<*> after its name.
 
-PPM B<install areas> are basically perl library locations.  PPM allows
-for the addition of new install areas, which is useful for shared
-ActivePerl installations where the user does not have write permissions
-for the I<site> and I<perl> library directories.  New install areas are
-added by specifying the target directory in the PERL5LIB environment
-variable.
-
 The order of the listed install areas is the order perl uses when
 searching for modules.  Modules installed in earlier areas override
 modules installed in later ones.
@@ -1357,6 +1350,18 @@ output. The default field separator can be overridden by the argument
 following B<--cvs>.
 
 The B<--no-header> option suppresses column headings.
+
+PPM allows for the addition of new install areas, which is useful for
+shared ActivePerl installations where the user does not have write
+permissions for the I<site> and I<perl> areas.  New install areas are
+added by simply setting up new library directories for perl to search,
+and PPM will set up install areas to match.  The easiest way to add
+library directories for perl is to specify them in the C<PERL5LIB>
+environment variable, see L<perlrun> for details.  PPM will create
+F<etc>, F<bin>, F<html> directories as needed when installing
+packages.  If the last segment of the library directory path is F<lib>
+then the other directories will be created as siblings of the F<lib>
+directory, otherwise they will be subdirectories.
 
 =item B<ppm area sync> [ I<area> ... ]
 
