@@ -43,8 +43,7 @@ Tkx::package_require('tooltip');
 Tkx::package_require('widget::dialog');
 Tkx::package_require('widget::statusbar');
 Tkx::package_require('widget::toolbar');
-eval { Tkx::package_require('widget::menuentry'); };
-my $HAVE_MENUENTRY = ($@ ? 0 : 1);
+Tkx::package_require('widget::menuentry');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('style::as');
 Tkx::package_require('BWidget');
@@ -74,16 +73,16 @@ if ($AQUA) {
     Tkx::interp("alias", "", "::ttk::scrollbar", "", "::scrollbar");
     Tkx::option('add', "*Scrollbar.borderWidth", 0);
 } else {
-    # Wait until 8.4.14 for this
-    #Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
+    Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
 }
 
 # These variables are tied to UI elements
 my %FILTER;
-$FILTER{'last'} = "";
 $FILTER{'type'} = "name";
 $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
+$FILTER{'lastfilter'} = "";
+$FILTER{'lasttype'} = $FILTER{'type'};
 
 my %VIEW;
 $VIEW{'name'} = 1;
@@ -128,25 +127,15 @@ Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
-my $filter;
-if ($HAVE_MENUENTRY) {
-    $filter = $toolbar->new_widget__menuentry(-width => 1,
-					      -menu => $filter_menu);
-} else {
-    my $flbl = $toolbar->new_ttk__menubutton(-text => "Filter:",
-					     -image => $IMG{'filter'},
-					     -style => "Toolbutton",
+my $filter = $toolbar->new_widget__menuentry(-width => 1,
 					     -menu => $filter_menu);
-    $filter = $toolbar->new_ttk__entry(-width => 10);
-    $toolbar->add($flbl, -separator => 1);
-}
-Tkx::tooltip($filter, "Filter search results");
+Tkx::tooltip($filter, "Filter packages");
 $toolbar->add($filter, -weight => 2, -separator => 0);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
 		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
 		  -variable => \$FILTER{'type'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Name and Abstract",
+$filter_menu->add('radiobutton', -label => "Name or Abstract",
 		  -value => "name abstract",
 		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Author", -value => "author",
@@ -293,14 +282,19 @@ sub merge_repo_items {
 sub filter {
     my $fltr = $filter->get();
     Tkx::after('cancel', $FILTER{'id'});
-    return if ($fltr eq $FILTER{'last'});
+    return if ($fltr eq $FILTER{'lastfilter'}
+		   && $FILTER{'type'} eq $FILTER{'lasttype'});
+    my $type = $FILTER{'type'};
+    $type =~ s/ / or /g;
+    Tkx::tooltip($filter, "Filter packages by $type");
     my $count = $pkglist->filter($fltr, $FILTER{'type'});
     if ($count == -1) {
 	$filter->delete(0, "end");
-	$filter->insert(0, $FILTER{'last'});
+	$filter->insert(0, $FILTER{'lastfilter'});
 	# No need to refilter - should not have changed
     } else {
-	$FILTER{'last'} = $fltr;
+	$FILTER{'lastfilter'} = $fltr;
+	$FILTER{'lasttype'} = $FILTER{'type'};
 	$NUM{'listed'} = $count;
     }
 }
