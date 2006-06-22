@@ -34,6 +34,7 @@ if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 	$mw->g_bind("<F12>", 'catch {tkcon show}');
 	$mw->g_bind("<F11>", 'catch {tkcon hide}');
     }
+    Tkx::catch("tkcon hide");
 }
 
 Tkx::package_require('tile');
@@ -78,10 +79,13 @@ if ($AQUA) {
 
 # These variables are tied to UI elements
 my %FILTER;
+$FILTER{'filter'} = "";
+$FILTER{'area'} = "ALL";
 $FILTER{'type'} = "name";
 $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
 $FILTER{'lastfilter'} = "";
+$FILTER{'lastarea'} = "";
 $FILTER{'lasttype'} = $FILTER{'type'};
 
 my %VIEW;
@@ -99,6 +103,8 @@ my %IMG;
 $IMG{'refresh'} = Tkx::ppm__img('refresh');
 $IMG{'filter'} = Tkx::ppm__img('search');
 $IMG{'config'} = Tkx::ppm__img('config');
+
+my $cur_pkg_name = "";
 
 # Create the menu structure
 menus();
@@ -128,8 +134,11 @@ Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
-my $filter = $toolbar->new_widget__menuentry(-width => 1,
-					     -menu => $filter_menu);
+my $filter = $toolbar->new_widget__menuentry(
+    -width => 1,
+    -menu => $filter_menu,
+    -textvariable => \$FILTER{'filter'},
+);
 Tkx::tooltip($filter, "Filter packages");
 $toolbar->add($filter, -weight => 2);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
@@ -144,12 +153,20 @@ $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
 
+my $albl = $toolbar->new_ttk__label(-text => "Area:");
+my $area_cbx = $toolbar->new_ttk__combobox(-width => 6,
+					   -values => ["ALL"],
+					   -textvariable => \$FILTER{'area'});
+Tkx::bind($area_cbx, "<<ComboboxSelected>>", [\&filter]);
+$toolbar->add($albl, -pad => [0, 2]);
+$toolbar->add($area_cbx, -pad => [0, 2, 2]);
+
 my $sync = $toolbar->new_ttk__button(-text => "Sync",
 				     -image => $IMG{'refresh'},
 				     -style => "Toolbutton",
 				     -command => [\&full_refresh]);
 Tkx::tooltip($sync, "Refresh all data");
-$toolbar->add($sync, -separator => 1);
+$toolbar->add($sync, -separator => 1, -pad => [4, 2, 0]);
 
 my $config = $toolbar->new_ttk__button(-text => "Config",
 				       -image => $IMG{'config'},
@@ -158,13 +175,6 @@ Tkx::tooltip($config, "Configure something");
 $toolbar->add($config, -pad => [0, 2]);
 
 ## Statusbar items
-my $albl = $statusbar->new_ttk__label(-text => "Area:");
-my $area_cbx = $statusbar->new_ttk__combobox(-width => 6,
-					     -values => ["ALL"]);
-$area_cbx->set("ALL");
-$statusbar->add($albl);
-$statusbar->add($area_cbx);
-
 my %NUM;
 $NUM{'total'} = 0;
 $NUM{'listed'} = 0;
@@ -221,10 +231,11 @@ Tkx::MainLoop();
 sub refresh {
     $pkglist->clear();
     $NUM{'listed'} = 0;
-    merge_area_items();
+    my $area = merge_area_items();
     $NUM{'installed'} = $pkglist->numitems();
-    merge_repo_items();
+    my $repo = merge_repo_items();
     $NUM{'total'} = $pkglist->numitems();
+    #print "Total: $NUM{'total'}, Installed: $NUM{'installed'} of $area area items and $repo repo items\n";
     filter();
     $NUM{'listed'} = $pkglist->numitems('visible');
     $pkglist->sort();
@@ -246,6 +257,7 @@ sub full_refresh {
 }
 
 sub merge_area_items {
+    my $count = 0;
     for my $area_name ($ppm->areas) {
 	my $area = $ppm->area($area_name);
 	my @fields = ("name", "version", "release_date", "abstract", "author");
@@ -258,18 +270,16 @@ sub merge_area_items {
 		       abstract => $abstract,
 		       author => $author,
 		       );
+	    $count++;
 	}
     }
+    return $count;
 }
 
 sub merge_repo_items {
-
     my @fields = ("name", "version", "release_date", "abstract", "author");
     my @res = $ppm->packages(@fields);
-
-    #require Data::Dump;
-    #Data::Dump::dump(@res);
-
+    my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	my ($name, $version, $release_date, $abstract, $author) = @$_;
@@ -279,23 +289,29 @@ sub merge_repo_items {
 		   author => $author,
 		   );
     }
+    return $count;
 }
 
 sub filter {
-    my $fltr = $filter->get();
     Tkx::after('cancel', $FILTER{'id'});
-    return if ($fltr eq $FILTER{'lastfilter'}
-		   && $FILTER{'type'} eq $FILTER{'lasttype'});
+    return if ($FILTER{'filter'} eq $FILTER{'lastfilter'}
+		   && $FILTER{'type'} eq $FILTER{'lasttype'}
+		       && $FILTER{'area'} eq $FILTER{'lastarea'});
     my $type = $FILTER{'type'};
     $type =~ s/ / or /g;
-    Tkx::tooltip($filter, "Filter packages by $type");
-    my $count = $pkglist->filter($fltr, $FILTER{'type'});
+    my $msg = "Filter packages by $type";
+    $msg .= " in $FILTER{'area'} area" if $FILTER{'area'} ne "ALL";
+    Tkx::tooltip($filter, $msg);
+    my $count = $pkglist->filter($FILTER{'filter'}, $FILTER{'type'},
+				 $FILTER{'area'});
     if ($count == -1) {
+	# Something wrong with the filter
 	$filter->delete(0, "end");
 	$filter->insert(0, $FILTER{'lastfilter'});
 	# No need to refilter - should not have changed
     } else {
-	$FILTER{'lastfilter'} = $fltr;
+	$FILTER{'lastfilter'} = $FILTER{'filter'};
+	$FILTER{'lastarea'} = $FILTER{'area'};
 	$FILTER{'lasttype'} = $FILTER{'type'};
 	$NUM{'listed'} = $count;
     }
@@ -376,6 +392,11 @@ sub menus {
 			  -variable => \$VIEW{'author'},
 			  -command => [$colcmd, 'author']);
 
+    # Action menu
+    $sm = $menu->new_menu(-name => "action");
+    $sm->configure(-postcommand => [\&on_action_post, $sm]);
+    $menu->add_cascade(-label => "Action", -menu => $sm);
+
     # Help menu
     $sm = $menu->new_menu(-name => "help"); # must be named "help"
     $menu->add_cascade(-label => "Help", -menu => $sm);
@@ -394,13 +415,31 @@ sub menus {
     return $menu;
 }
 
+sub on_action_post {
+    my $sm = shift;
+    $sm->delete(0, 'end');
+    if ($cur_pkg_name) {
+	$sm->add_command(-label => $cur_pkg_name,
+			 -state => "disabled");
+	$sm->add_separator();
+	$sm->add_command(-label => "Install");
+    } else {
+	$sm->add_command(-label => "No selected package",
+			 -state => "disabled");
+    }
+}
+
 sub select_item {
     my $item = shift;
-    # We need to figure out how we want details formatted
     $details->delete('1.0', 'end');
+    $cur_pkg_name = "";
+    return unless $item;
+    $cur_pkg_name = $pkglist->name($item);
+    # We need to figure out how we want details formatted
+
     my %data = Tkx::SplitList($pkglist->data($item));
-    my $name = delete $data{'name'};
-    $details->insert('1.0', $name . "\n", 'title');
+    delete $data{'name'};
+    $details->insert('1.0', $cur_pkg_name . "\n", 'title');
     for my $key (sort keys %data) {
 	$details->insert('end', $key . ":\t");
 	$details->insert('end', $data{$key} . "\n");

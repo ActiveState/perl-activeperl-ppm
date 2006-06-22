@@ -74,18 +74,7 @@ snit::widgetadaptor pkglist {
 	array set opts $args
 	set opts(name) $name
 	set ITEMS($item) [array get opts]
-	if {1} {
-	    eval [linsert [array get opts] 0 $tree item text $item]
-	} else {
-	    set config [list]
-	    # If we config more than text elements, we'll need this
-	    foreach {key val} [array get opts] {
-		lappend config $key elemText -text $val ,
-	    }
-	    # trim off last ","
-	    eval [linsert [lrange $config 0 end-1] 0 \
-		      $tree item element configure $item]
-	}
+	eval [linsert [array get opts] 0 $tree item text $item]
 	if {$new} {
 	    set img [::ppm::img default]
 	    incr visible
@@ -103,7 +92,7 @@ snit::widgetadaptor pkglist {
 	}
 	if {[info exists ITEMS($id)]} {
 	    array set opts $ITEMS($id)
-	    return $ITEMS(name)
+	    return $opts(name)
 	}
 	return ""
     }
@@ -139,51 +128,40 @@ snit::widgetadaptor pkglist {
 	return [array size ITEMS]
     }
 
-    method filter {ptn {fields name}} {
+    method filter {ptn {fields name} {area ALL}} {
 	set count 0
 	if {[catch {string match $ptn $fields} err]} {
 	    tk_messageBox -icon error -title "Invalid Search Pattern" \
 		-message "Invalid search pattern: $ptn\n$err" -type ok
 	    return -1
 	}
-	if {$ptn eq "" || $ptn eq "*"} {
+	if {$area eq "ALL" && ($ptn eq "" || $ptn eq "*")} {
 	    # make everything visible
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 1
 		incr count 1
 	    }
-	} elseif {0 && [info exists NAMES($ptn)]} {
-	    # Don't do exact match for PPM::GUI
-	    # exact match on one item - case sensitive
-	    foreach {item} [array names ITEMS] {
-		$tree item configure $item -visible 0
-	    }
-	    $tree item configure $NAMES($ptn) -visible 1
-	    set count 1
 	} else {
-	    # Fields-based searches
+	    # Fields-based and/or area searches
 	    if {[string first "*" $ptn] == -1} {
 		# no wildcard in pattern - add to each end
 		set ptn *$ptn*
 	    }
-	    if {$fields eq "name"} {
-		foreach {name} [array names NAMES] {
-		    set vis [string match -nocase $ptn $name]
-		    $tree item configure $NAMES($name) -visible $vis
-		    incr count $vis
-		}
-	    } else {
-		foreach {item} [array names ITEMS] {
-		    array set opts $ITEMS($item)
+	    foreach {item} [array names ITEMS] {
+		array set opts $ITEMS($item)
+		set vis [expr {$area eq "ALL" ||
+			       ([info exists opts(area)] &&
+				$opts(area) eq $area)}]
+		if {$vis} {
 		    foreach field $fields {
 			set vis [expr {[info exists opts($field)] &&
 				       [string match -nocase $ptn $opts($field)]}]
 			if {$vis} { break }
 		    }
-		    $tree item configure $item -visible $vis
-		    incr count $vis
-		    unset opts
 		}
+		$tree item configure $item -visible $vis
+		incr count $vis
+		unset opts
 	    }
 	}
 	set visible $count
@@ -296,10 +274,6 @@ snit::widgetadaptor pkglist {
     }
 
     method _select {t count lost new} {
-	if {$count != 1} {
-	    # how would we have more than one item selected?
-	    return
-	}
 	if {$options(-selectcommand) ne ""} {
 	    uplevel 1 $options(-selectcommand) $new
 	}
