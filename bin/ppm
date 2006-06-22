@@ -130,12 +130,12 @@ sub do_dump {
 sub do_log {
     $USAGE = "log [<minutes>]";
     usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^[1-9]\d*\z/);
-    my $min = shift(@ARGV) || 10;
+    my $min = shift(@ARGV) || 1;
 
     my $logfile = ActivePerl::PPM::Logger::ppm_logger()->logfile;
     open(my $fh, "<", $logfile) || die "Can't open $logfile: $!";
 
-    print "Last $min minutes of $logfile\n\n";
+    print "Last ", ($min == 1 ? "minute" : "$min minutes"), " of $logfile\n\n";
 
     my @t = (localtime time - $min * 60)[reverse 0..5];
     $t[0] += 1900; # year
@@ -1455,7 +1455,7 @@ The location of the package description file.
 =item B<ppm log> [ I<minutes> ]
 
 Print entries from the log for the last few minutes.  By default print
-log lines for the last 10 minutes.
+log lines for the last minute.
 
 =item B<ppm query> I<pattern>
 
