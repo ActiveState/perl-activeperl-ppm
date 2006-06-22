@@ -27,6 +27,11 @@ elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG} || "") =~ /\bUTF-8\b/)  {
 
 binmode(STDOUT, ":utf8") if ($BOX_CHARS || "") eq "unicode";
 
+if (@ARGV == 1 && $ARGV[0] =~ /^--?help/ || $ARGV[0] eq "-?") {
+    $ARGV[0] = $CMD;
+    $CMD = "help";
+}
+
 my $do_cmd = "do_$CMD";
 unless (defined &$do_cmd) {
     require Text::Abbrev;
