@@ -44,7 +44,8 @@ Tkx::package_require('tooltip');
 Tkx::package_require('widget::dialog');
 Tkx::package_require('widget::statusbar');
 Tkx::package_require('widget::toolbar');
-#Tkx::package_require('widget::menuentry');
+eval { Tkx::package_require('widget::menuentry'); };
+my $HAVE_MENUENTRY = ($@ ? 0 : 1);
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('style::as');
 Tkx::package_require('BWidget');
@@ -119,7 +120,7 @@ my $statusbar = $mw->new_widget__statusbar();
 $pw->add($pkglist, -weight => 3);
 $pw->add($details, -weight => 1);
 
-Tkx::grid($toolbar, -sticky => "ew");
+Tkx::grid($toolbar, -sticky => "ew", -padx => 2);
 Tkx::grid($pw, -sticky => "news", -padx => 4, -pady => 4);
 Tkx::grid($statusbar, -sticky => "ew");
 
@@ -128,15 +129,19 @@ Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
-my $flbl = $toolbar->new_ttk__menubutton(-text => "Filter:",
-					 -image => $IMG{'filter'},
-					 -style => "Toolbutton",
-					 -menu => $filter_menu);
-my $filter = $toolbar->new_ttk__entry(-width => 10);
-#my $filter = $toolbar->new_widget__menuentry(-width => 1,
-#					     -menu => $filter_menu);
+my $filter;
+if ($HAVE_MENUENTRY) {
+    $filter = $toolbar->new_widget__menuentry(-width => 1,
+					      -menu => $filter_menu);
+} else {
+    my $flbl = $toolbar->new_ttk__menubutton(-text => "Filter:",
+					     -image => $IMG{'filter'},
+					     -style => "Toolbutton",
+					     -menu => $filter_menu);
+    $filter = $toolbar->new_ttk__entry(-width => 10);
+    $toolbar->add($flbl, -separator => 1);
+}
 Tkx::tooltip($filter, "Filter search results");
-$toolbar->add($flbl, -separator => 1);
 $toolbar->add($filter, -weight => 2, -separator => 0);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
 		  -variable => \$FILTER{'type'}, -command => [\&filter]);
