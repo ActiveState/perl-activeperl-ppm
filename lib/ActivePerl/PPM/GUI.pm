@@ -114,7 +114,7 @@ my $toolbar = $mw->new_widget__toolbar();
 $details->tag('configure', 'title',
 	      -font => 'Helvetica 16 bold');
 
-my $statusbar = $mw->new_widget__statusbar();
+my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
 $pw->add($pkglist, -weight => 3);
 $pw->add($details, -weight => 1);
@@ -131,7 +131,7 @@ my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
 my $filter = $toolbar->new_widget__menuentry(-width => 1,
 					     -menu => $filter_menu);
 Tkx::tooltip($filter, "Filter packages");
-$toolbar->add($filter, -weight => 2, -separator => 0);
+$toolbar->add($filter, -weight => 2);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
 		  -variable => \$FILTER{'type'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
@@ -149,13 +149,13 @@ my $sync = $toolbar->new_ttk__button(-text => "Sync",
 				     -style => "Toolbutton",
 				     -command => [\&full_refresh]);
 Tkx::tooltip($sync, "Refresh all data");
-$toolbar->add($sync, -separator => 1, -pad => [4, 0]);
+$toolbar->add($sync, -separator => 1);
 
 my $config = $toolbar->new_ttk__button(-text => "Config",
 				       -image => $IMG{'config'},
 				       -style => "Toolbutton");
 Tkx::tooltip($config, "Configure something");
-$toolbar->add($config);
+$toolbar->add($config, -pad => [0, 2]);
 
 ## Statusbar items
 my $albl = $statusbar->new_ttk__label(-text => "Area:");
