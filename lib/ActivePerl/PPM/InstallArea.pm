@@ -686,15 +686,15 @@ sub sync_db {
 	    my($md5) = $dbh->selectrow_array("SELECT md5 FROM file WHERE package_id = ? AND path LIKE '%/.packlist'", undef, $id);
 	    if ($md5 && $md5 eq _file_info($pkglists->{$pkg})->{md5}) {
 		# packlist unchanged, assume unchanges package
-		ppm_log("NOTICE", "$pkg seems to be up-to-date");
+		ppm_log("NOTICE", "Package $pkg: up-to-date");
 		next;
 	    }
-	    ppm_log("INFO", "Updating PPM entry for $pkg");
+	    ppm_log("INFO", "Package $pkg: updated");
 	}
 	else {
 	    $dbh->do("INSERT INTO package (name) VALUES (?)", undef, $pkg);
 	    $id = $dbh->func('last_insert_rowid'); #$dbh->last_insert_id;
-	    ppm_log("INFO", "Created PPM entry for $pkg");
+	    ppm_log("INFO", "Package $pkg: created");
 	}
 
 	my $pkglist = ExtUtils::Packlist->new($pkglists->{$pkg});
@@ -704,7 +704,12 @@ sub sync_db {
 	for my $f ($pkglists->{$pkg}, sort keys %$pkglist) {
 	    my $path = $self->_relative_path($f);
 	    my $info = _file_info($f);
-	    $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) || ppm_log("ERR", "File conflict for $path (package $pkg)");
+	    unless (eval { $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) })
+	    {
+		my $epath = $self->_expand_path($path);
+		my $owner = $dbh->selectrow_array("SELECT package.name FROM package, file WHERE package.id = file.package_id AND file.path = ?", undef, $path);
+		ppm_log("ERR", "Package $pkg: File conflict for $epath already owned by $owner");
+	    }
 
 	    if ($f =~ /\.pm$/) {
 		require ExtUtils::MakeMaker;
