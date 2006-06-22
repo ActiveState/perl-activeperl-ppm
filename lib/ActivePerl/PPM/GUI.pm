@@ -412,7 +412,13 @@ sub select_item {
 }
 
 sub about {
+    require ActivePerl::PPM;
+    require ActivePerl;
+    my $perl_version = ActivePerl::perl_version;
+    
     Tkx::tk___messageBox(-title => "About Perl Package Manager",
 			 -icon => "info", -type => "ok",
-			 -message => "Tell me about it");
+			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
+ActivePerl version $perl_version
+\xA9 2006 ActiveState Software Inc.");
 }
