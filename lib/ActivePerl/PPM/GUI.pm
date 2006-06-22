@@ -98,6 +98,7 @@ $VIEW{'statusbar'} = 1;
 my %IMG;
 $IMG{'refresh'} = Tkx::ppm__img('refresh');
 $IMG{'filter'} = Tkx::ppm__img('search');
+$IMG{'config'} = Tkx::ppm__img('config');
 
 # Create the menu structure
 menus();
@@ -151,6 +152,7 @@ Tkx::tooltip($sync, "Refresh all data");
 $toolbar->add($sync, -separator => 1, -pad => [4, 0]);
 
 my $config = $toolbar->new_ttk__button(-text => "Config",
+				       -image => $IMG{'config'},
 				       -style => "Toolbutton");
 Tkx::tooltip($config, "Configure something");
 $toolbar->add($config);

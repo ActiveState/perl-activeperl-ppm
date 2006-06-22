@@ -24,6 +24,7 @@ namespace eval ::ppm {
 	linked		{"" package_link.png}
 	refresh		{"" refresh.png}
 	search		{"" zoom.png}
+	config		{"" cog.png}
     }
 }
 namespace eval ::ppm::img {
