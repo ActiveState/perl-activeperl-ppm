@@ -152,7 +152,7 @@ sub do_version {
 	usage("The $CMD command does not take arguments.");
     }
     require ActivePerl::PPM;
-    print "ppm $ActivePerl::PPM::VERSION (Beta 1)\n";
+    print "ppm $ActivePerl::PPM::VERSION (Beta 2)\n";
     print "Copyright (C) 2006 ActiveState Software Inc.  All rights reserved.\n";
 }
 
