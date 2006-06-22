@@ -676,7 +676,8 @@ sub sync_db {
     my $self = shift;
     my $dbh = $self->dbh;
     local $dbh->{AutoCommit} = 0;
-    ppm_status("Syncing PPM database with .packlists");
+    my $name = $self->name || "unnamed";
+    ppm_status("Syncing $name PPM database with .packlists");
     require ExtUtils::Packlist;
     my $pkglists = $self->packlists;
     for my $pkg (sort keys %$pkglists) {
