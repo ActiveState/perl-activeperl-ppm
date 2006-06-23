@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 87;
+plan tests => 90;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -205,6 +205,11 @@ $dir->sync_db;
 ok($dir->packages, 1);
 ok($pkg = $dir->package("Foo-Bar"));
 ok($pkg->{version}, "1.01");
+
+# feature_have
+ok($dir->feature_have("foo-bar"), undef);
+ok($dir->feature_have("Foo-Bar"), "0E0");
+ok($dir->feature_have("Foo::Bar"), "1.01");
 
 END {
     if ($prefix && -d $prefix) {
