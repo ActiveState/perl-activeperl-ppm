@@ -10,6 +10,7 @@ use File::Basename qw(dirname);
 use Cwd qw(abs_path);
 
 my $ppm = $::ppm;
+$ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 
 # these will be filled in the sync()
 my @areas;
@@ -445,6 +446,41 @@ sub menus {
     # Help menu
     $sm = $menu->new_menu(-name => "help"); # must be named "help"
     $menu->add_cascade(-label => "Help", -menu => $sm);
+    if (ActiveState::Browser::can_open("faq/ActivePerl-faq2.html")) {
+	$sm->add_command(
+	    -label => "PPM FAQ",
+	    -command => [\&ActiveState::Browser::open, "faq/ActivePerl-faq2.html"],
+	);
+    }
+    if (ActiveState::Browser::can_open("http://www.activestate.com")) {
+	my $web = $sm->new_menu(-tearoff => 0);
+	$sm->add_cascade(
+	    -label => "Web Resources",
+	    -menu => $web,
+        );
+
+        $web->add_command(
+            -label => "Report Bug",
+            -command => [\&ActiveState::Browser::open,
+			 "http://bugs.activestate.com/enter_bug.cgi?set_product=ActivePerl"],
+        );
+        $web->add_command(
+            -label => "ActiveState Repository",
+            -command => [\&ActiveState::Browser::open,
+			 "http://ppm.activestate.com/"],
+        );
+        $web->add_command(
+            -label => "ActivePerl Home",
+            -command => [\&ActiveState::Browser::open,
+			 "http://www.activestate.com/Products/ActivePerl/"],
+        );
+        $web->add_command(
+            -label => "ActiveState Home",
+            -command => [\&ActiveState::Browser::open, "http://www.activestate.com"],
+        );
+    }
+
+    $sm->add_separator;
     $sm->add_command(-label => "About", -command => sub { about(); });
 
     # Special menu on OS X
