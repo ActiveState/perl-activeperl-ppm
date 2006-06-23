@@ -2,8 +2,10 @@
 
 use strict;
 use Test qw(plan ok);
+use Config qw(%Config);
+use File::Path qw(rmtree);
 
-plan tests => 44;
+plan tests => 64;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -22,13 +24,31 @@ my $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
 ok($dir->name, "");
 ok($dir->prefix, $prefix);
 ok($dir->lib, "$prefix/lib");
+ok($dir->archlib, "$prefix/lib");
 ok($dir->etc, "$prefix/etc");
+ok($dir->bin, "$prefix/bin");
+ok($dir->html, "$prefix/html");
+ok($dir->script, "$prefix/bin");
 ok(j($dir->inc), "$prefix/lib");
 ok($dir->packages, 0);
 ok(j($dir->packlists), "");
 ok($dir->verify);
 
+$dir = ActivePerl::PPM::InstallArea->new("site");
+ok($dir->name, "site");
+ok($dir->lib, $Config{sitelib});
+$dir = undef;
+# avoid hitting methods that needs to create a database, since
+# we don't really want to update stuff the perl that runs this
+# test
+
 $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+
+ok($dir->packages, 0);
+ok(j($dir->packages), "");
+ok($dir->package(0), undef);
+ok($dir->package(1), undef);
+ok($dir->package_id("Foo"), undef);
 
 eval { $dir->install(); };    ok($@, qr/^No packages to install/);
 eval { $dir->install({}); };  ok($@, qr/^Missing package name/);
@@ -97,10 +117,33 @@ ok($dir->packages, 0);
 ok(j($dir->packages), "");
 ok($dir->verify);
 
+my $db_file = "$prefix/etc/ppm-area.db";
+chmod(0400, $db_file) || warn "Can't make $db_file readonly: $!";
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+ok($dir->readonly);
+chmod(0600, $db_file) || warn "Can't make $db_file writable: $!";
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+ok(!$dir->readonly);
+$dir = undef;
+
+rmtree($prefix, 1);
+mkdir($prefix, 0555);  # non-writable directory
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+ok($dir->lib, "$prefix/lib");
+ok($dir->readonly);
+ok($dir->packages, 0);
+ok(j($dir->packages), "");
+
+chmod(0755, $prefix) || warn "Can't make $prefix writable: $!";
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, name => "foo");
+ok($dir->name, "foo");
+ok($dir->lib, "$prefix/lib");
+ok(!$dir->readonly);
+
+
 END {
     if ($prefix && -d $prefix) {
-	#system("sqlite3", "$prefix/etc/ppm-area.db", ".dump");
-	require File::Path;
-	File::Path::rmtree($prefix, 1);
+	#system("sqlite3", $db_file, ".dump");
+	rmtree($prefix, 1);
     }
 }
