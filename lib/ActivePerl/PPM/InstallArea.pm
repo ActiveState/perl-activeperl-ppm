@@ -109,6 +109,21 @@ sub lib {
     $self->{dirs}{lib};
 }
 
+sub bin {
+    my $self = shift;
+    $self->{dirs}{bin};
+}
+
+sub script {
+    my $self = shift;
+    $self->{dirs}{script};
+}
+
+sub html {
+    my $self = shift;
+    $self->{dirs}{html};
+}
+
 sub etc {
     my $self = shift;
     $self->{dirs}{etc};
