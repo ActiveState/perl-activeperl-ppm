@@ -230,24 +230,34 @@ $NUM{'remove'} = 0;
 my $lbl;
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'total'});
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Total number of known packages");
 $lbl = $statusbar->new_ttk__label(-text => "packages,");
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Total number of known packages");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'});
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages installed");
 $lbl = $statusbar->new_ttk__label(-text => "installed");
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages installed");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'listed'});
 $statusbar->add($lbl, -separator => 1);
+Tkx::tooltip($lbl, "Number of packages in filtered view");
 $lbl = $statusbar->new_ttk__label(-text => "listed,");
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages in filtered view");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'});
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages selected for install");
 $lbl = $statusbar->new_ttk__label(-text => "to install/upgrade,");
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages selected for install");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'});
 $statusbar->add($lbl);
+Tkx::tooltip($lbl, "Number of packages selected for removal");
 $lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
 $statusbar->add($lbl, -weight => 1);
+Tkx::tooltip($lbl, "Number of packages selected for removal");
 
 ## Wait dialog for when we sync
 my $sync_dialog = $mw->new_widget__dialog(-title => 'Synchronize Database',
