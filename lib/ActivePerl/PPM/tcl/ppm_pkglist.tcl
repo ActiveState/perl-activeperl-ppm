@@ -128,14 +128,14 @@ snit::widgetadaptor pkglist {
 	return [array size ITEMS]
     }
 
-    method filter {ptn {fields name} {area ALL}} {
+    method filter {words {fields name} {area ALL}} {
 	set count 0
-	if {[catch {string match $ptn $fields} err]} {
+	if {[catch {string match $words $fields} err]} {
 	    tk_messageBox -icon error -title "Invalid Search Pattern" \
-		-message "Invalid search pattern: $ptn\n$err" -type ok
+		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
-	if {$area eq "ALL" && ($ptn eq "" || $ptn eq "*")} {
+	if {$area eq "ALL" && ($words eq "" || $words eq "*")} {
 	    # make everything visible
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 1
@@ -143,9 +143,14 @@ snit::widgetadaptor pkglist {
 	    }
 	} else {
 	    # Fields-based and/or area searches
-	    if {[string first "*" $ptn] == -1} {
-		# no wildcard in pattern - add to each end
-		set ptn *$ptn*
+	    set ptns [list]
+	    foreach word $words {
+		if {[string first "*" $word] == -1} {
+		    # no wildcard in pattern - add to each end
+		    lappend ptns *$word*
+		} else {
+		    lappend ptns $word
+		}
 	    }
 	    foreach {item} [array names ITEMS] {
 		array set opts $ITEMS($item)
@@ -153,10 +158,17 @@ snit::widgetadaptor pkglist {
 			       ([info exists opts(area)] &&
 				$opts(area) eq $area)}]
 		if {$vis} {
+		    set str {}
 		    foreach field $fields {
-			set vis [expr {[info exists opts($field)] &&
-				       [string match -nocase $ptn $opts($field)]}]
-			if {$vis} { break }
+			if {[info exists opts($field)]} {
+			    lappend str $opts($field)
+			}
+		    }
+		    foreach ptn $ptns {
+			set vis [string match -nocase $ptn $str]
+			# AND match on words, so break on first !visible
+			# OR would be to break on first visible
+			if {!$vis} { break }
 		    }
 		}
 		$tree item configure $item -visible $vis
