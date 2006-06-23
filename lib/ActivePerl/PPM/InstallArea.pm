@@ -1037,6 +1037,11 @@ L<ActivePerl::PPM::Package> for what field names are available.
 Return an package object (see L<ActivePerl::PPM::Package>) for the
 given package.  Returns C<undef> if no such package is installed.
 
+If no package match the specified name exactly and C<sloppy> is
+specified then search again ignoring case and even search for features
+provided that match name.  The method will croak if this extended
+search end up matching multiple packages.
+
 =item $area->package_id( $name )
 
 Returns the internal identifier for the given package.  The package

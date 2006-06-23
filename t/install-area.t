@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 82;
+plan tests => 87;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -177,6 +177,13 @@ ok($pkg->{name}, "Foo-Bar");
 ok($pkg->{version}, "1.00");
 ok(j($dir->package_files($pkg->{id})), "$prefix/lib/Foo/Bar.pm|$prefix/lib/auto/Foo/Bar/.packlist");
 ok($dir->package_packlist($pkg->{id}), "$prefix/lib/auto/Foo/Bar/.packlist");
+
+ok(!$dir->package("foo-bar"));
+ok($pkg = $dir->package("foo-bar", sloppy => 1));
+ok($pkg->{name}, "Foo-Bar");
+
+ok($pkg = $dir->package("foo::bar", sloppy => 1));
+ok($pkg->{name}, "Foo-Bar");
 
 $dir->sync_db;
 ok($dir->packages, 2);
