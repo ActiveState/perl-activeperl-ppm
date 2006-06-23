@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 64;
+plan tests => 78;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
