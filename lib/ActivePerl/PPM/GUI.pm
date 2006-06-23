@@ -234,7 +234,7 @@ $lbl = $statusbar->new_ttk__label(-text => "packages,");
 $statusbar->add($lbl);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'});
 $statusbar->add($lbl);
-$lbl = $statusbar->new_ttk__label(-text => "installed.");
+$lbl = $statusbar->new_ttk__label(-text => "installed,");
 $statusbar->add($lbl);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'listed'});
 $statusbar->add($lbl);
