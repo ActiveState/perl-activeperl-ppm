@@ -2,6 +2,7 @@ package ActivePerl::PPM::GUI;
 
 use strict;
 use Tkx ();
+use ActiveState::Browser ();
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -141,6 +142,14 @@ $details->tag('configure', 'h1', -font => 'ASfontBold2');
 $details->tag('configure', 'h2', -font => 'ASfontBold1');
 $details->tag('configure', 'abstract', -font => 'ASfontBold',
 	      -lmargin1 => 10, -lmargin2 => 10, -rmargin => 10);
+$details->tag_configure('link', -underline => 1, -foreground => 'blue');
+$details->tag_bind('link', "<Enter>", sub {
+    $details->configure(-cursor => "hand2");
+});
+$details->tag_bind('link', "<Leave>", sub {
+    $details->configure(-cursor => "");
+});
+
 
 my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
@@ -487,7 +496,15 @@ sub select_item {
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
     $details->insert('end', "${pad}Released:\t$pkg->{release_date}\n");
     $details->insert('end', "${pad}Author:\t$pkg->{author}\n");
-    $details->insert('end', "${pad}CPAN:\thttp://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n");
+    my $cpan_url = "http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/";
+    $details->insert('end', "${pad}CPAN:\t");
+    $details->insert('end', $cpan_url, "link");
+    if (ActiveState::Browser::can_open($cpan_url)) {
+	$details->tag_bind('link', "<ButtonRelease-1>", [
+	    \&ActiveState::Browser::open, $cpan_url
+	]);
+    }
+    $details->insert('end', "\n");
     if ($areaid) {
 	$details->insert('end', "Files:\n", 'h2');
 	for my $file ($area->package_files($pkg->{id})) {
