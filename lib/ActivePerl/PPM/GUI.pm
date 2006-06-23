@@ -81,7 +81,7 @@ if ($AQUA) {
 my %FILTER;
 $FILTER{'filter'} = "";
 $FILTER{'area'} = "ALL";
-$FILTER{'type'} = "name";
+$FILTER{'type'} = "name abstract";
 $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
 $FILTER{'lastfilter'} = "";
@@ -99,31 +99,51 @@ $VIEW{'author'} = 0;
 $VIEW{'toolbar'} = 1;
 $VIEW{'statusbar'} = 1;
 
+my %ACTION;
+$ACTION{'install'} = "";
+$ACTION{'remove'} = "";
+
 my %IMG;
 $IMG{'refresh'} = Tkx::ppm__img('refresh');
 $IMG{'filter'} = Tkx::ppm__img('search');
 $IMG{'config'} = Tkx::ppm__img('config');
 
-my $cur_pkg_name = "";
+my $cur_pkg = undef; # Current selection package
+
+my $action_menu;
 
 # Create the menu structure
 menus();
 
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
-my $details = $pw->new_text(-height => 7, -width => 60, -borderwidth => 1);
+my $det_sw = $pw->new_widget__scrolledwindow();
+my $details = $det_sw->new_text(-height => 7, -width => 60, -borderwidth => 1,
+				-font => "ASfont", -state => "disabled",
+				-wrap => "word");
+$det_sw->setwidget($details);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item],
 			       -borderwidth => 1, -relief => 'sunken');
+
+Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
+	      my ($x, $y, $X, $Y) = @_;
+	      $pkglist->selection('clear');
+	      $pkglist->selection('add', "nearest $x $y");
+	      $action_menu->g_tk___popup($X, $Y);
+}, Tkx::Ev("%x", "%y", "%X", "%Y")]);
+Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
 my $toolbar = $mw->new_widget__toolbar();
 
-$details->tag('configure', 'title',
-	      -font => 'Helvetica 16 bold');
+$details->tag('configure', 'h1', -font => 'ASfontBold2');
+$details->tag('configure', 'h2', -font => 'ASfontBold1');
+$details->tag('configure', 'abstract', -font => 'ASfontBold',
+	      -lmargin1 => 10, -lmargin2 => 10, -rmargin => 10);
 
 my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
 $pw->add($pkglist, -weight => 3);
-$pw->add($details, -weight => 1);
+$pw->add($det_sw, -weight => 1);
 
 Tkx::grid($toolbar, -sticky => "ew", -padx => 2);
 Tkx::grid($pw, -sticky => "news", -padx => 4, -pady => 4);
@@ -393,7 +413,7 @@ sub menus {
 			  -command => [$colcmd, 'author']);
 
     # Action menu
-    $sm = $menu->new_menu(-name => "action");
+    $action_menu = $sm = $menu->new_menu(-name => "action");
     $sm->configure(-postcommand => [\&on_action_post, $sm]);
     $menu->add_cascade(-label => "Action", -menu => $sm);
 
@@ -418,11 +438,12 @@ sub menus {
 sub on_action_post {
     my $sm = shift;
     $sm->delete(0, 'end');
-    if ($cur_pkg_name) {
-	$sm->add_command(-label => $cur_pkg_name,
+    if (defined($cur_pkg)) {
+	$sm->add_command(-label => $cur_pkg->{name},
 			 -state => "disabled");
 	$sm->add_separator();
-	$sm->add_command(-label => "Install");
+	$sm->add_command(-label => "Install") if $ACTION{'install'};
+	$sm->add_command(-label => "Remove") if $ACTION{'remove'};
     } else {
 	$sm->add_command(-label => "No selected package",
 			 -state => "disabled");
@@ -431,18 +452,46 @@ sub on_action_post {
 
 sub select_item {
     my $item = shift;
+    $details->configure(-state => "normal");
     $details->delete('1.0', 'end');
-    $cur_pkg_name = "";
+    $details->configure(-state => "disabled");
+    $cur_pkg = undef;
     return unless $item;
-    $cur_pkg_name = $pkglist->name($item);
-    # We need to figure out how we want details formatted
 
+    # We need to figure out how we want details formatted
     my %data = Tkx::SplitList($pkglist->data($item));
-    delete $data{'name'};
-    $details->insert('1.0', $cur_pkg_name . "\n", 'title');
-    for my $key (sort keys %data) {
-	$details->insert('end', $key . ":\t");
-	$details->insert('end', $data{$key} . "\n");
+    my $name = delete $data{'name'};
+    my $areaid = delete $data{'area'};
+    my $pkg = $ppm->package($name, $data{'available'} || undef);
+    my $area = $ppm->area($areaid) if $areaid;
+    $pkg = $area->package($name) if $areaid;
+    my $pad = "  ";
+    $details->configure(-state => "normal");
+    $details->insert('1.0', "$pkg->{name}\n", 'h1');
+    $details->insert('end', "$pkg->{abstract}\n", 'abstract');
+    $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
+    $details->insert('end', "${pad}Released:\t$pkg->{release_date}\n");
+    $details->insert('end', "${pad}Author:\t$pkg->{author}\n");
+    $details->insert('end', "${pad}CPAN:\thttp://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n");
+    if ($areaid) {
+	$details->insert('end', "Files:\n", 'h2');
+	for my $file ($area->package_files($pkg->{id})) {
+	    $details->insert('end', "\t$file\n");
+	}
+    }
+    # Remove trailing newline and prevent editing of widget
+    $details->delete('end-1c');
+    $details->configure(-state => "disabled");
+
+    # Record "allowable" actions based on package info
+    # XXX work on constraints
+    $cur_pkg = $pkg;
+    $ACTION{'install'} = "";
+    $ACTION{'remove'} = "";
+    if ($areaid) {
+	$ACTION{'remove'} = $pkg->{version};
+    } else {
+	$ACTION{'install'} = $pkg->{version};
     }
 }
 
