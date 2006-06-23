@@ -751,7 +751,7 @@ sub sync_db {
 	if ($info{verified} && $info{verified} == ($info{missing} || 0)) {
 	    # all files has been deleted, nuke package
 	    die "Assert" unless $info{id};
-	    ppm_log("NOTICE", "The $pkg package is gone");
+	    ppm_log("NOTICE", "Package $pkg: deleted");
 	    $dbh->do("DELETE FROM file WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM feature WHERE package_id = ?", undef, $info{id});
 	    $dbh->do("DELETE FROM script WHERE package_id = ?", undef, $info{id});
