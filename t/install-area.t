@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 use Config qw(%Config);
-use File::Path qw(rmtree);
+use File::Path qw(rmtree mkpath);
 
 plan tests => 64;
 
@@ -139,6 +139,47 @@ $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, name => "foo");
 ok($dir->name, "foo");
 ok($dir->lib, "$prefix/lib");
 ok(!$dir->readonly);
+ok($dir->packages, 0);
+$dir->sync_db;
+ok($dir->packages, 0);
+
+# simulate manual install
+my $fh;
+mkpath("$prefix/lib/auto/Dummy", 1, 0755);
+open($fh, ">$prefix/lib/auto/Dummy/.packlist")|| die;
+close($fh);
+mkpath("$prefix/lib/auto/Foo/Bar", 1, 0755);
+open($fh, ">$prefix/lib/auto/Foo/Bar/.packlist")|| die;
+print $fh "$prefix/lib/Foo/Bar.pm\n";
+close($fh);
+mkpath("$prefix/lib/Foo", 1, 0755);
+open($fh, ">$prefix/lib/Foo/Bar.pm") || die;
+print $fh "package Foo::Bar;
+use strict;
+our \$VERSION = q(1.00);
+1;
+";
+close($fh);
+
+# see if sync_db notice them
+$dir->sync_db;
+ok($dir->packages, 2);
+my $pkg;
+
+ok($pkg = $dir->package("Dummy"));
+ok($pkg->{name}, "Dummy");
+ok($pkg->{version}, undef);
+ok(j($dir->package_files($pkg->{id})), "$prefix/lib/auto/Dummy/.packlist");
+ok($dir->package_packlist($pkg->{id}), "$prefix/lib/auto/Dummy/.packlist");
+
+ok($pkg = $dir->package("Foo-Bar"));
+ok($pkg->{name}, "Foo-Bar");
+ok($pkg->{version}, "1.00");
+ok(j($dir->package_files($pkg->{id})), "$prefix/lib/Foo/Bar.pm|$prefix/lib/auto/Foo/Bar/.packlist");
+ok($dir->package_packlist($pkg->{id}), "$prefix/lib/auto/Foo/Bar/.packlist");
+
+$dir->sync_db;
+ok($dir->packages, 2);
 
 
 END {
