@@ -691,6 +691,7 @@ sub sync_db {
     local $dbh->{AutoCommit} = 0;
     my $name = $self->name || "unnamed";
     ppm_status("Syncing $name PPM database with .packlists");
+    my $unchanged = 0;
     require ExtUtils::Packlist;
     my $pkglists = $self->packlists;
     for my $pkg (sort keys %$pkglists) {
@@ -711,7 +712,7 @@ sub sync_db {
 		    $changed++ if $mainmod_md5 ne _file_info($mainmod_path)->{md5};
 		}
 		unless ($changed) {
-		    ppm_log("NOTICE", "Package $pkg: up-to-date");
+		    $unchanged++;
 		    next;
 		}
 	    }
@@ -775,6 +776,8 @@ sub sync_db {
 	    ppm_log("WARN", "The $pkg package is missing its .packlist");
 	}
     }
+    ppm_log("NOTICE", "$unchanged packages found up-to-date")
+	if $unchanged;
     ppm_status("");
 }
 
