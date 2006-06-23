@@ -51,6 +51,8 @@ snit::widgetadaptor pkglist {
 
 	$self tree-details
 
+	bindtags $tree [linsert [bindtags $tree] 1 $win]
+
 	$self configurelist $args
     }
 
