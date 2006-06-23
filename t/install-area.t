@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 78;
+plan tests => 79;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -181,6 +181,10 @@ ok($dir->package_packlist($pkg->{id}), "$prefix/lib/auto/Foo/Bar/.packlist");
 $dir->sync_db;
 ok($dir->packages, 2);
 
+# simulate manual removal of Dummy
+unlink("$prefix/lib/auto/Dummy/.packlist") || warn;
+$dir->sync_db;
+ok($dir->packages, 1);
 
 END {
     if ($prefix && -d $prefix) {
