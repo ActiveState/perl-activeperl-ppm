@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 79;
+plan tests => 82;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -159,7 +159,7 @@ use strict;
 our \$VERSION = q(1.00);
 1;
 ";
-close($fh);
+close($fh) || die;
 
 # see if sync_db notice them
 $dir->sync_db;
@@ -185,6 +185,19 @@ ok($dir->packages, 2);
 unlink("$prefix/lib/auto/Dummy/.packlist") || warn;
 $dir->sync_db;
 ok($dir->packages, 1);
+
+# simulate update of Foo::Bar
+open($fh, ">$prefix/lib/Foo/Bar.pm") || die;
+print $fh "package Foo::Bar;
+use strict;
+our \$VERSION = q(1.01);
+1;
+";
+close($fh) || die;
+$dir->sync_db;
+ok($dir->packages, 1);
+ok($pkg = $dir->package("Foo-Bar"));
+ok($pkg->{version}, "1.01");
 
 END {
     if ($prefix && -d $prefix) {

@@ -696,11 +696,24 @@ sub sync_db {
     for my $pkg (sort keys %$pkglists) {
 	my $id = $dbh->selectrow_array("SELECT id FROM package WHERE name = ?", undef, $pkg);
 	if (defined $id) {
-	    my($md5) = $dbh->selectrow_array("SELECT md5 FROM file WHERE package_id = ? AND path LIKE '%/.packlist'", undef, $id);
+	    my $md5 = $dbh->selectrow_array("SELECT md5 FROM file WHERE package_id = ? AND path LIKE '%/.packlist'", undef, $id);
 	    if ($md5 && $md5 eq _file_info($pkglists->{$pkg})->{md5}) {
-		# packlist unchanged, assume unchanges package
-		ppm_log("NOTICE", "Package $pkg: up-to-date");
-		next;
+		# packlist unchanged, so there is a good change package is too
+		# but let's also check the main module file if present
+		my $changed = 0;
+
+		my $mainmod_fname = $pkg;
+		$mainmod_fname =~ s,-,/,g;
+		$mainmod_fname .= ".pm";
+		my($mainmod_path, $mainmod_md5) = $dbh->selectrow_array("SELECT path,md5 FROM file WHERE package_id = ? AND (path LIKE ? or path LIKE ?)", undef, $id, "%/$mainmod_fname", "%:$mainmod_fname");
+		if ($mainmod_path) {
+		    $mainmod_path = $self->_expand_path($mainmod_path);
+		    $changed++ if $mainmod_md5 ne _file_info($mainmod_path)->{md5};
+		}
+		unless ($changed) {
+		    ppm_log("NOTICE", "Package $pkg: up-to-date");
+		    next;
+		}
 	    }
 	    ppm_log("INFO", "Package $pkg: updated");
 	}
