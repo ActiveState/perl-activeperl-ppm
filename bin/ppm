@@ -6,6 +6,7 @@ use ActivePerl::PPM::limited_inc;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
+use ActivePerl::PPM::Util qw(is_cpan_package);
 
 $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 
@@ -758,7 +759,8 @@ sub do_describe {
     }
     my $repo = $ppm->repo($pkg->{repo_id});
     print "${pad}Repo: $repo->{name}\n";
-    print "${pad}CPAN: http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n";
+    print "${pad}CPAN: http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n"
+	if is_cpan_package($pkg->{name});
     return;
 }
 

@@ -3,6 +3,7 @@ package ActivePerl::PPM::GUI;
 use strict;
 use Tkx ();
 use ActiveState::Browser ();
+use ActivePerl::PPM::Util qw(is_cpan_package);
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -496,18 +497,23 @@ sub select_item {
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
     $details->insert('end', "${pad}Released:\t$pkg->{release_date}\n");
     $details->insert('end', "${pad}Author:\t$pkg->{author}\n");
-    my $cpan_url = "http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/";
-    $details->insert('end', "${pad}CPAN:\t");
-    if (ActiveState::Browser::can_open($cpan_url)) {
-	$details->insert('end', $cpan_url, "link");
-	$details->tag_bind('link', "<ButtonRelease-1>", [
-	    \&ActiveState::Browser::open, $cpan_url
-	]);
+    if (is_cpan_package($pkg->{name})) {
+	my $cpan_url = "http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/";
+	if ($pkg->{name} eq "Perl") {
+	    $cpan_url = sprintf "http://search.cpan.org/dist/perl-%vd", $^V;
+	}
+	$details->insert('end', "${pad}CPAN:\t");
+	if (ActiveState::Browser::can_open($cpan_url)) {
+	    $details->insert('end', $cpan_url, "link");
+	    $details->tag_bind('link', "<ButtonRelease-1>", [
+	        \&ActiveState::Browser::open, $cpan_url
+	    ]);
+	}
+	else {
+	    $details->insert('end', $cpan_url);
+	}
+	$details->insert('end', "\n");
     }
-    else {
-	$details->insert('end', $cpan_url);
-    }
-    $details->insert('end', "\n");
     if ($areaid) {
 	$details->insert('end', "Files:\n", 'h2');
 	for my $file ($area->package_files($pkg->{id})) {
