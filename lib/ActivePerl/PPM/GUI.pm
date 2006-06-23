@@ -107,6 +107,8 @@ my %IMG;
 $IMG{'refresh'} = Tkx::ppm__img('refresh');
 $IMG{'filter'} = Tkx::ppm__img('search');
 $IMG{'config'} = Tkx::ppm__img('config');
+$IMG{'install'} = Tkx::ppm__img('install');
+$IMG{'remove'} = Tkx::ppm__img('remove');
 
 my $cur_pkg = undef; # Current selection package
 
@@ -181,6 +183,19 @@ Tkx::bind($area_cbx, "<<ComboboxSelected>>", [\&filter]);
 $toolbar->add($albl, -pad => [0, 2]);
 $toolbar->add($area_cbx, -pad => [0, 2, 2]);
 
+# Action buttons
+my $install_btn = $toolbar->new_ttk__button(-text => "Install",
+					    -image => $IMG{'install'},
+					    -style => "Toolbutton",
+					    -state => "disabled");
+$toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
+my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
+					   -image => $IMG{'remove'},
+					    -style => "Toolbutton",
+					    -state => "disabled");
+$toolbar->add($remove_btn, -pad => [0, 2]);
+
+# Sync/config buttons
 my $sync = $toolbar->new_ttk__button(-text => "Sync",
 				     -image => $IMG{'refresh'},
 				     -style => "Toolbutton",
@@ -488,10 +503,14 @@ sub select_item {
     $cur_pkg = $pkg;
     $ACTION{'install'} = "";
     $ACTION{'remove'} = "";
+    $remove_btn->configure(-state => "disabled");
+    $install_btn->configure(-state => "disabled");
     if ($areaid) {
 	$ACTION{'remove'} = $pkg->{version};
+	$remove_btn->configure(-state => "normal");
     } else {
 	$ACTION{'install'} = $pkg->{version};
+	$install_btn->configure(-state => "normal");
     }
 }
 
