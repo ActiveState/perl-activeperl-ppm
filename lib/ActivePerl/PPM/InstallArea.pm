@@ -783,7 +783,9 @@ sub sync_db {
 
 sub _dirty_file {
     my $self = shift;
-    return $self->_expand_path("etc:ppm-dirty");}
+    my $n = $self->name;
+    my $base = $n ? "ppm-$n-dirty" : "ppm-dirty";
+    return $self->_expand_path("etc:$base");}
 
 sub _relative_path {
     my($self, $path) = @_;
