@@ -498,11 +498,14 @@ sub select_item {
     $details->insert('end', "${pad}Author:\t$pkg->{author}\n");
     my $cpan_url = "http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/";
     $details->insert('end', "${pad}CPAN:\t");
-    $details->insert('end', $cpan_url, "link");
     if (ActiveState::Browser::can_open($cpan_url)) {
+	$details->insert('end', $cpan_url, "link");
 	$details->tag_bind('link', "<ButtonRelease-1>", [
 	    \&ActiveState::Browser::open, $cpan_url
 	]);
+    }
+    else {
+	$details->insert('end', $cpan_url);
     }
     $details->insert('end', "\n");
     if ($areaid) {
