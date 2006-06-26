@@ -179,7 +179,7 @@ ok($dir->verify);
     ok($dir->packages, 1);
     ok(-f "$prefix/bin/ppm");
     ok($dir->verify);
-    ok(ls_tree($prefix), $tree);  # XXX bug 45824
+    ok(ls_tree($prefix), $tree);
 }
 
 # test readonliness
