@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 107, todo => [72];
+plan tests => 107;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -172,7 +172,7 @@ ok($dir->verify);
     })};
     ok($dir->packages, 1);
     ok(-f "$prefix/bin/ppm");
-    ok($dir->verify);  # XXX currently fails
+    ok($dir->verify);
 }
 
 # test readonliness

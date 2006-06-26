@@ -358,6 +358,13 @@ sub install {
 		File::Path::mkpath($packlist_dir) || die "Can't mkpath '$packlist_dir': $!";
 		# XXX rollback
 	    }
+	    if (-e $packlist_file) {
+		my $bak = "$packlist_file.ppmbak";
+		die "Can't save to $bak since it exists" if -e $bak;
+		rename($packlist_file, $bak) || die "Can't rename as $bak: $!";
+		_on_rollback(\%state, "rename", $bak, $packlist_file);
+		_on_commit(\%state, "unlink", $bak);
+	    }
 	    $state{packlist}->write($packlist_file) || die "Can't write '$packlist_file': $!";
 	    $state{summary}{pkg}{$pkg->{name}}{packlist} = $packlist_file;
 	    _on_rollback(\%state, "unlink", $packlist_file);
