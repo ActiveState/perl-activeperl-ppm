@@ -5,7 +5,7 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 90;
+plan tests => 107, todo => [72];
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -117,6 +117,65 @@ ok($dir->packages, 0);
 ok(j($dir->packages), "");
 ok($dir->verify);
 
+# Another install attempt
+{
+    my $status = $dir->install({
+        name => "PPM",
+        version => "4.0",
+        abstract => "Abs",
+        blib => ".",
+    });
+    ok($status);
+    ok($status->{count}{installed} > 40);
+    ok($status->{pkg}{PPM}{new_version}, "4.0");
+    ok($status->{pkg}{PPM}{packlist}, "$prefix/lib/auto/PPM/.packlist");
+    ok(-f "$prefix/bin/ppm");
+    ok(-f "$prefix/lib/ActivePerl/PPM/InstallArea.pm");
+
+    $dir->uninstall("PPM");
+    ok($dir->packages, 0);
+    ok(!-f "$prefix/bin/ppm");
+    ok(!-d "$prefix/lib/ActivePerl");
+
+    # Let's try the same install, but this time force failure that
+    # triggers roolbak
+    local $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 1;
+    $status = eval { $dir->install({
+        name => "PPM",
+        version => "4.0",
+        abstract => "Abs",
+        blib => ".",
+    })};
+    ok(!$status);
+    ok($dir->packages, 0);
+    ok(!-f "$prefix/bin/ppm");
+    ok(!-d "$prefix/lib/ActivePerl");
+
+    # Try rollback with an install that has changed a few files
+    $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 0;
+    $status = $dir->install({
+        name => "PPM",
+        version => "4.0",
+        abstract => "Abs",
+        blib => ".",
+    });
+    ok($dir->packages, 1);
+
+    $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 1;
+    $status = eval { $dir->install({
+	name => "PPM",
+        version => "4.0001",
+        abstract => "Don't care",
+	files => {
+            lib => "lib:",
+        }
+    })};
+    ok($dir->packages, 1);
+    ok(-f "$prefix/bin/ppm");
+    ok($dir->verify);  # XXX currently fails
+}
+
+# test readonliness
 my $db_file = "$prefix/etc/ppm-area.db";
 chmod(0400, $db_file) || warn "Can't make $db_file readonly: $!";
 $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);

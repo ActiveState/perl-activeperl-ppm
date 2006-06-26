@@ -368,6 +368,7 @@ sub install {
 	    $state{summary}{count}{deleted}++;
 	}
 	_on_commit(\%state, "unlink", $dirty);  # must be last
+	die "Giving up" if our $FAIL_AT_END_OF_INSTALL;  # hook for testing
     };
 
     if ($@) {
