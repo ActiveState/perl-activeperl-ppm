@@ -7,7 +7,7 @@ use File::Path qw(rmtree mkpath);
 
 require 't/ls_tree.pl';
 
-plan tests => 110, todo => [70];
+plan tests => 110;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -154,7 +154,7 @@ ok($dir->verify);
     ok($dir->packages, 0);
     ok(!-f "$prefix/bin/ppm");
     ok(!-d "$prefix/lib/ActivePerl");
-    ok(ls_tree($prefix), $tree);  # XXX bug 45824
+    ok(ls_tree($prefix), $tree);
 
     # Try rollback with an install that has changed a few files
     $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 0;

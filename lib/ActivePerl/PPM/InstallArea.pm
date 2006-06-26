@@ -6,7 +6,6 @@ use Carp qw(croak);
 use ActiveState::ModInfo qw(fname2mod);
 use ActiveState::Path qw(join_path);
 use File::Compare ();
-use File::Path ();
 use File::Basename ();
 
 use ActivePerl::PPM::Package ();
@@ -354,10 +353,7 @@ sub install {
 	    (my $packlist_pkg = $pkg->{name}) =~ s,-,/,g;
 	    my $packlist_file = $self->_expand_path("archlib:auto/$packlist_pkg/.packlist");
 	    my $packlist_dir = File::Basename::dirname($packlist_file);
-	    unless (-d $packlist_dir) {
-		File::Path::mkpath($packlist_dir) || die "Can't mkpath '$packlist_dir': $!";
-		# XXX rollback
-	    }
+	    _mk_path(\%state, $packlist_dir);
 	    if (-e $packlist_file) {
 		my $bak = "$packlist_file.ppmbak";
 		die "Can't save to $bak since it exists" if -e $bak;
@@ -487,13 +483,9 @@ sub _copy_file {
 	open($out, ">", $copy_to) || do {
 	    my $err = $!;
 	    my $dirname = File::Basename::dirname($copy_to);
-	    unless (-d $dirname) {
-		if (File::Path::mkpath($dirname)) {
-		    # XXX rollback mkpath
-		    if (open($out, ">", $copy_to)) {
-			$err = undef;
-		    }
-		}
+	    _mk_path($state, $dirname);
+	    if (open($out, ">", $copy_to)) {
+		$err = undef;
 	    }
 	    die "Can't create $copy_to: $err" if $err;
 	};
@@ -546,10 +538,7 @@ sub _save_file_info {
 sub _copy_dir {
     my($state, $from, $to) = @_;
 
-    unless (-d $to) {
-	File::Path::mkpath($to, 0, 0755) || die "Can't mkdir $to: $!";
-	_on_rollback($state, "rmdir", $to);
-    }
+    _mk_path($state, $to);
 
     opendir(my $dh, $from) || die "Can't opendir $from: $!";
     my @files = sort readdir($dh);
@@ -572,6 +561,17 @@ sub _copy_dir {
 	    die "Don't know how to copy $from_file";
 	}
     }
+}
+
+sub _mk_path {
+    my($state, $dir) = @_;
+    return if -d $dir;
+    my $parent = File::Basename::dirname($dir);
+    die "$dir isn't a directory" if $parent eq $dir;  # recusion safety
+    _mk_path($state, $parent);
+
+    mkdir($dir, 0755) || die "Can't mkdir $dir: $!";
+    _on_rollback($state, "rmdir", $dir);
 }
 
 sub uninstall {
@@ -635,7 +635,11 @@ sub uninstall {
 sub _init_db {
     my $self = shift;
     my $etc = $self->etc;
-    File::Path::mkpath($etc);
+
+    unless (-d $etc) {
+	require File::Path;
+	File::Path::mkpath($etc) || die "Can't mkpath($etc): $!";
+    }
     require DBI;
     my $db_file = "ppm-area.db";
     if (my $name = $self->name) {

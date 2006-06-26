@@ -193,7 +193,10 @@ sub default_install_area {
 sub _init_db {
     my $self = shift;
     my $etc = $self->{etc};
-    File::Path::mkpath($etc);
+    unless (-d $etc) {
+	require File::Path;
+	File::Path::mkpath($etc) || die "Can't mkpath($etc): $!";
+    }
     require DBI;
     my $file_arch = $self->{arch};
     $file_arch =~ s/\./_/g;  # don't confuse version number dots with file extension
