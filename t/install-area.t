@@ -5,7 +5,9 @@ use Test qw(plan ok);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
-plan tests => 107;
+require 't/ls_tree.pl';
+
+plan tests => 110, todo => [70];
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -119,6 +121,7 @@ ok($dir->verify);
 
 # Another install attempt
 {
+    my $tree = ls_tree("$prefix");
     my $status = $dir->install({
         name => "PPM",
         version => "4.0",
@@ -136,6 +139,7 @@ ok($dir->verify);
     ok($dir->packages, 0);
     ok(!-f "$prefix/bin/ppm");
     ok(!-d "$prefix/lib/ActivePerl");
+    ok(ls_tree($prefix), $tree);
 
     # Let's try the same install, but this time force failure that
     # triggers roolbak
@@ -150,6 +154,7 @@ ok($dir->verify);
     ok($dir->packages, 0);
     ok(!-f "$prefix/bin/ppm");
     ok(!-d "$prefix/lib/ActivePerl");
+    ok(ls_tree($prefix), $tree);  # XXX bug 45824
 
     # Try rollback with an install that has changed a few files
     $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 0;
@@ -160,6 +165,7 @@ ok($dir->verify);
         blib => ".",
     });
     ok($dir->packages, 1);
+    $tree = ls_tree($prefix);
 
     $ActivePerl::PPM::InstallArea::FAIL_AT_END_OF_INSTALL = 1;
     $status = eval { $dir->install({
@@ -173,6 +179,7 @@ ok($dir->verify);
     ok($dir->packages, 1);
     ok(-f "$prefix/bin/ppm");
     ok($dir->verify);
+    ok(ls_tree($prefix), $tree);  # XXX bug 45824
 }
 
 # test readonliness
