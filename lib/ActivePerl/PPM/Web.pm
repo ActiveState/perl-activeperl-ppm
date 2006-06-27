@@ -5,13 +5,15 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(web_ua);
 
 use ActivePerl::PPM ();
+use ActivePerl ();
 
 my $ua;
 
 sub web_ua {
     unless ($ua) {
+	my $perl_version = ActivePerl::perl_version();
 	$ua = ActivePerl::PPM::Web::UA->new(
-	    agent => "PPM/$ActivePerl::PPM::VERSION ($^O) ",
+	    agent => "PPM/$ActivePerl::PPM::VERSION ActivePerl/$perl_version ($^O) ",
 	    env_proxy => 1,
 	    keep_alive => 1,
         );
