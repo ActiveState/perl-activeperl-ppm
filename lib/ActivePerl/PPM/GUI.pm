@@ -125,11 +125,13 @@ my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $det_sw = $pw->new_widget__scrolledwindow();
 my $details = $det_sw->new_text(-height => 7, -width => 60, -borderwidth => 1,
 				-font => "ASfont", -state => "disabled",
-				-wrap => "word");
+				-wrap => "word",
+				-tabs => ["10", "left", "90", "left"]);
 $det_sw->setwidget($details);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item],
-			       -borderwidth => 1, -relief => 'sunken');
+			       -borderwidth => 1, -relief => 'sunken',
+			       -itembackground => ["#F7F7FF", ""]);
 
 Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      my ($x, $y, $X, $Y) = @_;
@@ -536,7 +538,7 @@ sub select_item {
     my $pkg = $ppm->package($name, $data{'available'} || undef);
     my $area = $ppm->area($areaid) if $areaid;
     $pkg = $area->package($name) if $areaid;
-    my $pad = "  ";
+    my $pad = "\t";
     $details->configure(-state => "normal");
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
     $details->insert('end', "$pkg->{abstract}\n", 'abstract');

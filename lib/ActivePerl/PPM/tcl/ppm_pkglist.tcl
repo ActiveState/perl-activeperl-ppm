@@ -24,12 +24,13 @@ snit::widgetadaptor pkglist {
     delegate method * to tree
 
     option -selectcommand -default ""
+    option -itembackground -default "" -configuremethod C-itembackground
+    option -sortbackground -default "#f7f7f7" -configuremethod C-sortbackground
 
     variable NAMES -array {}
     variable ITEMS -array {}
 
     # color to use on details view sorted column
-    variable sortcolor "#fff7ff"
     variable sortcolumn "name"
     variable sortorder "-increasing"
 
@@ -54,6 +55,21 @@ snit::widgetadaptor pkglist {
 	bindtags $tree [linsert [bindtags $tree] 1 $win]
 
 	$self configurelist $args
+    }
+
+    method C-itembackground {option value} {
+	foreach col [$tree column list] {
+	    $tree column configure $col -itembackground $value
+	}
+	# don't lose sort column
+	$tree column configure $sortcolumn \
+	    -itembackground $options(-sortbackground)
+	set options($option) $value
+    }
+
+    method C-sortbackground {option value} {
+	$tree column configure $sortcolumn -itembackground $value
+	set options($option) $value
     }
 
     method add {name args} {
@@ -214,10 +230,12 @@ snit::widgetadaptor pkglist {
 		set sortorder -increasing
 		set arrow up
 	    }
-	    $tree column configure $sortcolumn -arrow none -itembackground {}
+	    $tree column configure $sortcolumn -arrow none \
+		-itembackground $options(-itembackground)
 	    set sortcolumn $col
 	}
-	$tree column configure $col -arrow $arrow -itembackground $sortcolor
+	$tree column configure $col -arrow $arrow \
+	    -itembackground $options(-sortbackground)
 	$self sort
     }
 
@@ -231,7 +249,6 @@ snit::widgetadaptor pkglist {
 	$tree column create -image [::ppm::img default] -tag action \
 	    -borderwidth 1 -button 0 -resize 0
 	$tree column create -width 100 -text "Package Name" -tag name \
-	    -arrow up -itembackground $sortcolor \
 	    -borderwidth 1
 	$tree column create -width  40 -text "Area" -tag area \
 	    -borderwidth 1
@@ -279,6 +296,9 @@ snit::widgetadaptor pkglist {
 	$tree notify bind DontDelete <ColumnDrag-receive> {
 	    %T column move %C %b
 	}
+
+	$tree column configure $sortcolumn -arrow up \
+	    -itembackground $options(-sortbackground)
 
 	if {0} {
 	    TreeCtrl::SetSensitive $tree {
