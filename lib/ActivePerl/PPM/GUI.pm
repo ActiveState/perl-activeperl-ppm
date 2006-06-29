@@ -334,11 +334,12 @@ sub merge_area_items {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
 	    $pkglist->add($name,
-		       area => $area_name,
-		       installed => $version,
-		       abstract => $abstract,
-		       author => $author,
-		       );
+			  area => $area_name,
+			  installed => $version,
+			  abstract => $abstract,
+			  author => $author,
+			  action => 'installed',
+		      );
 	    $count++;
 	}
     }
@@ -523,11 +524,9 @@ sub on_action_post {
     my $sm = shift;
     $sm->delete(0, 'end');
     if (defined($cur_pkg)) {
-	$sm->add_command(-label => $cur_pkg->{name},
-			 -state => "disabled");
-	$sm->add_separator();
-	$sm->add_command(-label => "Install") if $ACTION{'install'};
-	$sm->add_command(-label => "Remove") if $ACTION{'remove'};
+	my $name = $cur_pkg->{name};
+	$sm->add_command(-label => "Install $name") if $ACTION{'install'};
+	$sm->add_command(-label => "Remove $name") if $ACTION{'remove'};
     } else {
 	$sm->add_command(-label => "No selected package",
 			 -state => "disabled");
