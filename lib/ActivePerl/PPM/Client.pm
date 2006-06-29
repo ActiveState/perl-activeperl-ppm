@@ -895,8 +895,45 @@ extracted again with $client->config_get().
 
 =item $client->repo( $repo_id )
 
-Returns the repo object with the given identifier.  See
-L<ActivePerl::PPM::Repo> for methods available on the returned object.
+Returns a reference to a hash describing the repo with the given
+identifier.  The interesting fields of this hash are:
+
+=over
+
+=item name
+
+The full (user friendly) name of the repository.  Can be modified by
+$repo->repo_set_name().
+
+=item enabled
+
+A boolean that indicated if the repo is enabled or not.  Can be
+modified by $repo->repo_enable().
+
+=item packlist_uri
+
+The URI that the PPM client will monitor for changes to the
+repository.  This URI can denote a F<packlist.xml>, F<packlist.lst>
+file or an HTML document with links to PPD files (typically a server
+generated directory listing).  The URI can use any scheme that LWP
+supports and can embed a username and password for HTTP using this syntax: C<http://user:pass@ppm.example.com/>.
+
+=item packlist_last_status
+
+The HTTP status code reported last time the PPM client tried to access
+C<packlist_uri> document.
+
+=item packlist_last_access
+
+When did we last try to to access the C<packlist_uri> document.  The
+value is seconds from epoch as for perl's time() function.
+
+=item packlist_fresh_until
+
+When do we need to refetch the C<packlist_uri> document. The
+value is seconds from epoch as for perl's time() function.
+
+=back
 
 =item $client->repos
 
