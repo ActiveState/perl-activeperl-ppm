@@ -910,6 +910,10 @@ $repo->repo_set_name().
 A boolean that indicated if the repo is enabled or not.  Can be
 modified by $repo->repo_enable().
 
+=item pkgs
+
+The number of packages provided by this repository.
+
 =item packlist_uri
 
 The URI that the PPM client will monitor for changes to the
