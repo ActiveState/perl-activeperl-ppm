@@ -116,6 +116,7 @@ $IMG{'remove'} = Tkx::ppm__img('remove');
 my $cur_pkg = undef; # Current selection package
 
 my $action_menu;
+my $fields_menu;
 
 # Create the menu structure
 menus();
@@ -141,9 +142,13 @@ my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 
 Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      my ($x, $y, $X, $Y) = @_;
-	      $pkglist->selection('clear');
-	      $pkglist->selection('add', "nearest $x $y");
-	      $action_menu->g_tk___popup($X, $Y);
+	      if ($pkglist->identify($x, $y) =~ "header") {
+		  $fields_menu->g_tk___popup($X, $Y);
+	      } else {
+		  $pkglist->selection('clear');
+		  $pkglist->selection('add', "nearest $x $y");
+		  $action_menu->g_tk___popup($X, $Y);
+	      }
 }, Tkx::Ev("%x", "%y", "%X", "%Y")]);
 Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
 my $toolbar = $mw->new_widget__toolbar();
@@ -434,7 +439,7 @@ sub menus {
 			     }
 			 });
     $sm->add_separator();
-    my $ssm = $sm->new_menu(-name => "fields");
+    my $ssm = $fields_menu = $sm->new_menu(-name => "fields");
     $sm->add_cascade(-label => "Fields", -menu => $ssm);
     my $colcmd = sub {
 	my $col = shift;
