@@ -25,6 +25,7 @@ namespace eval ::ppm {
 	refresh		{"" refresh.png}
 	search		{"" zoom.png}
 	config		{"" cog.png}
+	gecko		{"" gecko.png}
     }
 }
 namespace eval ::ppm::img {
