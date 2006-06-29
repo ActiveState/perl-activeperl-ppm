@@ -18,10 +18,13 @@ namespace eval ::ppm {
     variable IMG
     array set IMG {
 	default		{"" package.png}
+	installed	{"" package_installed.png}
 	install		{"" package_add.png}
 	remove		{"" package_delete.png}
-	disabled	{"" plugin_disabled.png}
+	disabled	{"" package_disabled.png}
 	linked		{"" package_link.png}
+	upgrade		{"" package_upgrade.png}
+	upgradeable	{"" package_upgradeable.png}
 	refresh		{"" refresh.png}
 	search		{"" zoom.png}
 	config		{"" cog.png}
