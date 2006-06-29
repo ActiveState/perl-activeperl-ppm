@@ -4,7 +4,7 @@ use strict;
 use Test qw(plan ok skip);
 use URI::file;
 
-plan tests => 27;
+plan tests => 33;
 
 my $prefix = "xx$$.d";
 if (-e $prefix) {
@@ -12,7 +12,7 @@ if (-e $prefix) {
     die;
 }
 
-sub j { join("|", @_) }
+sub j { join("|", map {defined($_) ? $_ : "<undef>"} @_) }
 sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 
 use ActivePerl::PPM::Client;
@@ -77,7 +77,19 @@ ok($repo->{prio}, 0);
 ok($repo->{packlist_uri}, qr,^file:///.*t/repo/test2/package.lst$,);
 
 ok(j($client->search("*Buffy")), "Acme-Buffy");
+
+$client->config_save(foo => 42, bar => 33);
+ok($client->config_get("foo"), 42);
+ok(j($client->config_get("bar", "foo")), "33|42");
+ok(j($client->config_get("not-there", "bar")), "<undef>|33");
 undef($client);
+
+$client = ActivePerl::PPM::Client->new($prefix);
+ok($client->config_get("foo"), 42);
+ok($client->config_get("not-there"), undef);
+$client->config_save(bar => "*");
+ok($client->config_get("bar"), "*");
+
 
 END {
     undef($client);  # close any database handles

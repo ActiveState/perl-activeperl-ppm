@@ -258,6 +258,29 @@ EOT
     }
 }
 
+sub config_get {
+    my $self = shift;
+    my $dbh = $self->dbh;
+    my @res;
+    for (@_) {
+	my $v = $dbh->selectrow_array("SELECT value FROM config WHERE key = ?", undef, $_);
+	push(@res, $v);
+    }
+    return wantarray ? @res : $res[0];
+}
+
+sub config_save {
+    my $self = shift;
+    my $dbh = $self->dbh;
+    local $dbh->{AutoCommit} = 0;
+    while (@_) {
+	my $k = shift;
+	my $v = shift;
+	$dbh->do("INSERT OR REPLACE INTO config (key,value) VALUES (?, ?)", undef, $k, $v);
+    }
+    $dbh->commit;
+}
+
 sub activestate_repo {
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
@@ -856,6 +879,19 @@ match the corresponding entries in C<@INC>.
 
 Return the name of the area where installations should normally go.
 Might return C<undef> if there is no appropriate default.
+
+=item $value = $client->config_get( $key )
+
+=item ($value1, $value2, ...) = $client->config_get( $key1, $key2, ...)
+
+Read back one or more configuration values previosly saved.
+
+=item $client->config_save( $key => $value )
+
+=item $client->config_save( %pairs )
+
+Will persistently store the given key/value pairs.  The values can be
+extracted again with $client->config_get().
 
 =item $client->repo( $repo_id )
 
