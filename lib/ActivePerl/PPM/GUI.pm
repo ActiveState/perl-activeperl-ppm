@@ -118,6 +118,8 @@ my $cur_pkg = undef; # Current selection package
 my $action_menu;
 my $fields_menu;
 
+on_load();
+
 # Create the menu structure
 menus();
 
@@ -623,33 +625,31 @@ ActivePerl version $perl_version
 sub on_load {
     # Restore state from saved information
     # We would need to make sure these are reflected in UI elements
-    $FILTER{'filter'} = "";
-    $FILTER{'area'} = "*";
-    $FILTER{'type'} = "name abstract";
+    $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
+    $FILTER{'area'} = $ppm->config_get("gui.filter.area") || "*";
+    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "name abstract";
 
-    $VIEW{'name'} = 1;
-    $VIEW{'area'} = 1;
-    $VIEW{'installed'} = 1;
-    $VIEW{'available'} = 1;
-    $VIEW{'abstract'} = 1;
-    $VIEW{'author'} = 0;
-
-    $VIEW{'toolbar'} = 1;
-    $VIEW{'statusbar'} = 1;
+    my @view_keys = keys %VIEW;
+    my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
+    while (@view_keys) {
+	my $k = shift @view_keys;
+	my $v = shift @view_vals;
+	$VIEW{$k} = $v if defined $v;
+    }
 }
 
 sub on_exit {
-    exit; # wait until this works
-
     # We should save dialog and other state information
 
     ## Window location and size
-    my $geom = $mw->g_wm_geometry();
+    $ppm->config_save("gui.geometry", $mw->g_wm_geometry);
 
     ## Current filter
-    $FILTER{'lastfilter'};
-    $FILTER{'lastarea'};
-    $FILTER{'lasttype'};
+    $ppm->config_save(
+        "gui.filter" => $FILTER{lastfilter},
+        "gui.filter.lastarea" => $FILTER{lastarea},
+        "gui.filter.type" => $FILTER{lasttype},
+    );
 
     ## Current selected package?
     if (defined($cur_pkg)) {
@@ -661,18 +661,10 @@ sub on_exit {
     # this gets columns in current order (visible and not)
     my @cols = $pkglist->column('list');
     for my $col (@cols) {
-	my $width = $pkglist->column('width', $col);
+	#my $width = $pkglist->column('width', $col);
     }
 
-    $VIEW{'name'};
-    $VIEW{'area'};
-    $VIEW{'installed'};
-    $VIEW{'available'};
-    $VIEW{'abstract'};
-    $VIEW{'author'};
-
-    $VIEW{'toolbar'};
-    $VIEW{'statusbar'};
+    $ppm->config_save(map { ("gui.view.$_" => $VIEW{$_}) } keys %VIEW);
 
     exit;
 }
