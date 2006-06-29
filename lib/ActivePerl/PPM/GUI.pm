@@ -180,6 +180,13 @@ Tkx::grid($statusbar, -sticky => "ew");
 Tkx::grid(rowconfigure => $mw, 1, -weight => 1);
 Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
+my $config_dlg = $mw->new_widget__dialog(-title => 'PPM Configuration',
+					 -parent => $mw, -place => 'over',
+					 -type => 'ok',  -modal => 'none',
+					 -synchronous => 0);
+my $config_lbox;
+build_config($config_dlg);
+
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
 my $filter = $toolbar->new_widget__menuentry(
@@ -214,8 +221,8 @@ my $install_btn = $toolbar->new_ttk__button(-text => "Install",
 $toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
 my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
 					   -image => $IMG{'remove'},
-					    -style => "Toolbutton",
-					    -state => "disabled");
+					   -style => "Toolbutton",
+					   -state => "disabled");
 $toolbar->add($remove_btn, -pad => [0, 2]);
 
 # Sync/config buttons
@@ -223,13 +230,17 @@ my $sync = $toolbar->new_ttk__button(-text => "Sync",
 				     -image => $IMG{'refresh'},
 				     -style => "Toolbutton",
 				     -command => [\&full_refresh]);
-Tkx::tooltip($sync, "Refresh all data");
+Tkx::tooltip($sync, "Synchronize database");
 $toolbar->add($sync, -separator => 1, -pad => [4, 2, 0]);
 
 my $config = $toolbar->new_ttk__button(-text => "Config",
 				       -image => $IMG{'config'},
-				       -style => "Toolbutton");
-Tkx::tooltip($config, "Configure something");
+				       -style => "Toolbutton",
+				       -command => sub {
+					   $config_dlg->display();
+					   Tkx::focus(-force => $config_dlg);
+				       });
+Tkx::tooltip($config, "PPM Configuration");
 $toolbar->add($config, -pad => [0, 2]);
 
 ## Statusbar items
@@ -311,8 +322,13 @@ sub refresh {
 
 sub sync {
     $ppm->repo_sync;
-    @areas = $ppm->areas;
     @repos = $ppm->repos;
+    $config_lbox->delete(0, 'end');
+    for my $repo (map $ppm->repo($_), @repos) {
+	$config_lbox->insert('end', $repo->{name});
+    }
+
+    @areas = $ppm->areas;
     $area_menu->delete(0, 'end');
     my $cmd = sub {
 	my $txt = shift;
@@ -620,6 +636,25 @@ sub about {
 			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
 ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
+}
+
+sub build_config {
+    my $top = shift;
+    my $f = Tkx::widget->new($top->getframe());
+
+    my $lbl = $f->new_ttk__label(-text => "Repositories:");
+    my $sw = $f->new_widget__scrolledwindow();
+    $config_lbox = $sw->new_listbox(-width => 32);
+    $sw->setwidget($config_lbox);
+    my $add = $f->new_ttk__button(-text => "Add",
+				  -image => Tkx::ppm__img('add'));
+    my $del = $f->new_ttk__button(-text => "Delete",
+				  -image => Tkx::ppm__img('delete'));
+    Tkx::grid($lbl, $add, $del, -sticky => 'sw');
+    Tkx::grid($sw, '-', '-', -sticky => 'news');
+    Tkx::grid(columnconfigure => $f, 0, -weight => 1);
+    Tkx::grid(rowconfigure => $f, 1, -weight => 1);
+    Tkx::grid(rowconfigure => $f, 0, -weight => 0);
 }
 
 sub on_load {
