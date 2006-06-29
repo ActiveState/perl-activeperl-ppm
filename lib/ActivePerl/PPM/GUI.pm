@@ -443,10 +443,10 @@ sub menus {
     $ssm->add_checkbutton(-label => "Area",
 			  -variable => \$VIEW{'area'},
 			  -command => [$colcmd, 'area']);
-    $ssm->add_checkbutton(-label => "Installed Version",
+    $ssm->add_checkbutton(-label => "Installed",
 			  -variable => \$VIEW{'installed'},
 			  -command => [$colcmd, 'installed']);
-    $ssm->add_checkbutton(-label => "Available Version",
+    $ssm->add_checkbutton(-label => "Available",
 			  -variable => \$VIEW{'available'},
 			  -command => [$colcmd, 'available']);
     $ssm->add_checkbutton(-label => "Abstract",

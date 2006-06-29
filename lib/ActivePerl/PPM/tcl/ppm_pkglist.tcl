@@ -252,9 +252,9 @@ snit::widgetadaptor pkglist {
 	    -borderwidth 1
 	$tree column create -width  40 -text "Area" -tag area \
 	    -borderwidth 1
-	$tree column create -width  60 -text "Installed Version" \
+	$tree column create -width  60 -text "Installed" \
 	    -tag installed -borderwidth 1
-	$tree column create -width  60 -text "Available Version" \
+	$tree column create -width  60 -text "Available" \
 	    -tag available -borderwidth 1
 	$tree column create -text "Abstract" -tag abstract \
 	    -borderwidth 1 -expand 1 -squeeze 1
