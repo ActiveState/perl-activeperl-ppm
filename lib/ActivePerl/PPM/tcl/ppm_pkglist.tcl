@@ -99,15 +99,25 @@ snit::widgetadaptor pkglist {
 	set opts(name) $name
 	set ITEMS($item) [array get opts]
 	eval [linsert [array get opts] 0 $tree item text $item]
-	if {$new} {
-	    set img [::ppm::img default]
-	    incr visible
+	set img ""
+	if {[info exists opts(action)]} {
+	    set img [::ppm::img $opts(action)]
 	} else {
-	    set img [::ppm::img install]
+	    if {$new} {
+		set img [::ppm::img default]
+	    } else {
+		set img [::ppm::img upgradeable]
+	    }
 	}
-	$tree item element configure $item action elemImg -image $img
+	if {$img ne ""} {
+	    $tree item element configure $item action elemImg -image $img
+	}
+	if {$new} {
+	    incr visible
+	}
 	# should we schedule a sort, or make the user force it?
 	# currently the user must request it.
+	return $item
     }
 
     method name {id} {
