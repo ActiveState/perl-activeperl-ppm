@@ -939,10 +939,11 @@ value is seconds from epoch as for perl's time() function.
 
 Returns list of available repo identifiers.
 
-=item $client->repo_add( %attr )
+=item $client->repo_add( name => $name, packlist_uri => $uri )
 
 Will add a new repository with the given attributes.  The method will
 croak if a repository with the same C<packlist_uri> already exists.
+The return value is the $repo_id of the new repository.
 
 =item $client->repo_delete( $repo_id )
 
