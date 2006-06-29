@@ -294,6 +294,8 @@ my $slbl = $sfrm->new_ttk__label(-text => "We are sync'ing");
 $sync_dialog->setwidget($sfrm);
 Tkx::grid($slbl, -sticky => "ew");
 
+map view($_), keys %VIEW;
+
 # Now let's get started ...
 Tkx::update('idletasks');
 
@@ -335,13 +337,17 @@ sub sync {
 	$area_mb->configure(-text => $txt);
 	filter();
     };
-    $area_menu->add_radiobutton(-label => "All areas", -value => "*",
+    my $txt = "All areas";
+    $area_menu->add_radiobutton(-label => $txt, -value => "*",
 				-variable => \$FILTER{'area'},
-				-command => [$cmd, "All areas"]);
+				-command => [$cmd, $txt]);
+    $area_mb->configure(-text => $txt) if $FILTER{'area'} eq "*";
     for my $area (@areas) {
-	$area_menu->add_radiobutton(-label => "$area area", -value => $area,
+	$txt = "$area area";
+	$area_menu->add_radiobutton(-label => $txt, -value => $area,
 			    -variable => \$FILTER{'area'},
-			    -command => [$cmd, "$area area"]);
+			    -command => [$cmd, $txt]);
+	$area_mb->configure(-text => $txt) if $FILTER{'area'} eq $area;
     }
 }
 
@@ -425,6 +431,20 @@ sub ppm {
     $ppm->$func(@_);
 }
 
+sub view {
+    my $view = shift;
+    if ($view =~ 'bar$') {
+	my $w = ($view eq 'statusbar' ? $statusbar : $toolbar);
+	if ($VIEW{$view}) {
+	    Tkx::grid($w);
+	} else {
+	    Tkx::grid('remove', $w);
+	}
+    } else {
+	$pkglist->view($view, $VIEW{$view});
+    }
+}
+
 sub menus {
     Tkx::option_add("*Menu.tearOff", 0);
     my $menu = $mw->new_menu();
@@ -451,44 +471,28 @@ sub menus {
     $menu->add_cascade(-label => "View", -menu => $sm);
     $sm->add_checkbutton(-label => "Toolbar",
 			 -variable => \$VIEW{'toolbar'},
-			 -command => sub {
-			     if ($VIEW{'toolbar'}) {
-				 Tkx::grid($toolbar);
-			     } else {
-				 Tkx::grid('remove', $toolbar);
-			     }
-			 });
+			 -command => [\&view, 'toolbar']);
     $sm->add_checkbutton(-label => "Status Bar",
 			 -variable => \$VIEW{'statusbar'},
-			 -command => sub {
-			     if ($VIEW{'statusbar'}) {
-				 Tkx::grid($statusbar);
-			     } else {
-				 Tkx::grid('remove', $statusbar);
-			     }
-			 });
+			 -command => [\&view, 'statusbar']);
     $sm->add_separator();
     my $ssm = $fields_menu = $sm->new_menu(-name => "fields");
     $sm->add_cascade(-label => "Fields", -menu => $ssm);
-    my $colcmd = sub {
-	my $col = shift;
-	$pkglist->view($col, $VIEW{$col});
-    };
     $ssm->add_checkbutton(-label => "Area",
 			  -variable => \$VIEW{'area'},
-			  -command => [$colcmd, 'area']);
+			  -command => [\&view, 'area']);
     $ssm->add_checkbutton(-label => "Installed",
 			  -variable => \$VIEW{'installed'},
-			  -command => [$colcmd, 'installed']);
+			  -command => [\&view, 'installed']);
     $ssm->add_checkbutton(-label => "Available",
 			  -variable => \$VIEW{'available'},
-			  -command => [$colcmd, 'available']);
+			  -command => [\&view, 'available']);
     $ssm->add_checkbutton(-label => "Abstract",
 			  -variable => \$VIEW{'abstract'},
-			  -command => [$colcmd, 'abstract']);
+			  -command => [\&view, 'abstract']);
     $ssm->add_checkbutton(-label => "Author",
 			  -variable => \$VIEW{'author'},
-			  -command => [$colcmd, 'author']);
+			  -command => [\&view, 'author']);
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
@@ -682,7 +686,7 @@ sub on_exit {
     ## Current filter
     $ppm->config_save(
         "gui.filter" => $FILTER{lastfilter},
-        "gui.filter.lastarea" => $FILTER{lastarea},
+        "gui.filter.area" => $FILTER{lastarea},
         "gui.filter.type" => $FILTER{lasttype},
     );
 
