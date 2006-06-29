@@ -29,6 +29,9 @@ namespace eval ::ppm {
 	search		{"" zoom.png}
 	config		{"" cog.png}
 	gecko		{"" gecko.png}
+	add		{"" add.png}
+	delete		{"" delete.png}
+	accept		{"" accept.png}
     }
 }
 namespace eval ::ppm::img {
