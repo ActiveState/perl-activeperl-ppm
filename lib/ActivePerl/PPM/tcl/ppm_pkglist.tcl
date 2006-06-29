@@ -162,14 +162,14 @@ snit::widgetadaptor pkglist {
 	return [array size ITEMS]
     }
 
-    method filter {words {fields name} {area ALL}} {
+    method filter {words {fields name} {area *}} {
 	set count 0
 	if {[catch {string match $words $fields} err]} {
 	    tk_messageBox -icon error -title "Invalid Search Pattern" \
 		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
-	if {$area eq "ALL" && ($words eq "" || $words eq "*")} {
+	if {$area eq "*" && ($words eq "" || $words eq "*")} {
 	    # make everything visible
 	    foreach {item} [array names ITEMS] {
 		$tree item configure $item -visible 1
@@ -188,7 +188,7 @@ snit::widgetadaptor pkglist {
 	    }
 	    foreach {item} [array names ITEMS] {
 		array set opts $ITEMS($item)
-		set vis [expr {$area eq "ALL" ||
+		set vis [expr {$area eq "*" ||
 			       ([info exists opts(area)] &&
 				$opts(area) eq $area)}]
 		if {$vis} {

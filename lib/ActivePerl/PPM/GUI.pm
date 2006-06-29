@@ -83,7 +83,7 @@ if ($AQUA) {
 # These variables are tied to UI elements
 my %FILTER;
 $FILTER{'filter'} = "";
-$FILTER{'area'} = "ALL";
+$FILTER{'area'} = "*";
 $FILTER{'type'} = "name abstract";
 $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
@@ -199,13 +199,10 @@ $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
 
-my $albl = $toolbar->new_ttk__label(-text => "Area:");
-my $area_cbx = $toolbar->new_ttk__combobox(-width => 6,
-					   -values => ["ALL"],
-					   -textvariable => \$FILTER{'area'});
-Tkx::bind($area_cbx, "<<ComboboxSelected>>", [\&filter]);
-$toolbar->add($albl, -pad => [0, 2]);
-$toolbar->add($area_cbx, -pad => [0, 2, 2]);
+my $area_mb = $toolbar->new_ttk__menubutton(-text => "All areas");
+my $area_menu = $area_mb->new_menu(-tearoff => 0);
+$area_mb->configure(-menu => $area_menu);
+$toolbar->add($area_mb, -pad => [0, 2]);
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
@@ -314,7 +311,20 @@ sub sync {
     $ppm->repo_sync;
     @areas = $ppm->areas;
     @repos = $ppm->repos;
-    $area_cbx->configure(-values => ["ALL", @areas]);
+    $area_menu->delete(0, 'end');
+    my $cmd = sub {
+	my $txt = shift;
+	$area_mb->configure(-text => $txt);
+	filter();
+    };
+    $area_menu->add_radiobutton(-label => "All areas", -value => "*",
+				-variable => \$FILTER{'area'},
+				-command => [$cmd, "All areas"]);
+    for my $area (@areas) {
+	$area_menu->add_radiobutton(-label => "$area area", -value => $area,
+			    -variable => \$FILTER{'area'},
+			    -command => [$cmd, "$area area"]);
+    }
 }
 
 sub full_refresh {
@@ -370,7 +380,7 @@ sub filter {
     my $type = $FILTER{'type'};
     $type =~ s/ / or /g;
     my $msg = "Filter packages by $type";
-    $msg .= " in $FILTER{'area'} area" if $FILTER{'area'} ne "ALL";
+    $msg .= " in $FILTER{'area'} area" if $FILTER{'area'} ne "*";
     Tkx::tooltip($filter, $msg);
     my $count = $pkglist->filter($FILTER{'filter'}, $FILTER{'type'},
 				 $FILTER{'area'});
