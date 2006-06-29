@@ -120,6 +120,12 @@ my $action_menu;
 # Create the menu structure
 menus();
 
+Tkx::bind($mw, "<Destroy>", [sub {
+			     my $w = shift;
+			     on_exit() if $w eq $mw->_mpath;
+			 }, Tkx::Ev('%W')]);
+$mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
+
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $det_sw = $pw->new_widget__scrolledwindow();
@@ -396,8 +402,8 @@ sub menus {
     $sm = $menu->new_menu(-name => "file");
     $menu->add_cascade(-label => "File", -menu => $sm);
     $sm->add_command(-label => "Exit", -accelerator => "Ctrl-q",
-		     -command => sub { exit; });
-    $mw->g_bind("<Control-q>" => sub { exit; });
+		     -command => [\&on_exit]);
+    $mw->g_bind("<Control-q>" => [\&on_exit]);
 
     # Edit menu
     $sm = $menu->new_menu(-name => "edit");
@@ -598,4 +604,61 @@ sub about {
 			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
 ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
+}
+
+sub on_load {
+    # Restore state from saved information
+    # We would need to make sure these are reflected in UI elements
+    $FILTER{'filter'} = "";
+    $FILTER{'area'} = "*";
+    $FILTER{'type'} = "name abstract";
+
+    $VIEW{'name'} = 1;
+    $VIEW{'area'} = 1;
+    $VIEW{'installed'} = 1;
+    $VIEW{'available'} = 1;
+    $VIEW{'abstract'} = 1;
+    $VIEW{'author'} = 0;
+
+    $VIEW{'toolbar'} = 1;
+    $VIEW{'statusbar'} = 1;
+}
+
+sub on_exit {
+    exit; # wait until this works
+
+    # We should save dialog and other state information
+
+    ## Window location and size
+    my $geom = $mw->g_wm_geometry();
+
+    ## Current filter
+    $FILTER{'lastfilter'};
+    $FILTER{'lastarea'};
+    $FILTER{'lasttype'};
+
+    ## Current selected package?
+    if (defined($cur_pkg)) {
+	my $name = $cur_pkg->{name};
+    }
+
+    ## Tree column order, widths, visibility, sort
+
+    # this gets columns in current order (visible and not)
+    my @cols = $pkglist->column('list');
+    for my $col (@cols) {
+	my $width = $pkglist->column('width', $col);
+    }
+
+    $VIEW{'name'};
+    $VIEW{'area'};
+    $VIEW{'installed'};
+    $VIEW{'available'};
+    $VIEW{'abstract'};
+    $VIEW{'author'};
+
+    $VIEW{'toolbar'};
+    $VIEW{'statusbar'};
+
+    exit;
 }
