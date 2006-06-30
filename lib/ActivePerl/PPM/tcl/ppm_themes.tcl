@@ -47,6 +47,11 @@ proc ::ppm::img {what} {
     return -code error "unknown image '$what'"
 }
 
+proc ::ppm::img_name {img} {
+    # get regular name from image
+    return [regsub {^::ppm::img::} $img {}]
+}
+
 proc ::ppm::load_image {what} {
     variable IMGDIR
     variable IMG
