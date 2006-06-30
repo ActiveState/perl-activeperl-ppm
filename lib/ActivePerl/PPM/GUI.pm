@@ -4,7 +4,6 @@ use strict;
 use Tkx ();
 use ActiveState::Browser ();
 use ActivePerl::PPM::Util qw(is_cpan_package);
-use ActivePerl::PPM::GUI::pkglist;
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -138,18 +137,10 @@ my $details = $det_sw->new_text(-height => 7, -width => 60, -borderwidth => 1,
 				-wrap => "word",
 				-tabs => ["10", "left", "90", "left"]);
 $det_sw->setwidget($details);
-my $pkglist;
-if (0) {
-    $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
+my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item],
 			       -borderwidth => 1, -relief => 'sunken',
 			       -itembackground => ["#F7F7FF", ""]);
-} else {
-    $pkglist = $pw->new_ppm_pkglist(-width => 550, -height => 350,
-			       -selectcommand => [\&select_item],
-			       -borderwidth => 1, -relief => 'sunken',
-			       -itembackground => ["#F7F7FF", ""]);
-}
 
 Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      my ($x, $y, $X, $Y) = @_;
