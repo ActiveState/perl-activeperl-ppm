@@ -363,16 +363,16 @@ sub merge_area_items {
     my $count = 0;
     for my $area_name ($ppm->areas) {
 	my $area = $ppm->area($area_name);
-	my @fields = ("name", "version", "release_date", "abstract", "author");
+	my @fields = ("id", "name", "version", "release_date", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
-	    $pkglist->add($name,
+	    my ($id, $name, $version, $release_date, $abstract, $author) = @$pkg;
+	    $pkglist->add($name, $id,
 			  area => $area_name,
 			  installed => $version,
 			  abstract => $abstract,
 			  author => $author,
-			  action => 'installed',
+			  icon => 'installed',
 		      );
 	    $count++;
 	}
@@ -381,13 +381,13 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("name", "version", "release_date", "abstract", "author");
+    my @fields = ("id", "name", "version", "release_date", "abstract", "author");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($name, $version, $release_date, $abstract, $author) = @$_;
-	$pkglist->add($name,
+	my ($id, $name, $version, $release_date, $abstract, $author) = @$_;
+	$pkglist->add($name, $id,
 		   available => $version,
 		   abstract => $abstract,
 		   author => $author,
@@ -577,6 +577,7 @@ sub select_item {
     my %data = Tkx::SplitList($pkglist->data($item));
     my $name = delete $data{'name'};
     my $areaid = delete $data{'area'};
+    my @ids = $pkglist->pkgids($name);
     my $pkg = $ppm->package($name, $data{'available'} || undef);
     my $area = $ppm->area($areaid) if $areaid;
     $pkg = $area->package($name) if $areaid;

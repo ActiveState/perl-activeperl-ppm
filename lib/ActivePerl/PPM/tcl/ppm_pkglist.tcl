@@ -28,7 +28,6 @@ snit::widgetadaptor pkglist {
     option -sortbackground -default "#f7f7f7" -configuremethod C-sortbackground
 
     variable NAMES -array {}
-    variable ITEMS -array {}
 
     # color to use on details view sorted column
     variable sortcolumn "name"
@@ -78,30 +77,34 @@ snit::widgetadaptor pkglist {
 	set options($option) $value
     }
 
-    method add {name args} {
+    method add {name id args} {
 	if {[info exists NAMES($name)]} {
-	    set item $NAMES($name)
+	    set item [lindex $NAMES($name) 0]
+	    lappend NAMES($name) $id
 	    set new 0
 	} else {
 	    set item [$tree item create -button 0 -open 0 -parent 0 -visible 1]
-	    set NAMES($name) $item
+	    set NAMES($name) [list $item $id]
 	    $tree item style set $item \
-		action styAction \
 		name styName \
-		area styName \
-		installed styName \
-		available styName \
-		abstract styName \
-		author styName
+		area styText \
+		installed styText \
+		available styText \
+		abstract styText \
+		author styText
 	    set new 1
 	}
 	array set opts $args
 	set opts(name) $name
-	set ITEMS($item) [array get opts]
+	if {[info exists opts(icon)]} {
+	    # extract icon to handle as an image
+	    set icon $opts(icon)
+	    unset opts(icon)
+	}
 	eval [linsert [array get opts] 0 $tree item text $item]
 	set img ""
-	if {[info exists opts(action)]} {
-	    set img [::ppm::img $opts(action)]
+	if {[info exists icon]} {
+	    set img [::ppm::img $icon]
 	} else {
 	    if {$new} {
 		set img [::ppm::img default]
@@ -110,7 +113,7 @@ snit::widgetadaptor pkglist {
 	    }
 	}
 	if {$img ne ""} {
-	    $tree item element configure $item action elemImg -image $img
+	    $tree item image $item name $img
 	}
 	if {$new} {
 	    incr visible
@@ -120,37 +123,40 @@ snit::widgetadaptor pkglist {
 	return $item
     }
 
-    method name {id} {
-	if {[info exists NAMES($id)]} {
-	    return $id
+    method data {id {col {}}} {
+	if {$col ne ""} {
+	    return [$tree item text $id $col]
+	} else {
+	    set out [list]
+	    foreach col [$tree column list] {
+		lappend out [$tree column cget $col -tag] \
+		    [$tree item text $id $col]
+	    }
+	    return $out
 	}
-	if {[info exists ITEMS($id)]} {
-	    array set opts $ITEMS($id)
-	    return $opts(name)
+    }
+
+    method pkgids {name} {
+	if {[info exists NAMES($name)]} {
+	    # Returns package ids associated with name
+	    return [lrange $NAMES($name) 1 end]
 	}
 	return ""
     }
 
-    method data {id} {
-	if {[info exists ITEMS($id)]} {
-	    return $ITEMS($id)
-	}
-	if {[info exists NAMES($id)]} {
-	    return $ITEMS($NAMES($id))
-	}
-	return ""
-    }
-
-    method state {id} {
+    method icon {name {icon {}}} {
 	# This should return the selected install state
+	set item [lindex $NAMES($name) 0]
+	if {$icon ne ""} {
+	    $tree item image $item name $icon
+	}
+	return [::ppm::img_name [$tree item image $item name]]
     }
 
     method clear {} {
 	$tree item delete all
 	array unset NAMES
-	array unset ITEMS
 	array set NAMES {}
-	array set ITEMS {}
 	set visible 0
     }
 
@@ -159,7 +165,7 @@ snit::widgetadaptor pkglist {
 	    # return only # visible
 	    return $visible
 	}
-	return [array size ITEMS]
+	return [$tree item numchildren root]
     }
 
     method filter {words {fields name} {area *}} {
@@ -171,7 +177,7 @@ snit::widgetadaptor pkglist {
 	}
 	if {$area eq "*" && ($words eq "" || $words eq "*")} {
 	    # make everything visible
-	    foreach {item} [array names ITEMS] {
+	    foreach {item} [$tree item children root] {
 		$tree item configure $item -visible 1
 		incr count 1
 	    }
@@ -186,17 +192,13 @@ snit::widgetadaptor pkglist {
 		    lappend ptns $word
 		}
 	    }
-	    foreach {item} [array names ITEMS] {
-		array set opts $ITEMS($item)
-		set vis [expr {$area eq "*" ||
-			       ([info exists opts(area)] &&
-				$opts(area) eq $area)}]
+	    foreach {item} [$tree item children root] {
+		set vis [expr {($area eq "*")
+			       || ([$tree item text $item area] eq $area)}]
 		if {$vis} {
 		    set str {}
 		    foreach field $fields {
-			if {[info exists opts($field)]} {
-			    lappend str $opts($field)
-			}
+			lappend str [$tree item text $item $field]
 		    }
 		    foreach ptn $ptns {
 			set vis [string match -nocase $ptn $str]
@@ -207,7 +209,6 @@ snit::widgetadaptor pkglist {
 		}
 		$tree item configure $item -visible $vis
 		incr count $vis
-		unset opts
 	    }
 	}
 	set visible $count
@@ -226,10 +227,6 @@ snit::widgetadaptor pkglist {
     }
 
     method _headerinvoke {t col} {
-	if {[$tree column compare $col == action]} {
-	    # sort on the action column?
-	    return
-	}
 	set sortorder -increasing
 	set arrow up
 	set dir [$tree column cget $sortcolumn -arrow]
@@ -259,10 +256,8 @@ snit::widgetadaptor pkglist {
 	}
 	$tree configure -itemheight $height
 
-	$tree column create -image [::ppm::img default] -tag action \
-	    -borderwidth 1 -button 0 -resize 0
-	$tree column create -width 100 -text "Package Name" -tag name \
-	    -borderwidth 1
+	$tree column create -image [::ppm::img default] -text "Package Name" \
+	    -tag name -width 120 -borderwidth 1
 	$tree column create -width  40 -text "Area" -tag area \
 	    -borderwidth 1
 	$tree column create -width  60 -text "Installed" \
@@ -285,16 +280,17 @@ snit::widgetadaptor pkglist {
 	$tree element create selRect rect \
 	    -fill [list $selbg {selected focus} gray {selected !focus}]
 
-	# column 0: image (Action)
-	set S [$tree style create styAction]
-	$tree style elements $S {selRect elemImg}
-	$tree style layout $S selRect -union [list elemImg] -iexpand news
-	$tree style layout $S elemImg -expand news
+	# image + text style (Icon + Package)
+	set S [$tree style create styName -orient horizontal]
+	$tree style elements $S {selRect elemImg elemText}
+	$tree style layout $S selRect -union {elemImg elemText} -iexpand news
+	$tree style layout $S elemImg -expand ns -padx 2
+	$tree style layout $S elemText -squeeze x -expand ns -padx 2
 
-	# column 1: text (Package)
-	set S [$tree style create styName]
+	# text style (other columns)
+	set S [$tree style create styText]
 	$tree style elements $S {selRect elemText}
-	$tree style layout $S selRect -union [list elemText] -iexpand news
+	$tree style layout $S selRect -union {elemText} -iexpand news
 	$tree style layout $S elemText -squeeze x -expand ns -padx 2
 
 	$tree notify install <Header-invoke>
@@ -312,12 +308,6 @@ snit::widgetadaptor pkglist {
 
 	$tree column configure $sortcolumn -arrow up \
 	    -itembackground $options(-sortbackground)
-
-	if {0} {
-	    TreeCtrl::SetSensitive $tree {
-		{name styName elemText}
-	    }
-	}
     }
 
     method _select {t count lost new} {
