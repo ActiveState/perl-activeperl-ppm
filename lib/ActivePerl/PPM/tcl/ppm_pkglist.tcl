@@ -230,21 +230,18 @@ snit::widgetadaptor pkglist {
 	    # sort on the action column?
 	    return
 	}
+	set sortorder -increasing
+	set arrow up
+	set dir [$tree column cget $sortcolumn -arrow]
 	if {[$tree column compare $col == $sortcolumn]} {
-	    if {[$tree column cget $sortcolumn -arrow] eq "down"} {
-		set sortorder -increasing
-		set arrow up
-	    } else {
+	    if {$dir ne "down"} {
 		set sortorder -decreasing
 		set arrow down
 	    }
 	} else {
-	    if {[$tree column cget $sortcolumn -arrow] eq "down"} {
+	    if {$dir eq "down"} {
 		set sortorder -decreasing
 		set arrow down
-	    } else {
-		set sortorder -increasing
-		set arrow up
 	    }
 	    $tree column configure $sortcolumn -arrow none \
 		-itembackground $options(-itembackground)
