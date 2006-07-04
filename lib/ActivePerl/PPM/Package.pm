@@ -253,6 +253,108 @@ sub dbi_store {
     return $id;
 }
 
+#
+# Script support
+#
+
+sub run_script {
+    my($self, $kind, $area, $tmpdir, $pkg_info) = @_;
+
+    my $script = $self->{script}{$kind};
+    return unless $script;
+
+    $tmpdir ||= do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1, CLEANUP => 1) };
+
+    my @commands;
+    if (defined(my $uri = $script->{uri})) {
+	print "Downloading ", $self->name_version, " $kind script...";
+	require ActivePerl::PPM::Web;
+	my $res = ActivePerl::PPM::Web::web_ua()->get(URI->new_abs($uri, $self->{ppd_uri}));
+	die $res->status_line unless $res->is_success;
+	if (my $len = $res->content_length) {
+	    my $save_len = length($res->content);
+	    if ($save_len != $len) {
+		die "Aborted download ($len bytes expected, got $save_len).\n";
+	    }
+	}
+	if ($script->{exec}) {
+	    my $file = "$tmpdir/${kind}_script";
+	    open(my $fh, ">:utf8", $file) || die "Can't create $file: $!";
+	    print $fh $res->decoded_content;
+	    close($fh) || die "Can't write $file: $!";
+	    chmod(0755, $file);
+	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
+	}
+	else {
+	    push(@commands, grep length, split(/\n/, $res->decoded_content));
+	}
+	print "done\n";
+    }
+    else {
+	if (my $exec = $script->{exec}) {
+	    my $text = $script->{text};
+	    $text =~ s/;;/\n/g;  # what ugliness
+
+	    my $file = "$tmpdir/${kind}_script";
+	    open(my $fh, ">", $file) || die "Can't create $file: $!";
+	    print $fh $text;
+	    close($fh) || die "Can't write $file: $!";
+	    chmod(0755, $file);
+
+	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
+	}
+	else {
+	    push(@commands, grep length, split(/;;/, $script->{text}));
+	}
+    }
+    if (@commands) {
+	require ActiveState::Run;
+	require Cwd;
+	my $old_cwd = Cwd::cwd();
+	local $ENV{PPM_INSTROOT} = $area->prefix;
+	local $ENV{PPM_INSTLIB} = $area->lib;
+	local $ENV{PPM_INSTARCHLIB} = $area->archlib;
+	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
+	local $ENV{PPM_ACTION} = $kind;
+	local $ENV{PPM_NEW_VERSION} = $pkg_info->{new_version} if exists $pkg_info->{new_version};
+	local $ENV{PPM_PREV_VERSION};
+	if (exists $pkg_info->{old_version}) {
+	    $ENV{PPM_ACTION} = "upgrade" if $ENV{PPM_ACTION} eq "install";
+	    $ENV{PPM_PREV_VERSION} = $pkg_info->{old_version};
+	}
+	local $ENV{PPM_INSTPACKLIST} = $pkg_info->{packlist} if exists $pkg_info->{packlist};;
+	local $ENV{PPM_PERL} = $^X;
+	eval {
+	    chdir $tmpdir;
+	    print "Running ", $self->name_version, " $kind script...\n";
+	    for my $cmd (@commands) {
+		ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
+	    }
+	};
+	chdir($old_cwd) || die "Can't chdir back to '$old_cwd': $!";
+	die if $@;
+    }
+}
+
+sub _expand_exec {
+    my $exec = shift;
+    my @args;
+    if ($exec =~ /\W/) {
+	require Text::ParseWords;
+	($exec, @args) = Text::ParseWords::shellwords($exec);
+    }
+    if (uc($exec) eq "SELF") {
+	$exec = shift;
+	$exec = "./$exec" if $^O ne "MSWin32";
+    }
+    elsif (uc($exec) eq "PPM_PERL" || $exec eq "perl") {
+	$exec = $^X;
+    }
+    $exec = '@' . $exec;  # silence command echo
+    return [$exec, @args, @_];
+}
+
+
 1;
 
 __END__
@@ -413,6 +515,12 @@ the packages passed in.
 
 This returns SQL C<CREATE TABLE> statements used to initialize the
 database that the C<new_dbi> and C<dbi_store> methods depend on.
+
+=item $pkg->run_script( $kind, $area, $tmpdir, \%pkg_info )
+
+Execute the given kind of script for the package.  The $kind argument
+should be either "install" or "uninstall".  The $kind and $area
+argument must be provided.
 
 =back
 

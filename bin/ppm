@@ -1071,108 +1071,13 @@ Run 'ppm help area' to learn how to set up private areas.";
 
 	# run install scripts
 	for my $pkg (@_) {
-	    _run_script($area, $pkg, "install", $tmpdir, $summary->{pkg}{$pkg->{name}});
+	    $pkg->run_script("install", $area, $tmpdir, $summary->{pkg}{$pkg->{name}});
 	}
     };
     my $err = $@;
     require File::Path;
     File::Path::rmtree($tmpdir, $verbose);
     die $err if $err;
-}
-
-sub _run_script {
-    my($area, $pkg, $kind, $tmpdir, $pkg_info) = @_;
-    my $script = $pkg->{script}{$kind};
-    return unless $script;
-
-    $tmpdir ||= do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1, CLEANUP => 1) };
-
-    my @commands;
-    if (defined(my $uri = $script->{uri})) {
-	print "Downloading ", $pkg->name_version, " $kind script...";
-	my $res = web_ua()->get(URI->new_abs($uri, $pkg->{ppd_uri}));
-	die $res->status_line unless $res->is_success;
-	if (my $len = $res->content_length) {
-	    my $save_len = length($res->content);
-	    if ($save_len != $len) {
-		die "Aborted download ($len bytes expected, got $save_len).\n";
-	    }
-	}
-	if ($script->{exec}) {
-	    my $file = "$tmpdir/${kind}_script";
-	    open(my $fh, ">:utf8", $file) || die "Can't create $file: $!";
-	    print $fh $res->decoded_content;
-	    close($fh) || die "Can't write $file: $!";
-	    chmod(0755, $file);
-	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
-	}
-	else {
-	    push(@commands, grep length, split(/\n/, $res->decoded_content));
-	}
-	print "done\n";
-    }
-    else {
-	if (my $exec = $script->{exec}) {
-	    my $text = $script->{text};
-	    $text =~ s/;;/\n/g;  # what ugliness
-
-	    my $file = "$tmpdir/${kind}_script";
-	    open(my $fh, ">", $file) || die "Can't create $file: $!";
-	    print $fh $text;
-	    close($fh) || die "Can't write $file: $!";
-	    chmod(0755, $file);
-
-	    push(@commands, _expand_exec($script->{exec}, "${kind}_script"));
-	}
-	else {
-	    push(@commands, grep length, split(/;;/, $script->{text}));
-	}
-    }
-    if (@commands) {
-	require ActiveState::Run;
-	require Cwd;
-	my $old_cwd = Cwd::cwd();
-	local $ENV{PPM_INSTROOT} = $area->prefix;
-	local $ENV{PPM_INSTLIB} = $area->lib;
-	local $ENV{PPM_INSTARCHLIB} = $area->archlib;
-	local $ENV{PPM_VERSION} = do { require ActivePerl::PPM; $ActivePerl::PPM::VERSION };
-	local $ENV{PPM_ACTION} = $kind;
-	local $ENV{PPM_NEW_VERSION} = $pkg_info->{new_version} if exists $pkg_info->{new_version};
-	local $ENV{PPM_PREV_VERSION};
-	if (exists $pkg_info->{old_version}) {
-	    $ENV{PPM_ACTION} = "upgrade" if $ENV{PPM_ACTION} eq "install";
-	    $ENV{PPM_PREV_VERSION} = $pkg_info->{old_version};
-	}
-	local $ENV{PPM_INSTPACKLIST} = $pkg_info->{packlist} if exists $pkg_info->{packlist};;
-	local $ENV{PPM_PERL} = $^X;
-	eval {
-	    chdir $tmpdir;
-	    print "Running ", $pkg->name_version, " $kind script...\n";
-	    for my $cmd (@commands) {
-		ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
-	    }
-	};
-	chdir($old_cwd) || die "Can't chdir back to '$old_cwd': $!";
-	die if $@;
-    }
-}
-
-sub _expand_exec {
-    my $exec = shift;
-    my @args;
-    if ($exec =~ /\W/) {
-	require Text::ParseWords;
-	($exec, @args) = Text::ParseWords::shellwords($exec);
-    }
-    if (uc($exec) eq "SELF") {
-	$exec = shift;
-	$exec = "./$exec" if $^O ne "MSWin32";
-    }
-    elsif (uc($exec) eq "PPM_PERL" || $exec eq "perl") {
-	$exec = $^X;
-    }
-    $exec = '@' . $exec;  # silence command echo
-    return [$exec, @args, @_];
 }
 
 sub do_remove {
@@ -1211,7 +1116,7 @@ sub do_remove {
 	    die "'ppm remove $pkg_o->{name}' will uninstall package providing $pkg";
 	}
 	eval {
-	    _run_script($area, $pkg_o, "uninstall", undef, {
+	    $pkg_o->run_script("uninstall", $area, undef, {
 	        old_version => $pkg_o->{version},
                 packlist => $area->package_packlist($pkg_o->{id}),
             });
