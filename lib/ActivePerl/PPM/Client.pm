@@ -840,7 +840,6 @@ sub packages_install {
     }
 
     $| = 1;
-    my $verbose = 0;
     my $ua = web_ua();
     unless ($area) {
 	$area = $self->default_install_area;
@@ -998,7 +997,7 @@ Run 'ppm help area' to learn how to set up private areas.";
     };
     my $err = $@;
     require File::Path;
-    File::Path::rmtree($tmpdir, $verbose);
+    File::Path::rmtree($tmpdir, 0);
     die $err if $err;
 }
 
