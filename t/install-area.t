@@ -1,7 +1,7 @@
 #!perl -w
 
 use strict;
-use Test qw(plan ok);
+use Test qw(plan ok skip);
 use Config qw(%Config);
 use File::Path qw(rmtree mkpath);
 
@@ -36,9 +36,11 @@ ok($dir->packages, 0);
 ok(j($dir->packlists), "");
 ok($dir->verify);
 
+my $sitelib = $Config{sitelib};
+$sitelib =~ s,\\,/,g if $^O eq "MSWin32";
 $dir = ActivePerl::PPM::InstallArea->new("site");
 ok($dir->name, "site");
-ok($dir->lib, $Config{sitelib});
+ok($dir->lib, $sitelib);
 $dir = undef;
 # avoid hitting methods that needs to create a database, since
 # we don't really want to update stuff the perl that runs this
@@ -196,7 +198,12 @@ rmtree($prefix, 1);
 mkdir($prefix, 0555);  # non-writable directory
 $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
 ok($dir->lib, "$prefix/lib");
-ok($dir->readonly);
+unless ($^O eq "MSWin32") {
+    ok($dir->readonly);
+}
+else {
+    skip("No readonly directories on Windows");
+}
 ok($dir->packages, 0);
 ok(j($dir->packages), "");
 
