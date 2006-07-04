@@ -91,6 +91,9 @@ $FILTER{'delay'} = 500; # filter delay on key in millisecs
 $FILTER{'lastfilter'} = "";
 $FILTER{'lastarea'} = "";
 $FILTER{'lasttype'} = $FILTER{'type'};
+$FILTER{'upgradeable'} = 0;
+$FILTER{'installed'} = 0;
+$FILTER{'laststates'} = ();
 
 my %VIEW;
 $VIEW{'name'} = 1;
@@ -113,6 +116,8 @@ $IMG{'filter'} = Tkx::ppm__img('search');
 $IMG{'config'} = Tkx::ppm__img('config');
 $IMG{'install'} = Tkx::ppm__img('install');
 $IMG{'remove'} = Tkx::ppm__img('remove');
+$IMG{'upgradeable'} = Tkx::ppm__img('upgradeable');
+$IMG{'installed'} = Tkx::ppm__img('installed');
 
 my $cur_pkg = undef; # Current selection package
 
@@ -214,7 +219,24 @@ $filter->g_bind('<Key>', [\&filter_onkey]);
 my $area_mb = $toolbar->new_ttk__menubutton(-text => "All areas");
 my $area_menu = $area_mb->new_menu(-tearoff => 0);
 $area_mb->configure(-menu => $area_menu);
-$toolbar->add($area_mb, -pad => [0, 2]);
+#$toolbar->add($area_mb, -pad => [0, 2]);
+
+# Filter state buttons
+my $filter_inst = $toolbar->new_ttk__checkbutton(
+    -text => "Installed", -image => $IMG{'installed'},
+    -style => "Toolbutton", -variable => \$FILTER{'installed'},
+    -command => [\&filter],
+);
+$toolbar->add($filter_inst, -pad => 0);
+Tkx::tooltip($filter_inst, "Filter on installed packages");
+my $filter_upgr = $toolbar->new_ttk__checkbutton(
+    -text => "Upgradeable", -image => $IMG{'upgradeable'},
+    -style => "Toolbutton", -variable => \$FILTER{'upgradeable'},
+    -command => [\&filter],
+);
+$toolbar->add($filter_upgr, -pad => 0);
+Tkx::tooltip($filter_upgr, "Filter on upgradeable packages");
+### XXX: Needs "actionable" state filter button
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
@@ -407,16 +429,23 @@ sub merge_repo_items {
 
 sub filter {
     Tkx::after('cancel', $FILTER{'id'});
+    my @states = ();
+    push(@states, "upgradeable") if $FILTER{'upgradeable'};
+    push(@states, "installed") if $FILTER{'installed'};
     return if ($FILTER{'filter'} eq $FILTER{'lastfilter'}
 		   && $FILTER{'type'} eq $FILTER{'lasttype'}
-		       && $FILTER{'area'} eq $FILTER{'lastarea'});
+		       && $FILTER{'area'} eq $FILTER{'lastarea'}
+			   && @states eq $FILTER{'laststates'});
     my $type = $FILTER{'type'};
     $type =~ s/ / or /g;
     my $msg = "Filter packages by $type";
     $msg .= " in $FILTER{'area'} area" if $FILTER{'area'} ne "*";
     Tkx::tooltip($filter, $msg);
-    my $count = $pkglist->filter($FILTER{'filter'}, $FILTER{'type'},
-				 $FILTER{'area'});
+    my $count = $pkglist->filter($FILTER{'filter'},
+				 fields => $FILTER{'type'},
+				 areas  => $FILTER{'area'},
+				 states => [@states],
+			     );
     if ($count == -1) {
 	# Something wrong with the filter
 	$filter->delete(0, "end");
@@ -426,6 +455,7 @@ sub filter {
 	$FILTER{'lastfilter'} = $FILTER{'filter'};
 	$FILTER{'lastarea'} = $FILTER{'area'};
 	$FILTER{'lasttype'} = $FILTER{'type'};
+	$FILTER{'laststates'} = @states;
 	$NUM{'listed'} = $count;
     }
 }

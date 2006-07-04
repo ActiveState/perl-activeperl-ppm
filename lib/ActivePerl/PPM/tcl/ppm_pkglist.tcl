@@ -168,18 +168,33 @@ snit::widgetadaptor pkglist {
 	return [$tree item numchildren root]
     }
 
-    method filter {words {fields name} {area *}} {
+    method filter {words args} {
+	array set opts {
+	    fields {name}
+	    areas {*}
+	    states {}
+	}
+	array set opts $args
 	set count 0
-	if {[catch {string match $words $fields} err]} {
+	if {[catch {string match $words $opts(fields)} err]} {
 	    tk_messageBox -icon error -title "Invalid Search Pattern" \
 		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
-	if {$area eq "*" && ($words eq "" || $words eq "*")} {
+	if {$opts(areas) eq "*" && ($words eq "" || $words eq "*")} {
 	    # make everything visible
-	    foreach {item} [$tree item children root] {
-		$tree item configure $item -visible 1
-		incr count 1
+	    if {[llength $opts(states)]} {
+		foreach {item} [$tree item children root] {
+		    set state [::ppm::img_name [$tree item image $item name]]
+		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
+		    $tree item configure $item -visible $vis
+		    incr count 1
+		}
+	    } else {
+		foreach {item} [$tree item children root] {
+		    $tree item configure $item -visible 1
+		    incr count 1
+		}
 	    }
 	} else {
 	    # Fields-based and/or area searches
@@ -193,11 +208,15 @@ snit::widgetadaptor pkglist {
 		}
 	    }
 	    foreach {item} [$tree item children root] {
-		set vis [expr {($area eq "*")
-			       || ([$tree item text $item area] eq $area)}]
+		set vis [expr {($opts(areas) eq "*")
+			       || ([$tree item text $item area] eq $opts(areas))}]
+		if {$vis} {
+		    set state [::ppm::img_name [$tree item image $item name]]
+		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
+		}
 		if {$vis} {
 		    set str {}
-		    foreach field $fields {
+		    foreach field $opts(fields) {
 			lappend str [$tree item text $item $field]
 		    }
 		    foreach ptn $ptns {
@@ -223,7 +242,12 @@ snit::widgetadaptor pkglist {
     }
 
     method sort {} {
-	$tree item sort root $sortorder -column $sortcolumn -dictionary
+	set opts [list -column $sortcolumn -dictionary]
+	if {$sortcolumn ne "name"} {
+	    # Use package name as second sort order
+	    lappend opts -column "name"
+	}
+	eval [list $tree item sort root $sortorder] $opts
     }
 
     method _headerinvoke {t col} {
