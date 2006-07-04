@@ -831,6 +831,177 @@ sub package_set_abs_ppd_uri {
     return @pkgs;
 }
 
+sub packages_install {
+    my $self = shift;
+    my $area = shift;
+    unless (@_) {
+	print "No missing packages to install\n";
+	return;
+    }
+
+    $| = 1;
+    my $verbose = 0;
+    my $ua = web_ua();
+    unless ($area) {
+	$area = $self->default_install_area;
+	unless ($area) {
+	    my $msg = "All available install areas are readonly.
+Run 'ppm help area' to learn how to set up private areas.";
+	    require ActiveState::Path;
+	    if (ActiveState::Path::find_prog("sudo")) {
+		$msg .= "\nYou might also try 'sudo ppm' to raise your privileges.";
+	    }
+	    die $msg;
+	}
+	ppm_log("NOTICE", "Installing into $area");
+    }
+    $area = $self->area($area);
+    die "Can't install into read-only area" if $area->readonly;
+
+    my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
+    eval {
+	$self->package_set_abs_ppd_uri(@_);
+
+	# determine codebase_file
+	for my $pkg (@_) {
+	    my $name = $pkg->name_version;
+	    my $codebase = $pkg->{codebase};
+	    die "No codebase for $name" unless $codebase;
+	    $codebase = URI->new_abs($codebase, $pkg->{ppd_uri});
+
+	    if ($codebase =~ /\.(tgz|tar\.gz)$/) {
+		$pkg->{codebase_type} = "tgz";
+	    }
+	    die "Don't know how to unpack $codebase" unless $pkg->{codebase_type};
+
+	    if ($codebase->scheme eq 'file') {
+		$pkg->{codebase_file} = $codebase->file;
+		unless (-f $pkg->{codebase_file}) {
+		    die "No file _at $pkg->{codebase_file}";
+		}
+	    }
+	    else {
+		print "Downloading $name...";
+		my $save = $pkg->{codebase_file} = "$tmpdir/$name.$pkg->{codebase_type}";
+		#print "\n    $codebase ==> $save...";
+		my $res = $ua->get($codebase, ":content_file" => $save);
+		die $res->status_line unless $res->is_success;
+		if (my $len = $res->content_length) {
+		    my $save_len = -s $save;
+		    if ($save_len != $len) {
+			die "Aborted download ($len bytes expected, got $save_len).\n";
+		    }
+		}
+		# XXX An MD5 checksum for the tarball would be a good thing
+		print "done\n";
+	    }
+	}
+
+	# unpack
+	for my $pkg (@_) {
+	    my $pname = $pkg->name_version;
+	    print "Unpacking $pname...";
+	    my $codebase_file = $pkg->{codebase_file};
+	    if ($pkg->{codebase_type} eq "tgz") {
+		require Archive::Tar;
+		require ExtUtils::MakeMaker;
+		require ActiveState::ModInfo;
+		ppm_log("DEBUG", "Unpacking $codebase_file");
+		my $tar = Archive::Tar->new($codebase_file, 1);
+		for my $file ($tar->get_files) {
+		    next unless $file->is_file;  # don't extract links and other crap
+		    my $fname = $file->full_path;
+		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
+		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
+		    my $extract = $fname;
+		    next unless $extract =~ s,^blib/,$pname/,;
+		    $extract = "$tmpdir/$extract";
+		    $tar->extract_file($fname, $extract)
+			|| die "Can't extract to $extract";
+		    if ($fname =~ /\.pm$/) {
+			my $mod = $fname;
+			if ($mod =~ s,^blib/(?:lib|arch)/,,) {
+			    $mod = ActiveState::ModInfo::fname2mod($mod);
+			    $mod .= "::" unless $mod =~ /::/;
+			    $pkg->{provide}{$mod} = MM->parse_version($extract) || 0;
+			}
+
+		    }
+		}
+		$pkg->{blib} = "$tmpdir/$pname";
+	    }
+	    else {
+		die "Don't know how to unpack $pkg->{codebase_type} files";
+	    }
+	    print "done\n";
+	}
+
+	# relocate
+	if ($^O ne "MSWin32") {
+	    require ActiveState::RelocateTree;
+	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
+	    my $prefix = do { require Config; $Config::Config{prefix} };
+	    for my $pkg (@_) {
+		print "Relocating ", $pkg->name_version, "...";
+		ActiveState::RelocateTree::relocate (
+		    to      => $pkg->{blib},
+		    inplace => 1,
+	            search  => $ppm_sponge,
+	            replace => $prefix,
+                    quiet   => 1,
+		);
+		print "done\n";
+	    }
+	}
+
+	# generate HTML from the POD
+	if (eval { require ActivePerl::DocTools; }) {
+	    require Cwd;
+	    my $pwd = Cwd::cwd();
+	    chdir($tmpdir) || die "Can't chdir $tmpdir: $!";
+	    eval {
+		for my $pkg (@_) {
+		    my $pname = $pkg->name_version;
+		    next unless -d $pname;
+		    print "Generating HTML for $pname...";
+		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => $pname);
+		    print "done\n";
+		}
+	    };
+	    chdir($pwd) || die "Can't chdir back to $pwd: $!";
+	    die $@ if $@;
+	}
+
+	# install
+	my $to = $area->name;
+	$to = " to $to area" if $to;
+	print "Installing$to...";
+	my $summary = $area->install(@_);
+	if ($summary) {
+	    print "done\n";
+	    if (my $count = $summary->{count}) {
+		for my $what (sort keys %$count) {
+		    my $n = $count->{$what} || 0;
+		    printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
+		}
+	    }
+	}
+	else {
+	    print "\n";
+	    die $@;
+	}
+
+	# run install scripts
+	for my $pkg (@_) {
+	    $pkg->run_script("install", $area, $tmpdir, $summary->{pkg}{$pkg->{name}});
+	}
+    };
+    my $err = $@;
+    require File::Path;
+    File::Path::rmtree($tmpdir, $verbose);
+    die $err if $err;
+}
+
 1;
 
 __END__
@@ -1090,6 +1261,12 @@ missing dependencies are returned.  If $str is C<none> then
 dependencies are ignored.
 
 =back
+
+=item $client->packages_install( $area, @pkgs )
+
+Install the given packages to the given area.  The $area argument
+should be an area name and the @pkgs should be
+ActivePerl::PPM::RepoPackage objects.
 
 =back
 
