@@ -457,6 +457,11 @@ sub repo_sync {
 			 $repo->{id});
 
 		# parse document
+		if ($res->content_type =~ m,^application/(x-)?gzip$,) {
+		    # tweak reponse so that 'decoded_content' will decode it
+		    $res->content_type("application/octet-stream");
+		    $res->push_header("Content-Encoding", "gzip");
+		}
 		my $cref = $res->decoded_content(ref => 1, default_charset => "none");
 		if ($res->content_type eq "text/html") {
 		    my $base = $res->base;
