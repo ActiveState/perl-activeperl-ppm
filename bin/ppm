@@ -911,7 +911,36 @@ sub _install_repo {
 }
 
 sub _install {
-    $ppm->packages_install(@_);
+    my $area = shift;
+    unless (@_) {
+	print "No missing packages to install\n";
+	return;
+    }
+
+    unless ($area) {
+	$area = $ppm->default_install_area;
+	unless ($area) {
+	    my $msg = "All available install areas are readonly.
+Run 'ppm help area' to learn how to set up private areas.";
+	    require ActiveState::Path;
+	    if (ActiveState::Path::find_prog("sudo")) {
+		$msg .= "\nYou might also try 'sudo ppm' to raise your privileges.";
+	    }
+	    die $msg;
+	}
+	ppm_log("NOTICE", "Installing into $area");
+    }
+    $area = $ppm->area($area);
+
+    $| = 1;
+
+    my $summary = $ppm->packages_install($area, @_);
+    if (my $count = $summary->{count}) {
+	for my $what (sort keys %$count) {
+	    my $n = $count->{$what} || 0;
+	    printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
+	}
+    }
 }
 
 sub do_remove {

@@ -834,30 +834,12 @@ sub package_set_abs_ppd_uri {
 sub packages_install {
     my $self = shift;
     my $area = shift;
-    unless (@_) {
-	print "No missing packages to install\n";
-	return;
-    }
-
-    $| = 1;
-    my $ua = web_ua();
-    unless ($area) {
-	$area = $self->default_install_area;
-	unless ($area) {
-	    my $msg = "All available install areas are readonly.
-Run 'ppm help area' to learn how to set up private areas.";
-	    require ActiveState::Path;
-	    if (ActiveState::Path::find_prog("sudo")) {
-		$msg .= "\nYou might also try 'sudo ppm' to raise your privileges.";
-	    }
-	    die $msg;
-	}
-	ppm_log("NOTICE", "Installing into $area");
-    }
-    $area = $self->area($area);
     die "Can't install into read-only area" if $area->readonly;
+    die "No packages to install" unless @_;
 
+    my $ua = web_ua();
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
+    my $install_summary;
     eval {
 	$self->package_set_abs_ppd_uri(@_);
 
@@ -975,15 +957,9 @@ Run 'ppm help area' to learn how to set up private areas.";
 	my $to = $area->name;
 	$to = " to $to area" if $to;
 	print "Installing$to...";
-	my $summary = $area->install(@_);
-	if ($summary) {
+	$install_summary = $area->install(@_);
+	if ($install_summary) {
 	    print "done\n";
-	    if (my $count = $summary->{count}) {
-		for my $what (sort keys %$count) {
-		    my $n = $count->{$what} || 0;
-		    printf "%4d file%s %s\n", $n, ($n == 1 ? "" : "s"), $what;
-		}
-	    }
 	}
 	else {
 	    print "\n";
@@ -992,13 +968,15 @@ Run 'ppm help area' to learn how to set up private areas.";
 
 	# run install scripts
 	for my $pkg (@_) {
-	    $pkg->run_script("install", $area, $tmpdir, $summary->{pkg}{$pkg->{name}});
+	    $pkg->run_script("install", $area, $tmpdir, $install_summary->{pkg}{$pkg->{name}});
 	}
     };
     my $err = $@;
     require File::Path;
     File::Path::rmtree($tmpdir, 0);
     die $err if $err;
+
+    return $install_summary;
 }
 
 1;
