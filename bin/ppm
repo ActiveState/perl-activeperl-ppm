@@ -934,7 +934,7 @@ Run 'ppm help area' to learn how to set up private areas.";
 
     $| = 1;
 
-    my $summary = $ppm->packages_install($area, @_);
+    my $summary = $ppm->install(packages => \@_, area => $area);
     if (my $count = $summary->{count}) {
 	for my $what (sort keys %$count) {
 	    my $n = $count->{$what} || 0;

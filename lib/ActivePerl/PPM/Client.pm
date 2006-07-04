@@ -831,20 +831,23 @@ sub package_set_abs_ppd_uri {
     return @pkgs;
 }
 
-sub packages_install {
-    my $self = shift;
-    my $area = shift;
+sub install {
+    my($self, %args) = @_;
+    my $area = delete $args{area} || $self->default_install_area || die "No area";
+    $area = $self->area($area) unless ref($area);
     die "Can't install into read-only area" if $area->readonly;
-    die "No packages to install" unless @_;
+
+    my @pkgs = @{delete $args{packages} || []};
+    die "No packages to install" unless @pkgs;
 
     my $ua = web_ua();
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     my $install_summary;
     eval {
-	$self->package_set_abs_ppd_uri(@_);
+	$self->package_set_abs_ppd_uri(@pkgs);
 
 	# determine codebase_file
-	for my $pkg (@_) {
+	for my $pkg (@pkgs) {
 	    my $name = $pkg->name_version;
 	    my $codebase = $pkg->{codebase};
 	    die "No codebase for $name" unless $codebase;
@@ -879,7 +882,7 @@ sub packages_install {
 	}
 
 	# unpack
-	for my $pkg (@_) {
+	for my $pkg (@pkgs) {
 	    my $pname = $pkg->name_version;
 	    print "Unpacking $pname...";
 	    my $codebase_file = $pkg->{codebase_file};
@@ -922,7 +925,7 @@ sub packages_install {
 	    require ActiveState::RelocateTree;
 	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
 	    my $prefix = do { require Config; $Config::Config{prefix} };
-	    for my $pkg (@_) {
+	    for my $pkg (@pkgs) {
 		print "Relocating ", $pkg->name_version, "...";
 		ActiveState::RelocateTree::relocate (
 		    to      => $pkg->{blib},
@@ -941,7 +944,7 @@ sub packages_install {
 	    my $pwd = Cwd::cwd();
 	    chdir($tmpdir) || die "Can't chdir $tmpdir: $!";
 	    eval {
-		for my $pkg (@_) {
+		for my $pkg (@pkgs) {
 		    my $pname = $pkg->name_version;
 		    next unless -d $pname;
 		    print "Generating HTML for $pname...";
@@ -957,7 +960,7 @@ sub packages_install {
 	my $to = $area->name;
 	$to = " to $to area" if $to;
 	print "Installing$to...";
-	$install_summary = $area->install(@_);
+	$install_summary = $area->install(@pkgs);
 	if ($install_summary) {
 	    print "done\n";
 	}
@@ -967,7 +970,7 @@ sub packages_install {
 	}
 
 	# run install scripts
-	for my $pkg (@_) {
+	for my $pkg (@pkgs) {
 	    $pkg->run_script("install", $area, $tmpdir, $install_summary->{pkg}{$pkg->{name}});
 	}
     };
@@ -1196,7 +1199,7 @@ C<_needed_by> will be an array reference of package names listing
 packages having resolved dependencies on this package.  These
 attributes do not exclude each other.
 
-The arguments to the functions are passed as key/value pairs:
+The arguments to the function are passed as key/value pairs:
 
 =over
 
@@ -1239,11 +1242,27 @@ dependencies are ignored.
 
 =back
 
-=item $client->packages_install( $area, @pkgs )
+=item $client->install( %args )
 
-Install the given packages to the given area.  The $area argument
-should be an area name and the @pkgs should be
-ActivePerl::PPM::RepoPackage objects.
+Will download, unpack and install the given packages.  The function
+will raise an exception of it gets into trouble, otherwise it will
+return
+
+The arguments to the function are passed as key/value pairs:
+
+=over
+
+=item packages => \@pkgs
+
+Mandatory argument that provide the packages to install.  The array
+passed should contain C<ActivePerl::PPM::Package> objects.
+
+=item area => $area
+
+What install area to install into.  If not provided, then
+$client->default_install_area is used.
+
+=back
 
 =back
 
