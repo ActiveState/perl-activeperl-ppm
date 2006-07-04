@@ -1,5 +1,6 @@
 # PPM specific packages
 package ifneeded ppm::pkglist 1.0 [list source $dir/ppm_pkglist.tcl]
+package ifneeded ppm::repolist 1.0 [list source $dir/ppm_repolist.tcl]
 package ifneeded ppm::themes 1.0 [list source $dir/ppm_themes.tcl]
 
 # For debugging
