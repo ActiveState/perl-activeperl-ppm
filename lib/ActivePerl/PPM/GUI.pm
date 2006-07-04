@@ -49,6 +49,7 @@ Tkx::package_require('widget::statusbar');
 Tkx::package_require('widget::toolbar');
 Tkx::package_require('widget::menuentry');
 Tkx::package_require('ppm::pkglist');
+Tkx::package_require('ppm::repolist');
 Tkx::package_require('style::as');
 Tkx::package_require('BWidget');
 Tkx::Widget__theme(1);
@@ -62,7 +63,7 @@ if ($AQUA) {
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
 
-Tkx::style_default('Slim.Toolbutton', -padding => 2);
+#Tkx::style_default('Slim.Toolbutton', -padding => 2);
 
 # make tree widgets use theming on non-x11 platforms
 if ($windowingsystem ne "x11") {
@@ -184,7 +185,9 @@ my $config_dlg = $mw->new_widget__dialog(-title => 'PPM Configuration',
 					 -parent => $mw, -place => 'over',
 					 -type => 'ok',  -modal => 'none',
 					 -synchronous => 0);
-my $config_lbox;
+my $repolist;
+my $repo_add;
+my $repo_del;
 build_config($config_dlg);
 
 ## Toolbar items
@@ -325,9 +328,15 @@ sub refresh {
 sub sync {
     $ppm->repo_sync;
     @repos = $ppm->repos;
-    $config_lbox->delete(0, 'end');
-    for my $repo (map $ppm->repo($_), @repos) {
-	$config_lbox->insert('end', $repo->{name});
+    $repolist->clear();
+    for my $repoid (@repos) {
+	my $repo = $ppm->repo($repoid);
+	$repolist->add($repoid,
+		       repo => $repo->{name},
+		       url => $repo->{packlist_uri},
+		       num => $repo->{pkgs},
+		       checked => $repo->{packlist_last_access},
+		   );
     }
 
     @areas = $ppm->areas;
@@ -643,23 +652,56 @@ ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
 }
 
+sub select_repo_item {
+    my $item = shift;
+    $repo_del->configure(-state => "disabled");
+    return unless $item;
+
+    # We need to figure out how we want details formatted
+    my %data = Tkx::SplitList($repolist->data($item));
+    $repo_del->configure(-state => "normal");
+}
+
 sub build_config {
     my $top = shift;
     my $f = Tkx::widget->new($top->getframe());
+    $f->configure(-padding => 4);
 
-    my $lbl = $f->new_ttk__label(-text => "Repositories:");
     my $sw = $f->new_widget__scrolledwindow();
-    $config_lbox = $sw->new_listbox(-width => 32);
-    $sw->setwidget($config_lbox);
-    my $add = $f->new_ttk__button(-text => "Add",
-				  -image => Tkx::ppm__img('add'));
-    my $del = $f->new_ttk__button(-text => "Delete",
-				  -image => Tkx::ppm__img('delete'));
-    Tkx::grid($lbl, $add, $del, -sticky => 'sw');
+    $repolist = $sw->new_repolist(-width => 450, -height => 100,
+				  -selectcommand => [\&select_repo_item],
+				  -borderwidth => 1, -relief => 'sunken',
+				  -itembackground => ["#F7F7FF", ""]);
+    $sw->setwidget($repolist);
+    $repo_add = $f->new_ttk__button(-text => "Add",
+				    -image => Tkx::ppm__img('add'));
+    $repo_del = $f->new_ttk__button(-text => "Delete", -state => "disabled",
+				    -image => Tkx::ppm__img('delete'));
+    my $addl = $f->new_ttk__label(-text => "Add Repository:",
+				  -font => 'ASfontBold');
+    my $addf = $f->new_ttk__frame(-padding => [6, 2, 6, 0]);
+    my $rnamel = $addf->new_ttk__label(-text => "Name:", -anchor => 'w');
+    my $rnamee = $addf->new_ttk__entry();
+    my $rlocnl = $addf->new_ttk__label(-text => "Location:", -anchor => 'w');
+    my $rlocne = $addf->new_ttk__entry();
+    my $ruserl = $addf->new_ttk__label(-text => "Username:", -anchor => 'w');
+    my $rusere = $addf->new_ttk__entry();
+    my $rpassl = $addf->new_ttk__label(-text => "Password:", -anchor => 'w');
+    my $rpasse = $addf->new_ttk__entry();
+    my $opttxt = "(optional, for FTP and HTTP repositories only)";
+    my $opt0 = $addf->new_ttk__label(-text => $opttxt, -font => "ASfont-1");
+    #my $opt1 = $addf->new_ttk__label(-text => $opttxt, -font => "ASfont-1");
+    Tkx::grid($rnamel, $rnamee, '-', -sticky => 'sew', -pady => 1);
+    Tkx::grid($rlocnl, $rlocne, '-', -sticky => 'sew', -pady => 1);
+    Tkx::grid($ruserl, $rusere, $opt0, -sticky => 'sew', -pady => 1);
+    Tkx::grid($rpassl, $rpasse, 'x', -sticky => 'sew', -pady => 1);
+    Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
+
     Tkx::grid($sw, '-', '-', -sticky => 'news');
+    Tkx::grid($addl, $repo_add, $repo_del, -sticky => 'sw', -pady => [4, 0]);
+    Tkx::grid($addf, '-', '-', -sticky => 'news');
     Tkx::grid(columnconfigure => $f, 0, -weight => 1);
-    Tkx::grid(rowconfigure => $f, 1, -weight => 1);
-    Tkx::grid(rowconfigure => $f, 0, -weight => 0);
+    Tkx::grid(rowconfigure => $f, 0, -weight => 1);
 }
 
 sub on_load {
