@@ -120,8 +120,6 @@ $IMG{'f_upgradeable'} = [Tkx::ppm__img('package', 'filter', 'upgradeable')];
 $IMG{'f_installed'} = [Tkx::ppm__img('package', 'filter')];
 $IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 
-my $cur_pkg = undef; # Current selection package
-
 my $action_menu;
 my $fields_menu;
 
@@ -194,7 +192,7 @@ my $config_dlg = $mw->new_widget__dialog(-title => 'PPM Configuration',
 my $repolist;
 my $repo_add;
 my $repo_del;
-build_config($config_dlg);
+build_config_dialog($config_dlg);
 
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
@@ -261,7 +259,8 @@ $toolbar->add($remove_btn, -pad => [0, 2]);
 my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 				       -image => $IMG{'go'},
 				       -style => "Toolbutton",
-				       -state => "disabled");
+				       -state => "disabled",
+				       -command => [\&run_actions]);
 $toolbar->add($go_btn, -pad => [0, 2]);
 
 # Sync/config buttons
@@ -320,6 +319,14 @@ Tkx::tooltip($lbl, "Number of packages selected for removal");
 $lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
 $statusbar->add($lbl, -weight => 1);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
+
+## Action dialog for committing to install/remove
+my $action_box;
+my $action_dialog = $mw->new_widget__dialog(-title => 'Commit Actions',
+					    -parent => $mw, -place => 'over',
+					    -type => 'ok',
+					    -synchronous => 0);
+build_action_dialog($action_dialog);
 
 ## Wait dialog for when we sync
 my $sync_dialog = $mw->new_widget__dialog(-title => 'Synchronize Database',
@@ -587,7 +594,6 @@ sub select_item {
     $details->configure(-state => "normal");
     $details->delete('1.0', 'end');
     $details->configure(-state => "disabled");
-    $cur_pkg = undef;
     my $menu = $action_menu;
     $menu->delete(0, 'end');
     $menu->add_command(-label => "No selected package", -state => "disabled");
@@ -598,9 +604,12 @@ sub select_item {
     my $name = $data{'name'};
     my $areaid = $data{'area'};
     my @ids = $pkglist->pkgids($name);
-    my $pkg = $ppm->package($name, $data{'available'} || undef);
     my $area = $ppm->area($areaid) if $areaid;
-    $pkg = $area->package($name) if $areaid;
+    my ($pkg, $repo_pkg, $area_pkg);
+    $pkg = $repo_pkg = $ppm->package($name, $data{'available'} || undef);
+    if ($areaid) {
+	$pkg = $area_pkg = $area->package($name);
+    }
     my $pad = "\t";
     $details->configure(-state => "normal");
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
@@ -637,10 +646,12 @@ sub select_item {
 
     ## Record "allowable" actions based on package info
     # XXX work on constraints
-    $cur_pkg = $pkg;
     if (!defined($ACTION{$name})) {
 	$ACTION{$name}{'install'} = 0;
 	$ACTION{$name}{'remove'} = 0;
+	$ACTION{$name}{'area'} = $area;
+	$ACTION{$name}{'area_pkg'} = $area_pkg;
+	$ACTION{$name}{'repo_pkg'} = $repo_pkg;
     }
     # The icon represents the current actionable state:
     #   default installed upgradeable install remove upgrade
@@ -764,16 +775,84 @@ sub update_actions {
     }
 }
 
-sub about {
-    require ActivePerl::PPM;
-    require ActivePerl;
-    my $perl_version = ActivePerl::perl_version;
-    
-    Tkx::tk___messageBox(-title => "About Perl Package Manager",
-			 -icon => "info", -type => "ok",
-			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
-ActivePerl version $perl_version
-\xA9 2006 ActiveState Software Inc.");
+sub run_actions {
+    my $msg = "Ready to ";
+    if ($NUM{'install'}) {
+	$msg .= "install $NUM{'install'} packages";
+    }
+    if ($NUM{'remove'}) {
+	$msg .= " and " if $NUM{'install'};
+	$msg .= "remove $NUM{'remove'} packages";
+    }
+    $msg .= "?";
+    my $res = Tkx::tk___messageBox(
+	-title => "Commit Actions?", -type => "okcancel", -parent => $mw,
+	-icon => "question", -message => $msg,
+    );
+    if ($res eq "ok") {
+	commit_actions();
+    }
+}
+
+sub commit_actions {
+    $action_dialog->display();
+    $action_box->configure(-state => "normal");
+    for my $name (sort keys %ACTION) {
+	# First remove any area pacakges
+	my $area = $ACTION{$name}{'area'};
+	my $area_pkg = $ACTION{$name}{'area_pkg'};
+	if ($ACTION{$name}{'remove'}) {
+	    my $area_name = $area->name;
+	    my $txt = "Remove $name from $area_name area\n";
+	    $action_box->insert('end', $txt);
+	    Tkx::update();
+	    print $txt;
+	    eval { $area->uninstall($area_pkg); };
+	    if ($@) {
+		$txt = "\tERROR:\n$@\n";
+		$action_box->insert('end', $txt);
+		print $txt;
+	    }
+	}
+    }
+    for my $name (sort keys %ACTION) {
+	# Then install
+	my $repo_pkg = $ACTION{$name}{'repo_pkg'};
+	if ($ACTION{$name}{'install'}) {
+	    my $area_name = $ppm->default_install_area;
+	    my $txt = "Install $name to $area_name area\n";
+	    $action_box->insert('end', $txt);
+	    Tkx::update();
+	    print $txt;
+	    eval { $ppm->install(packages => [$repo_pkg]); };
+	    if ($@) {
+		$txt = "\tERROR:\n$@\n";
+		$action_box->insert('end', $txt);
+		print $txt;
+	    }
+	}
+    }
+    $action_box->configure(-state => "disabled");
+    refresh();
+}
+
+sub build_action_dialog {
+    my $top = shift;
+    my $f = Tkx::widget->new($top->getframe());
+    $f->configure(-padding => 4);
+
+    my $l = $f->new_ttk__label(-text => "Commit actions:");
+    my $sw = $f->new_widget__scrolledwindow();
+    $action_box = $sw->new_text(
+	-height => 8, -width => 60, -borderwidth => 1,
+	-font => "ASfont", -state => "disabled",
+	-wrap => "word",
+    );
+    $sw->setwidget($action_box);
+    Tkx::grid($l, -sticky => "w");
+    Tkx::grid($sw, -sticky => "news");
+    Tkx::grid(columnconfigure => $f, 0, -weight => 1);
+    Tkx::grid(rowconfigure => $f, 1, -weight => 1);
 }
 
 sub select_repo_item {
@@ -786,7 +865,7 @@ sub select_repo_item {
     $repo_del->configure(-state => "normal");
 }
 
-sub build_config {
+sub build_config_dialog {
     my $top = shift;
     my $f = Tkx::widget->new($top->getframe());
     $f->configure(-padding => 4);
@@ -859,9 +938,6 @@ sub on_exit {
     );
 
     ## Current selected package?
-    if (defined($cur_pkg)) {
-	my $name = $cur_pkg->{name};
-    }
 
     ## Tree column order, widths, visibility, sort
 
@@ -874,4 +950,16 @@ sub on_exit {
     $ppm->config_save(map { ("gui.view.$_" => $VIEW{$_}) } keys %VIEW);
 
     exit;
+}
+
+sub about {
+    require ActivePerl::PPM;
+    require ActivePerl;
+    my $perl_version = ActivePerl::perl_version;
+    
+    Tkx::tk___messageBox(-title => "About Perl Package Manager",
+			 -icon => "info", -type => "ok",
+			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
+ActivePerl version $perl_version
+\xA9 2006 ActiveState Software Inc.");
 }
