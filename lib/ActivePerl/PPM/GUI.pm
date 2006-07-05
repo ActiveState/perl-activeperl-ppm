@@ -363,7 +363,7 @@ sub refresh {
     my $repo = merge_repo_items();
     $NUM{'total'} = $pkglist->numitems();
     #print "Total: $NUM{'total'}, Installed: $NUM{'installed'} of $area area items and $repo repo items\n";
-    %ACTION = undef;
+    %ACTION = ();
     $NUM{'install'} = 0;
     $NUM{'remove'} = 0;
     update_actions();
