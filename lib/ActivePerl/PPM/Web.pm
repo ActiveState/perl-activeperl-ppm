@@ -33,7 +33,6 @@ sub simple_request {
     my $self = shift;
     my $req = shift;
     my $before = time();
-    local $| = 1;  # so that progress output shows
 
     my $res = $self->SUPER::simple_request($req, @_);
 
