@@ -40,7 +40,10 @@ sub ppm_debug {
 
 sub ppm_status {
     unless ($status) {
-	if (-t *STDOUT) {
+	if (exists &ActivePerl::PPM::GUI::Status::begin) {
+	    $status = ActivePerl::PPM::GUI::Status->new;
+	}
+	elsif (-t *STDOUT) {
 	    require ActivePerl::PPM::Status::Term;
 	    $status = ActivePerl::PPM::Status::Term->new;
 	    $| = 1;

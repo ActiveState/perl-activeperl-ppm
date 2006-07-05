@@ -963,3 +963,30 @@ sub about {
 ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
 }
+
+BEGIN {
+    package ActivePerl::PPM::GUI::Status;
+
+    require ActivePerl::PPM::Status;
+    our @ISA = qw(ActivePerl::PPM::Status);
+
+    sub begin {
+	my $self = shift;
+	my $what = shift;
+	print "$what...\n";
+	Tkx::update();
+	$self->SUPER::begin($what, @_);
+    }
+
+    sub tick {
+	print "#";
+	# XXX update some progressbar
+	Tkx::update();
+    }
+
+    sub end {
+	my $self = shift;
+	print "\n";
+	$self->SUPER::end;
+    }
+}
