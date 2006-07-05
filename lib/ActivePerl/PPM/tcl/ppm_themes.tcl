@@ -1,6 +1,6 @@
-# pkglist.tcl --
+# ppm_themes.tcl --
 #
-#	This file implements package pkglist, which  ...
+#	This file implements package ...
 #
 # Copyright (c) 2006 ActiveState Software Inc
 #
@@ -13,86 +13,65 @@ package require tile
 package provide ppm::themes 1.0
 
 namespace eval ::ppm {
-    variable IMGDIR [file dirname [file dirname [info script]]]/images/
+    variable IMGDIR [file dirname [file dirname [info script]]]/images
 
-    variable IMG
-    array set IMG {
-	default		{"" package.png}
-	installed	{"" package_installed.png}
-	install		{"" package_add.png}
-	remove		{"" package_delete.png}
-	disabled	{"" package_disabled.png}
-	linked		{"" package_link.png}
-	upgrade		{"" package_upgrade.png}
-	upgradeable	{"" package_upgradeable.png}
-	refresh		{"" refresh.png}
-	search		{"" zoom.png}
-	config		{"" cog.png}
-	gecko		{"" gecko.png}
-	add		{"" add.png}
-	delete		{"" delete.png}
-	accept		{"" accept.png}
+    variable IMG ; # array of creates images
+    array set IMG {}
+    variable MAP ; # array mapping of semantic name -> image file
+    array set MAP {
+	default		{package.png}
+	installed	{package_installed.png}
+	install		{package_add.png}
+	remove		{package_delete.png}
+	disabled	{package_disabled.png}
+	linked		{package_link.png}
+	upgrade		{package_upgrade.png}
+	upgradeable	{package_upgradeable.png}
+	modified	{package_go.png}
+	go		{package_go.png}
+	refresh		{refresh.png}
+	search		{zoom.png}
+	config		{cog.png}
+	gecko		{gecko.png}
+	add		{add.png}
+	delete		{delete.png}
+	accept		{accept.png}
+	filter_modifier	{zoom_corner.png}
     }
 }
 namespace eval ::ppm::img {
     # namespace for image commands
 }
 
-proc ::ppm::img {what} {
+proc ::ppm::img {what {type {}}} {
+    variable MAP
     variable IMG
-    if {[info exists IMG($what)]} {
-	if {[lindex $IMG($what) 0] eq ""} { ::ppm::load_image $what }
-	return [lindex $IMG($what) 0]
+    if {[info exists MAP($what)]} {
+	set file $MAP($what)
+    } else {
+	set file $what
     }
-    return -code error "unknown image '$what'"
+    set key $what/$type
+    if {![info exists IMG($key)]} {
+	variable IMGDIR
+	if {![file isdirectory $IMGDIR] || ![file exists $IMGDIR/$file]} {
+	    return -code error \
+		"unable to find image '$IMGDIR/$file' for '$what'"
+	}
+	set IMG($key) [image create photo ::ppm::img::$key -file $IMGDIR/$file]
+	if {$type eq ""} {
+	} elseif {$type eq "filter"} {
+	    set mod [img "filter_modifier"]
+	    $IMG($key) copy $mod; # add in modifier to top-left corner
+	} else {
+	    return -code error "unknown filter \"$type\""
+	}
+    }
+    return $IMG($key)
 }
 
 proc ::ppm::img_name {img} {
     # get regular name from image
-    return [regsub {^::ppm::img::} $img {}]
+    regexp {^::ppm::img::([^/]+)/(.*)$} $img -> name type]
+    return $name
 }
-
-proc ::ppm::load_image {what} {
-    variable IMGDIR
-    variable IMG
-    if {![file isdirectory $IMGDIR]} {
-	return -code error "unable to find images in '$IMGDIR'"
-    }
-    lset IMG($what) 0 [image create photo ::ppm::img::$what \
-			   -file $IMGDIR/[lindex $IMG($what) 1]]
-    return [lindex $IMG($what) 0]
-}
-
-proc ::ppm::setupThemes {} {
-    foreach theme [style theme names] {
-	set pad [style theme settings $theme { style default TEntry -padding }]
-
-	switch -- [llength $pad] {
-	    0 { set pad [list 4 0 0 0] }
-	    1 { set pad [list [expr {$pad+4}] $pad $pad $pad] }
-	    2 {
-		foreach {padx pady} $pad break
-		set pad [list [expr {$padx+4}] $pady $padx $pady]
-	    }
-	    4 { lset pad 0 [expr {[lindex $pad 0]+4}] }
-	}
-
-	style theme settings $theme {
-	    style layout SearchEntry {
-		Entry.field -children {
-		    SearchEntry.icon -side left
-		    Entry.padding -children {
-			Entry.textarea
-		    }
-		}
-	    }
-
-	    style configure SearchEntry -padding $pad
-	    style element create SearchEntry.icon image [ppm::img search] \
-		-padding {8 0 0 0} -sticky {}
-
-	    style map SearchEntry -image [list disabled [ppm::img search]]
-	}
-    }
-}
-::ppm::setupThemes
