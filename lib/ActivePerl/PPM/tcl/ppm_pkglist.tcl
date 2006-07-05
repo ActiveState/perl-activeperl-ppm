@@ -160,8 +160,8 @@ snit::widgetadaptor pkglist {
 	set visible 0
     }
 
-    method numitems {{type {}}} {
-	if {$type eq "visible"} {
+    method numitems {{which {}}} {
+	if {$which eq "visible"} {
 	    # return only # visible
 	    return $visible
 	}
@@ -171,7 +171,6 @@ snit::widgetadaptor pkglist {
     method filter {words args} {
 	array set opts {
 	    fields {name}
-	    areas {*}
 	    states {}
 	}
 	array set opts $args
@@ -181,23 +180,20 @@ snit::widgetadaptor pkglist {
 		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
-	if {$opts(areas) eq "*" && ($words eq "" || $words eq "*")} {
-	    # make everything visible
-	    if {[llength $opts(states)]} {
-		foreach {item} [$tree item children root] {
+	set checkState [llength $opts(states)]
+	if {$words eq "" || $words eq "*"} {
+	    # make everything visible (based on state)
+	    foreach {item} [$tree item children root] {
+		set vis 1
+		if {$checkState} {
 		    set state [::ppm::img_name [$tree item image $item name]]
 		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
-		    $tree item configure $item -visible $vis
-		    incr count 1
 		}
-	    } else {
-		foreach {item} [$tree item children root] {
-		    $tree item configure $item -visible 1
-		    incr count 1
-		}
+		$tree item configure $item -visible $vis
+		incr count $vis
 	    }
 	} else {
-	    # Fields-based and/or area searches
+	    # Fields-based and/or state-based searches
 	    set ptns [list]
 	    foreach word $words {
 		if {[string first "*" $word] == -1} {
@@ -208,16 +204,16 @@ snit::widgetadaptor pkglist {
 		}
 	    }
 	    foreach {item} [$tree item children root] {
-		set vis [expr {($opts(areas) eq "*")
-			       || ([$tree item text $item area] eq $opts(areas))}]
-		if {$vis} {
+		set vis 1
+		if {$checkState} {
 		    set state [::ppm::img_name [$tree item image $item name]]
 		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
 		}
 		if {$vis} {
 		    set str {}
 		    foreach field $opts(fields) {
-			lappend str [$tree item text $item $field]
+			set data [$tree item text $item $field]
+			if {$data ne ""} { lappend str $data }
 		    }
 		    foreach ptn $ptns {
 			set vis [string match -nocase $ptn $str]
