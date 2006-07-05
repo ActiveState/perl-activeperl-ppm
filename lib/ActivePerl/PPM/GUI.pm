@@ -83,16 +83,15 @@ if ($AQUA) {
 
 # These variables are tied to UI elements
 my %FILTER;
-$FILTER{'filter'} = "";
-$FILTER{'area'} = "*";
-$FILTER{'type'} = "name abstract";
 $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
+$FILTER{'filter'} = "";
 $FILTER{'lastfilter'} = "";
-$FILTER{'lastarea'} = "";
+$FILTER{'type'} = "name abstract";
 $FILTER{'lasttype'} = $FILTER{'type'};
 $FILTER{'upgradeable'} = 0;
 $FILTER{'installed'} = 0;
+$FILTER{'modified'} = 0;
 $FILTER{'laststates'} = ();
 
 my %VIEW;
@@ -116,8 +115,10 @@ $IMG{'filter'} = Tkx::ppm__img('search');
 $IMG{'config'} = Tkx::ppm__img('config');
 $IMG{'install'} = Tkx::ppm__img('install');
 $IMG{'remove'} = Tkx::ppm__img('remove');
-$IMG{'upgradeable'} = Tkx::ppm__img('upgradeable');
-$IMG{'installed'} = Tkx::ppm__img('installed');
+$IMG{'go'} = Tkx::ppm__img('go');
+$IMG{'f_upgradeable'} = Tkx::ppm__img('upgradeable', "filter");
+$IMG{'f_installed'} = Tkx::ppm__img('installed', "filter");
+$IMG{'f_modified'} = Tkx::ppm__img('modified', "filter");
 
 my $cur_pkg = undef; # Current selection package
 
@@ -216,27 +217,28 @@ $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
 
-my $area_mb = $toolbar->new_ttk__menubutton(-text => "All areas");
-my $area_menu = $area_mb->new_menu(-tearoff => 0);
-$area_mb->configure(-menu => $area_menu);
-#$toolbar->add($area_mb, -pad => [0, 2]);
-
 # Filter state buttons
 my $filter_inst = $toolbar->new_ttk__checkbutton(
-    -text => "Installed", -image => $IMG{'installed'},
+    -text => "Installed", -image => $IMG{'f_installed'},
     -style => "Toolbutton", -variable => \$FILTER{'installed'},
     -command => [\&filter],
 );
-$toolbar->add($filter_inst, -pad => 0);
+$toolbar->add($filter_inst, -pad => [0, 2]);
 Tkx::tooltip($filter_inst, "Filter on installed packages");
 my $filter_upgr = $toolbar->new_ttk__checkbutton(
-    -text => "Upgradeable", -image => $IMG{'upgradeable'},
+    -text => "Upgradeable", -image => $IMG{'f_upgradeable'},
     -style => "Toolbutton", -variable => \$FILTER{'upgradeable'},
     -command => [\&filter],
 );
-$toolbar->add($filter_upgr, -pad => 0);
+$toolbar->add($filter_upgr, -pad => [0, 2]);
 Tkx::tooltip($filter_upgr, "Filter on upgradeable packages");
-### XXX: Needs "actionable" state filter button
+my $filter_mod = $toolbar->new_ttk__checkbutton(
+    -text => "Modified", -image => $IMG{'f_modified'},
+    -style => "Toolbutton", -variable => \$FILTER{'modified'},
+    -command => [\&filter],
+);
+$toolbar->add($filter_mod, -pad => [0, 2]);
+Tkx::tooltip($filter_mod, "Filter on packages to install/remove");
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
@@ -249,6 +251,11 @@ my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
 					   -style => "Toolbutton",
 					   -state => "disabled");
 $toolbar->add($remove_btn, -pad => [0, 2]);
+my $go_btn = $toolbar->new_ttk__button(-text => "Go",
+				       -image => $IMG{'go'},
+				       -style => "Toolbutton",
+				       -state => "disabled");
+$toolbar->add($go_btn, -pad => [0, 2]);
 
 # Sync/config buttons
 my $sync = $toolbar->new_ttk__button(-text => "Sync",
@@ -362,24 +369,6 @@ sub sync {
     }
 
     @areas = $ppm->areas;
-    $area_menu->delete(0, 'end');
-    my $cmd = sub {
-	my $txt = shift;
-	$area_mb->configure(-text => $txt);
-	filter();
-    };
-    my $txt = "All areas";
-    $area_menu->add_radiobutton(-label => $txt, -value => "*",
-				-variable => \$FILTER{'area'},
-				-command => [$cmd, $txt]);
-    $area_mb->configure(-text => $txt) if $FILTER{'area'} eq "*";
-    for my $area (@areas) {
-	$txt = "$area area";
-	$area_menu->add_radiobutton(-label => $txt, -value => $area,
-			    -variable => \$FILTER{'area'},
-			    -command => [$cmd, $txt]);
-	$area_mb->configure(-text => $txt) if $FILTER{'area'} eq $area;
-    }
 }
 
 sub full_refresh {
@@ -430,20 +419,17 @@ sub merge_repo_items {
 sub filter {
     Tkx::after('cancel', $FILTER{'id'});
     my @states = ();
-    push(@states, "upgradeable") if $FILTER{'upgradeable'};
     push(@states, "installed") if $FILTER{'installed'};
+    push(@states, "upgradeable") if ($FILTER{'upgradeable'} || $FILTER{'installed'});
+    push(@states, "install", "remove", "upgrade") if $FILTER{'modified'};
     return if ($FILTER{'filter'} eq $FILTER{'lastfilter'}
 		   && $FILTER{'type'} eq $FILTER{'lasttype'}
-		       && $FILTER{'area'} eq $FILTER{'lastarea'}
 			   && @states eq $FILTER{'laststates'});
     my $type = $FILTER{'type'};
     $type =~ s/ / or /g;
-    my $msg = "Filter packages by $type";
-    $msg .= " in $FILTER{'area'} area" if $FILTER{'area'} ne "*";
-    Tkx::tooltip($filter, $msg);
+    Tkx::tooltip($filter, "Filter packages by $type");
     my $count = $pkglist->filter($FILTER{'filter'},
 				 fields => $FILTER{'type'},
-				 areas  => $FILTER{'area'},
 				 states => [@states],
 			     );
     if ($count == -1) {
@@ -453,7 +439,6 @@ sub filter {
 	# No need to refilter - should not have changed
     } else {
 	$FILTER{'lastfilter'} = $FILTER{'filter'};
-	$FILTER{'lastarea'} = $FILTER{'area'};
 	$FILTER{'lasttype'} = $FILTER{'type'};
 	$FILTER{'laststates'} = @states;
 	$NUM{'listed'} = $count;
@@ -738,8 +723,10 @@ sub on_load {
     # Restore state from saved information
     # We would need to make sure these are reflected in UI elements
     $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
-    $FILTER{'area'} = $ppm->config_get("gui.filter.area") || "*";
     $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "name abstract";
+    $FILTER{'upgradeable'} = $ppm->config_get("gui.filter.upgradeable") || 0;
+    $FILTER{'installed'} = $ppm->config_get("gui.filter.installed") || 0;
+    $FILTER{'modified'} = $ppm->config_get("gui.filter.modified") || 0;
 
     my @view_keys = keys %VIEW;
     my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
@@ -758,9 +745,11 @@ sub on_exit {
 
     ## Current filter
     $ppm->config_save(
-        "gui.filter" => $FILTER{lastfilter},
-        "gui.filter.area" => $FILTER{lastarea},
-        "gui.filter.type" => $FILTER{lasttype},
+        "gui.filter" => $FILTER{'lastfilter'},
+        "gui.filter.type" => $FILTER{'lasttype'},
+        "gui.filter.upgradeable" => $FILTER{'upgradeable'},
+        "gui.filter.installed" => $FILTER{'installed'},
+        "gui.filter.modified" => $FILTER{'modified'},
     );
 
     ## Current selected package?
