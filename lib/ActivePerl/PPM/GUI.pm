@@ -778,11 +778,13 @@ sub update_actions {
 sub run_actions {
     my $msg = "Ready to ";
     if ($NUM{'install'}) {
-	$msg .= "install $NUM{'install'} packages";
+	$msg .= "install $NUM{'install'} package";
+	$msg .= "s" if $NUM{'install'} > 1;
     }
     if ($NUM{'remove'}) {
 	$msg .= " and " if $NUM{'install'};
-	$msg .= "remove $NUM{'remove'} packages";
+	$msg .= "remove $NUM{'remove'} package";
+	$msg .= "s" if $NUM{'remove'} > 1;
     }
     $msg .= "?";
     my $res = Tkx::tk___messageBox(
@@ -970,23 +972,49 @@ BEGIN {
     require ActivePerl::PPM::Status;
     our @ISA = qw(ActivePerl::PPM::Status);
 
+    my $prefixed;
+
     sub begin {
 	my $self = shift;
 	my $what = shift;
-	print "$what...\n";
-	Tkx::update();
+	$action_box->configure(-state => "normal");
+	$action_box->insert('end', "$what ... ");
+	$action_box->configure(-state => "disabled");
+	Tkx::update('idletasks');
+	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
+	    print "$what ... ";
+	}
+	$prefixed = 1;
 	$self->SUPER::begin($what, @_);
     }
 
     sub tick {
-	print "#";
+	$action_box->configure(-state => "normal");
+	$action_box->insert('end', "#");
+	$action_box->configure(-state => "disabled");
+	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
+	    print "#";
+	}
 	# XXX update some progressbar
-	Tkx::update();
+	Tkx::update('idletasks');
     }
 
     sub end {
 	my $self = shift;
-	print "\n";
-	$self->SUPER::end;
+	my $outcome = shift || "DONE";
+	my $what = $self->SUPER::end;
+	$action_box->configure(-state => "normal");
+	if ($prefixed) {
+	    $outcome .= "\n";
+	    $prefixed = 0;
+	} else {
+	    $outcome = "$what $outcome\n";
+	}
+	$action_box->insert('end', $outcome);
+	$action_box->configure(-state => "disabled");
+	Tkx::update('idletasks');
+	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
+	    print $outcome;
+	}
     }
 }
