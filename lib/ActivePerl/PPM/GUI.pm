@@ -807,7 +807,7 @@ sub commit_actions {
 	    $action_box->insert('end', $txt);
 	    Tkx::update();
 	    print $txt;
-	    eval { $area->uninstall($area_pkg); };
+	    eval { $area->uninstall($name); };
 	    if ($@) {
 		$txt = "\tERROR:\n$@\n";
 		$action_box->insert('end', $txt);
