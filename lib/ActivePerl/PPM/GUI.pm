@@ -87,12 +87,10 @@ $FILTER{'id'} = "";
 $FILTER{'delay'} = 500; # filter delay on key in millisecs
 $FILTER{'filter'} = "";
 $FILTER{'lastfilter'} = "";
-$FILTER{'type'} = "name abstract";
+$FILTER{'fields'} = "name abstract";
+$FILTER{'lastfields'} = $FILTER{'fields'};
+$FILTER{'type'} = ""; # "" installed upgradeable modified
 $FILTER{'lasttype'} = $FILTER{'type'};
-$FILTER{'upgradeable'} = 0;
-$FILTER{'installed'} = 0;
-$FILTER{'modified'} = 0;
-$FILTER{'laststates'} = ();
 
 my %VIEW;
 $VIEW{'name'} = 1;
@@ -106,19 +104,17 @@ $VIEW{'toolbar'} = 1;
 $VIEW{'statusbar'} = 1;
 
 my %ACTION;
-$ACTION{'install'} = "";
-$ACTION{'remove'} = "";
 
 my %IMG;
-$IMG{'refresh'} = Tkx::ppm__img('refresh');
-$IMG{'filter'} = Tkx::ppm__img('search');
-$IMG{'config'} = Tkx::ppm__img('config');
-$IMG{'install'} = Tkx::ppm__img('install');
-$IMG{'remove'} = Tkx::ppm__img('remove');
-$IMG{'go'} = Tkx::ppm__img('go');
-$IMG{'f_upgradeable'} = Tkx::ppm__img('upgradeable', "filter");
-$IMG{'f_installed'} = Tkx::ppm__img('installed', "filter");
-$IMG{'f_modified'} = Tkx::ppm__img('modified', "filter");
+$IMG{'refresh'} = [Tkx::ppm__img('refresh')];
+$IMG{'config'} = [Tkx::ppm__img('config')];
+$IMG{'install'} = [Tkx::ppm__img('package', 'install')];
+$IMG{'remove'} = [Tkx::ppm__img('package', 'remove')];
+$IMG{'go'} = [Tkx::ppm__img('package', 'modified')];
+$IMG{'f_all'} = [Tkx::ppm__img('available', 'filter')];
+$IMG{'f_upgradeable'} = [Tkx::ppm__img('package', 'filter', 'upgradeable')];
+$IMG{'f_installed'} = [Tkx::ppm__img('package', 'filter')];
+$IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 
 my $cur_pkg = undef; # Current selection package
 
@@ -206,36 +202,43 @@ my $filter = $toolbar->new_widget__menuentry(
 Tkx::tooltip($filter, "Filter packages");
 $toolbar->add($filter, -weight => 2);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
-		  -variable => \$FILTER{'type'}, -command => [\&filter]);
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
-		  -variable => \$FILTER{'type'}, -command => [\&filter]);
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Name or Abstract",
 		  -value => "name abstract",
-		  -variable => \$FILTER{'type'}, -command => [\&filter]);
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter_menu->add('radiobutton', -label => "Author", -value => "author",
-		  -variable => \$FILTER{'type'}, -command => [\&filter]);
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
 
 # Filter state buttons
-my $filter_inst = $toolbar->new_ttk__checkbutton(
+my $filter_all = $toolbar->new_ttk__radiobutton(
+    -text => "Installed", -image => $IMG{'f_all'},
+    -style => "Toolbutton", -variable => \$FILTER{'type'},
+    -command => [\&filter], -value => "",
+);
+$toolbar->add($filter_all, -pad => [0, 2]);
+Tkx::tooltip($filter_all, "Filter on all packages");
+my $filter_inst = $toolbar->new_ttk__radiobutton(
     -text => "Installed", -image => $IMG{'f_installed'},
-    -style => "Toolbutton", -variable => \$FILTER{'installed'},
-    -command => [\&filter],
+    -style => "Toolbutton", -variable => \$FILTER{'type'},
+    -command => [\&filter], -value => "installed",
 );
 $toolbar->add($filter_inst, -pad => [0, 2]);
 Tkx::tooltip($filter_inst, "Filter on installed packages");
-my $filter_upgr = $toolbar->new_ttk__checkbutton(
+my $filter_upgr = $toolbar->new_ttk__radiobutton(
     -text => "Upgradeable", -image => $IMG{'f_upgradeable'},
-    -style => "Toolbutton", -variable => \$FILTER{'upgradeable'},
-    -command => [\&filter],
+    -style => "Toolbutton", -variable => \$FILTER{'type'},
+    -command => [\&filter], -value => "upgradeable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
 Tkx::tooltip($filter_upgr, "Filter on upgradeable packages");
-my $filter_mod = $toolbar->new_ttk__checkbutton(
+my $filter_mod = $toolbar->new_ttk__radiobutton(
     -text => "Modified", -image => $IMG{'f_modified'},
-    -style => "Toolbutton", -variable => \$FILTER{'modified'},
-    -command => [\&filter],
+    -style => "Toolbutton", -variable => \$FILTER{'type'},
+    -command => [\&filter], -value => "modified",
 );
 $toolbar->add($filter_mod, -pad => [0, 2]);
 Tkx::tooltip($filter_mod, "Filter on packages to install/remove");
@@ -349,7 +352,11 @@ sub refresh {
     my $repo = merge_repo_items();
     $NUM{'total'} = $pkglist->numitems();
     #print "Total: $NUM{'total'}, Installed: $NUM{'installed'} of $area area items and $repo repo items\n";
-    filter();
+    %ACTION = undef;
+    $NUM{'install'} = 0;
+    $NUM{'remove'} = 0;
+    update_actions();
+    filter(1);
     $NUM{'listed'} = $pkglist->numitems('visible');
     $pkglist->sort();
 }
@@ -392,7 +399,6 @@ sub merge_area_items {
 			  installed => $version,
 			  abstract => $abstract,
 			  author => $author,
-			  icon => 'installed',
 		      );
 	    $count++;
 	}
@@ -417,20 +423,17 @@ sub merge_repo_items {
 }
 
 sub filter {
+    my $force = shift || 0;
     Tkx::after('cancel', $FILTER{'id'});
-    my @states = ();
-    push(@states, "installed") if $FILTER{'installed'};
-    push(@states, "upgradeable") if ($FILTER{'upgradeable'} || $FILTER{'installed'});
-    push(@states, "install", "remove", "upgrade") if $FILTER{'modified'};
-    return if ($FILTER{'filter'} eq $FILTER{'lastfilter'}
-		   && $FILTER{'type'} eq $FILTER{'lasttype'}
-			   && @states eq $FILTER{'laststates'});
-    my $type = $FILTER{'type'};
-    $type =~ s/ / or /g;
-    Tkx::tooltip($filter, "Filter packages by $type");
+    return if (!$force && $FILTER{'filter'} eq $FILTER{'lastfilter'}
+		   && $FILTER{'fields'} eq $FILTER{'lastfields'}
+		       && $FILTER{'type'} eq $FILTER{'lasttype'});
+    my $fields = $FILTER{'fields'};
+    $fields =~ s/ / or /g;
+    Tkx::tooltip($filter, "Filter packages by $fields");
     my $count = $pkglist->filter($FILTER{'filter'},
-				 fields => $FILTER{'type'},
-				 states => [@states],
+				 fields => $FILTER{'fields'},
+				 type => $FILTER{'type'},
 			     );
     if ($count == -1) {
 	# Something wrong with the filter
@@ -439,8 +442,8 @@ sub filter {
 	# No need to refilter - should not have changed
     } else {
 	$FILTER{'lastfilter'} = $FILTER{'filter'};
+	$FILTER{'lastfields'} = $FILTER{'fields'};
 	$FILTER{'lasttype'} = $FILTER{'type'};
-	$FILTER{'laststates'} = @states;
 	$NUM{'listed'} = $count;
     }
 }
@@ -520,7 +523,6 @@ sub menus {
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
-    $sm->configure(-postcommand => [\&on_action_post, $sm]);
     $menu->add_cascade(-label => "Action", -menu => $sm);
 
     # Help menu
@@ -576,31 +578,21 @@ sub menus {
     return $menu;
 }
 
-sub on_action_post {
-    my $sm = shift;
-    $sm->delete(0, 'end');
-    if (defined($cur_pkg)) {
-	my $name = $cur_pkg->{name};
-	$sm->add_command(-label => "Install $name") if $ACTION{'install'};
-	$sm->add_command(-label => "Remove $name") if $ACTION{'remove'};
-    } else {
-	$sm->add_command(-label => "No selected package",
-			 -state => "disabled");
-    }
-}
-
 sub select_item {
     my $item = shift;
     $details->configure(-state => "normal");
     $details->delete('1.0', 'end');
     $details->configure(-state => "disabled");
     $cur_pkg = undef;
+    my $menu = $action_menu;
+    $menu->delete(0, 'end');
+    $menu->add_command(-label => "No selected package", -state => "disabled");
     return unless $item;
 
     # We need to figure out how we want details formatted
     my %data = Tkx::SplitList($pkglist->data($item));
-    my $name = delete $data{'name'};
-    my $areaid = delete $data{'area'};
+    my $name = $data{'name'};
+    my $areaid = $data{'area'};
     my @ids = $pkglist->pkgids($name);
     my $pkg = $ppm->package($name, $data{'available'} || undef);
     my $area = $ppm->area($areaid) if $areaid;
@@ -639,19 +631,132 @@ sub select_item {
     $details->delete('end-1c');
     $details->configure(-state => "disabled");
 
-    # Record "allowable" actions based on package info
+    ## Record "allowable" actions based on package info
     # XXX work on constraints
     $cur_pkg = $pkg;
-    $ACTION{'install'} = "";
-    $ACTION{'remove'} = "";
+    if (!defined($ACTION{$name})) {
+	$ACTION{$name}{'install'} = 0;
+	$ACTION{$name}{'remove'} = 0;
+    }
+    # The icon represents the current actionable state:
+    #   default installed upgradeable install remove upgrade
     $remove_btn->configure(-state => "disabled");
     $install_btn->configure(-state => "disabled");
-    if ($areaid) {
-	$ACTION{'remove'} = $pkg->{version};
-	$remove_btn->configure(-state => "normal");
+    $menu->delete(0, 'end');
+    if ($data{'installed'}) {
+	my $cmd = sub {
+	    my $was_btn = shift || 0;
+	    if ($was_btn) {
+		if ($ACTION{$name}{'remove'}) {
+		    $ACTION{$name}{'remove'} = 0;
+		} else {
+		    $ACTION{$name}{'remove'} = $data{'installed'};
+		}
+	    }
+	    queue_for_remove(%data);
+	};
+	$remove_btn->configure(-state => "normal",
+			       -command => [$cmd, 1]);
+	$menu->add_checkbutton(-label => "Remove $name $data{'installed'}",
+			       -variable => \$ACTION{$name}{'remove'},
+			       -onvalue => $data{'installed'},
+			       -command => $cmd);
+    }
+    if ($data{'available'} && $data{'installed'}) {
+	my $cmd = sub {
+	    my $was_btn = shift || 0;
+	    if ($was_btn) {
+		# Add in reversal of previous state
+		if ($ACTION{$name}{'install'}) {
+		    $ACTION{$name}{'install'} = 0;
+		    $ACTION{$name}{'remove'} = 0;
+		} else {
+		    $ACTION{$name}{'install'} = $data{'available'};
+		    $ACTION{$name}{'remove'} = $data{'installed'};
+		}
+	    } else {
+		# the checkbutton only modifies install, take care remove
+		if ($ACTION{$name}{'install'}) {
+		    $ACTION{$name}{'remove'} = $data{'installed'};
+		} else {
+		    $ACTION{$name}{'remove'} = 0;
+		}
+	    }
+	    queue_for_remove(%data);
+	    queue_for_install(%data);
+	};
+	my $txt = ($data{'installed'} eq $data{'available'}) ?
+	    "Reinstall" : "Upgrade";
+	$install_btn->configure(-state => "normal",
+				-command => [$cmd, 1]);
+	$menu->add_checkbutton(-label => "$txt $name to $data{'available'}",
+			       -variable => \$ACTION{$name}{'install'},
+			       -onvalue => $data{'available'},
+			       -command => $cmd);
+    } elsif ($data{'available'}) {
+	my $cmd = sub {
+	    my $was_btn = shift || 0;
+	    if ($was_btn) {
+		if ($ACTION{$name}{'install'}) {
+		    $ACTION{$name}{'install'} = 0;
+		} else {
+		    $ACTION{$name}{'install'} = $data{'available'};
+		}
+	    }
+	    queue_for_install(%data);
+	};
+	$install_btn->configure(-state => "normal",
+				-command => [$cmd, 1]);
+	$menu->add_checkbutton(-label => "Install $name $data{'available'}",
+			       -variable => \$ACTION{$name}{'install'},
+			       -onvalue => $data{'available'},
+			       -command => $cmd);
+    }
+    if (!$data{'available'} && !$data{'installed'}) {
+	# Oddball packages that have no version?
+	$menu->add_command(-label => "$name", -state => "disabled");
+    }
+}
+
+sub queue_for_install {
+    my %data = @_;
+    my $name = $data{'name'};
+    my $ver = $ACTION{$name}{'install'};
+    my $state;
+    if ($ver) {
+	$state = $pkglist->state($name, "install");
+	$NUM{'install'}++;
     } else {
-	$ACTION{'install'} = $pkg->{version};
-	$install_btn->configure(-state => "normal");
+	$state = $pkglist->state($name, "!install");
+	$NUM{'install'}--;
+    }
+    update_actions();
+    print "$name $ver :: STATE: $state\n";
+}
+
+sub queue_for_remove {
+    my %data = @_;
+    my $name = $data{'name'};
+    my $ver = $ACTION{$name}{'remove'};
+    my $state;
+    if ($ver) {
+	$state = $pkglist->state($name, "remove");
+	$NUM{'remove'}++;
+    } else {
+	$state = $pkglist->state($name, "!remove");
+	$NUM{'remove'}--;
+    }
+    update_actions();
+    print "$name $ver :: STATE: $state\n";
+}
+
+sub update_actions {
+    if ($NUM{'install'} || $NUM{'remove'}) {
+	$go_btn->configure(-state => "normal");
+	$filter_mod->configure(-state => "normal");
+    } else {
+	$go_btn->configure(-state => "disabled");
+	$filter_mod->configure(-state => "disabled");
     }
 }
 
@@ -723,10 +828,9 @@ sub on_load {
     # Restore state from saved information
     # We would need to make sure these are reflected in UI elements
     $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
-    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "name abstract";
-    $FILTER{'upgradeable'} = $ppm->config_get("gui.filter.upgradeable") || 0;
-    $FILTER{'installed'} = $ppm->config_get("gui.filter.installed") || 0;
-    $FILTER{'modified'} = $ppm->config_get("gui.filter.modified") || 0;
+    $FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
+	|| "name abstract";
+    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || 0;
 
     my @view_keys = keys %VIEW;
     my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
@@ -746,10 +850,8 @@ sub on_exit {
     ## Current filter
     $ppm->config_save(
         "gui.filter" => $FILTER{'lastfilter'},
+        "gui.filter.fields" => $FILTER{'lastfields'},
         "gui.filter.type" => $FILTER{'lasttype'},
-        "gui.filter.upgradeable" => $FILTER{'upgradeable'},
-        "gui.filter.installed" => $FILTER{'installed'},
-        "gui.filter.modified" => $FILTER{'modified'},
     );
 
     ## Current selected package?

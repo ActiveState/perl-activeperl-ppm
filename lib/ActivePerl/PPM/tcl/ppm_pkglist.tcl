@@ -11,6 +11,7 @@
 package require snit
 package require treectrl
 package require widget::scrolledwindow
+package require style::as
 package provide ppm::pkglist 1.0
 
 snit::widgetadaptor pkglist {
@@ -53,8 +54,6 @@ snit::widgetadaptor pkglist {
 
 	$hull setwidget $win.tree
 
-	$tree debug configure -enable no -display no
-
 	$self tree-details
 
 	bindtags $tree [linsert [bindtags $tree] 1 $win]
@@ -96,25 +95,18 @@ snit::widgetadaptor pkglist {
 	}
 	array set opts $args
 	set opts(name) $name
-	if {[info exists opts(icon)]} {
-	    # extract icon to handle as an image
-	    set icon $opts(icon)
-	    unset opts(icon)
-	}
 	eval [linsert [array get opts] 0 $tree item text $item]
-	set img ""
-	if {[info exists icon]} {
-	    set img [::ppm::img $icon]
-	} else {
-	    if {$new} {
-		set img [::ppm::img default]
-	    } else {
-		set img [::ppm::img upgradeable]
-	    }
+
+	# determine appropriate state (adjusts icon)
+	set state ""
+	if {[info exists opts(installed)] && $opts(installed) ne ""} {
+	    lappend state installed
 	}
-	if {$img ne ""} {
-	    $tree item image $item name $img
+	if {[info exists opts(available)] && $opts(available) ne ""} {
+	    lappend state available
 	}
+	$self state $name $state
+
 	if {$new} {
 	    incr visible
 	}
@@ -144,13 +136,43 @@ snit::widgetadaptor pkglist {
 	return ""
     }
 
-    method icon {name {icon {}}} {
-	# This should return the selected install state
+    method state {name {state {}}} {
+	# This should return the current item state
 	set item [lindex $NAMES($name) 0]
-	if {$icon ne ""} {
-	    $tree item image $item name $icon
+	if {$state ne ""} {
+	    $tree item state forcolumn $item name $state
 	}
-	return [::ppm::img_name [$tree item image $item name]]
+	# get full state
+	set state [$tree item state forcolumn $item name]
+	set available [expr {[lsearch -exact $state "available"] > -1}]
+	set installed [expr {[lsearch -exact $state "installed"] > -1}]
+	set install   [expr {[lsearch -exact $state "install"] > -1}]
+	set remove    [expr {[lsearch -exact $state "remove"] > -1}]
+
+	set img ""; # make sure to get base image name before modifiers
+	if {$installed} {
+	    lappend img installed
+	    if {$available} {
+		lappend img upgradeable
+	    }
+	} elseif {$available} {
+	    lappend img available
+	} else {
+	    lappend img package
+	}
+	if {$remove} {
+	    lappend img remove
+	}
+	if {$install} {
+	    if {$installed} {
+		lappend img reinstall
+	    } else {
+		lappend img install
+	    }
+	}
+	$tree item image $item name [list [eval [linsert $img 0 ::ppm::img]]]
+
+	return $state
     }
 
     method clear {} {
@@ -171,7 +193,7 @@ snit::widgetadaptor pkglist {
     method filter {words args} {
 	array set opts {
 	    fields {name}
-	    states {}
+	    type {}
 	}
 	array set opts $args
 	set count 0
@@ -180,14 +202,21 @@ snit::widgetadaptor pkglist {
 		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
-	set checkState [llength $opts(states)]
 	if {$words eq "" || $words eq "*"} {
 	    # make everything visible (based on state)
 	    foreach {item} [$tree item children root] {
 		set vis 1
-		if {$checkState} {
-		    set state [::ppm::img_name [$tree item image $item name]]
-		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
+		if {$opts(type) ne ""} {
+		    set state [$tree item state forcolumn $item name]
+		    if {$opts(type) eq "installed"} {
+			set vis [expr {[lsearch -exact $state "installed"] > -1}]
+		    } elseif {$opts(type) eq "upgradeable"} {
+			set vis [expr {[lsearch -exact $state "installed"] > -1
+				       && [lsearch -exact $state "available"] > -1}]
+		    } elseif {$opts(type) eq "modified"} {
+			set vis [expr {[lsearch -exact $state "install"] > -1
+				       || [lsearch -exact $state "remove"] > -1}]
+		    }
 		}
 		$tree item configure $item -visible $vis
 		incr count $vis
@@ -205,9 +234,17 @@ snit::widgetadaptor pkglist {
 	    }
 	    foreach {item} [$tree item children root] {
 		set vis 1
-		if {$checkState} {
-		    set state [::ppm::img_name [$tree item image $item name]]
-		    set vis [expr {[lsearch -exact $opts(states) $state] > -1}]
+		if {$opts(type) ne ""} {
+		    set state [$tree item state forcolumn $item name]
+		    if {$opts(type) eq "installed"} {
+			set vis [expr {[lsearch -exact $state "installed"] > -1}]
+		    } elseif {$opts(type) eq "upgradeable"} {
+			set vis [expr {[lsearch -exact $state "installed"] > -1
+				       && [lsearch -exact $state "available"] > -1}]
+		    } elseif {$opts(type) eq "modified"} {
+			set vis [expr {[lsearch -exact $state "install"] > -1
+				       || [lsearch -exact $state "remove"] > -1}]
+		    }
 		}
 		if {$vis} {
 		    set str {}
@@ -276,7 +313,8 @@ snit::widgetadaptor pkglist {
 	}
 	$tree configure -itemheight $height
 
-	$tree column create -image [::ppm::img default] -text "Package Name" \
+	$tree column create -image [::ppm::img installed] \
+	    -text "Package Name" \
 	    -tag name -width 120 -borderwidth 1
 	$tree column create -width  40 -text "Area" -tag area \
 	    -borderwidth 1
@@ -289,12 +327,32 @@ snit::widgetadaptor pkglist {
 	$tree column create -width 120 -text "Author" -tag author \
 	    -borderwidth 1 -visible 0
 
-	set w [listbox $win.l]
-	set selbg [$w cget -selectbackground]
-	set selfg [$w cget -selectforeground]
-	destroy $w
+	set selbg $::style::as::highlightbg
+	set selfg $::style::as::highlightfg
+
+	$tree state define available
+	$tree state define installed
+	$tree state define install
+	$tree state define remove
+
+	set imgmap [list]
+	# available + installed == upgradeable
+	foreach {states imgs} {
+	    {available}	{available}
+	    {available install}		{available install}
+	    {installed}			{installed}
+	    {installed install}		{installed reinstall}
+	    {installed remove}		{installed remove}
+	    {available installed}	{installed upgradeable}
+	    {available installed install} {installed upgradeable reinstall}
+	    {available installed remove}  {installed upgradeable remove}
+	} {
+	    lappend imgmap [eval [linsert $imgs 0 ::ppm::img]] $states
+	}
+
 	# See vpage.tcl for examples
 	$tree element create elemImg image
+	#$tree element configure elemImg -image $imgmap
 	$tree element create elemText text -lines 1 \
 	    -fill [list $selfg {selected focus}]
 	$tree element create selRect rect \

@@ -16,42 +16,46 @@ namespace eval ::ppm {
     variable IMGDIR [file dirname [file dirname [info script]]]/images
 
     variable IMG ; # array of creates images
-    array set IMG {}
+    variable MOD ; # array of modifier images
     variable MAP ; # array mapping of semantic name -> image file
+    array set IMG {}
+    array set MOD {
+	install		{bullet_add.png}
+	reinstall	{bullet_go.png}
+	remove		{bullet_delete.png}
+	upgrade		{bullet_add.png}
+	upgradeable	{bullet_star.png}
+	filter		{zoom_corner.png}
+	modified	{bullet_go.png}
+    }
     array set MAP {
-	default		{package.png}
-	installed	{package_installed.png}
-	install		{package_add.png}
-	remove		{package_delete.png}
-	disabled	{package_disabled.png}
-	linked		{package_link.png}
-	upgrade		{package_upgrade.png}
-	upgradeable	{package_upgradeable.png}
-	modified	{package_go.png}
-	go		{package_go.png}
+	package		{package.png}
+	available	{package_disabled.png}
+	installed	{package.png}
 	refresh		{refresh.png}
-	search		{zoom.png}
 	config		{cog.png}
 	gecko		{gecko.png}
 	add		{add.png}
 	delete		{delete.png}
 	accept		{accept.png}
-	filter_modifier	{zoom_corner.png}
     }
 }
 namespace eval ::ppm::img {
     # namespace for image commands
 }
 
-proc ::ppm::img {what {type {}}} {
+proc ::ppm::img {what args} {
     variable MAP
+    variable MOD
     variable IMG
     if {[info exists MAP($what)]} {
 	set file $MAP($what)
+    } elseif {[info exists MOD($what)]} {
+	set file $MOD($what)
     } else {
 	set file $what
     }
-    set key $what/$type
+    set key [join [linsert $args 0 $what] /]
     if {![info exists IMG($key)]} {
 	variable IMGDIR
 	if {![file isdirectory $IMGDIR] || ![file exists $IMGDIR/$file]} {
@@ -59,19 +63,15 @@ proc ::ppm::img {what {type {}}} {
 		"unable to find image '$IMGDIR/$file' for '$what'"
 	}
 	set IMG($key) [image create photo ::ppm::img::$key -file $IMGDIR/$file]
-	if {$type eq ""} {
-	} elseif {$type eq "filter"} {
-	    set mod [img "filter_modifier"]
-	    $IMG($key) copy $mod; # add in modifier to top-left corner
-	} else {
-	    return -code error "unknown filter \"$type\""
+	foreach mod $args {
+	    set mimg [img $MOD($mod)]
+	    $IMG($key) copy $mimg; # overlay modifier
 	}
     }
     return $IMG($key)
 }
 
 proc ::ppm::img_name {img} {
-    # get regular name from image
-    regexp {^::ppm::img::([^/]+)/(.*)$} $img -> name type]
-    return $name
+    # get regular name from image made up of [list $what ?$mod ...?]
+    return [split [namespace tail $img] /]
 }
