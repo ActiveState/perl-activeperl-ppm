@@ -479,7 +479,6 @@ sub repo_sync {
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 		}
 		elsif ($$cref =~ /<REPOSITORY(?:SUMMARY)?\b/) {
-	    warn;
 		    my $status = ppm_status();
 		    $status->begin("Updating $repo->{name} database");
 		    _repo_delete_packages($dbh, $repo->{id});
