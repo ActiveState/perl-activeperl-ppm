@@ -36,6 +36,12 @@ sub simple_request {
 
     my $res = $self->SUPER::simple_request($req, @_);
 
+    if ($res->content_type =~ m,^application/(x-)?gzip$,) {
+	# tweak reponse so that 'decoded_content' will decode it
+	$res->content_type("application/octet-stream");
+	$res->push_header("Content-Encoding", "gzip");
+    }
+
     my $used = (time() - $before) || 1e-6;
     my $bytes = "";
     my $speed = "";
