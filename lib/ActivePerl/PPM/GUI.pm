@@ -60,6 +60,10 @@ if ($AQUA) {
     Tkx::set("::tk::mac::useThemedToplevel" => 1);
 }
 
+if ($windowingsystem eq "win32") {
+    $mw->g_wm_iconbitmap(-default => $^X);
+}
+
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
 
