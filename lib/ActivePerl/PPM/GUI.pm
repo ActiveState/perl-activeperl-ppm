@@ -222,28 +222,28 @@ my $filter_all = $toolbar->new_ttk__radiobutton(
     -command => [\&filter], -value => "",
 );
 $toolbar->add($filter_all, -pad => [0, 2]);
-Tkx::tooltip($filter_all, "Filter on all packages");
+Tkx::tooltip($filter_all, "All packages");
 my $filter_inst = $toolbar->new_ttk__radiobutton(
     -text => "Installed", -image => $IMG{'f_installed'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "installed",
 );
 $toolbar->add($filter_inst, -pad => [0, 2]);
-Tkx::tooltip($filter_inst, "Filter on installed packages");
+Tkx::tooltip($filter_inst, "Installed packages");
 my $filter_upgr = $toolbar->new_ttk__radiobutton(
     -text => "Upgradeable", -image => $IMG{'f_upgradeable'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "upgradeable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
-Tkx::tooltip($filter_upgr, "Filter on upgradeable packages");
+Tkx::tooltip($filter_upgr, "Upgradeable packages");
 my $filter_mod = $toolbar->new_ttk__radiobutton(
     -text => "Modified", -image => $IMG{'f_modified'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "modified",
 );
 $toolbar->add($filter_mod, -pad => [0, 2]);
-Tkx::tooltip($filter_mod, "Filter on packages to install/remove");
+Tkx::tooltip($filter_mod, "Packages to install/remove");
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
