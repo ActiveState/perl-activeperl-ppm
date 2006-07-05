@@ -613,10 +613,13 @@ sub select_item {
     my $pad = "\t";
     $details->configure(-state => "normal");
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
-    $details->insert('end', "$pkg->{abstract}\n", 'abstract');
+    $details->insert('end', "$pkg->{abstract}\n", 'abstract') if $pkg->{abstract};
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
-    $details->insert('end', "${pad}Released:\t$pkg->{release_date}\n");
-    $details->insert('end', "${pad}Author:\t$pkg->{author}\n");
+    if (my $date = $pkg->{release_date}) {
+	$date =~ s/ .*//;  # drop time
+	$details->insert('end', "${pad}Released:\t$date\n");
+    }
+    $details->insert('end', "${pad}Author:\t$pkg->{author}\n") if $pkg->{author};
     if (is_cpan_package($pkg->{name})) {
 	my $cpan_url = "http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/";
 	if ($pkg->{name} eq "Perl") {
@@ -635,7 +638,7 @@ sub select_item {
 	$details->insert('end', "\n");
     }
     if ($areaid) {
-	$details->insert('end', "Files:\n", 'h2');
+	$details->insert('end', "\nFiles:\n", 'h2');
 	for my $file ($area->package_files($pkg->{id})) {
 	    $details->insert('end', "\t$file\n");
 	}
