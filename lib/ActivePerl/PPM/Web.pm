@@ -27,7 +27,7 @@ package ActivePerl::PPM::Web::UA;
 use Time::HiRes qw(time);
 
 use base 'LWP::UserAgent';
-use ActivePerl::PPM::Logger qw(ppm_log);
+use ActivePerl::PPM::Logger qw(ppm_log ppm_status);
 
 sub simple_request {
     my $self = shift;
@@ -59,48 +59,23 @@ sub simple_request {
     return $res;
 }
 
-my @animation = ("/", "-", "\\", "|");
-my $animation_index = 0;
-my $last_p;
-my $last_t;
-my $is_tty = -t *STDOUT;
-
 sub progress {
     my($self, $status, $response) = @_;
-    return unless $is_tty;
+    return unless $self->{progress_what};
+    my @arg;
     if ($status eq "begin") {
-	$animation_index = 0;
-	$last_p = "";
-	$last_t = time;
-	print "$self->{progress_what}..." if $self->{progress_what};
-    }
-    elsif ($status eq "end") {
-	print "     \b\b\b\b\b";
-	print "done\n" if $self->{progress_what};
-    }
-    elsif ($status eq "tick") {
-	my $t = time;
-	my $d = $t - $last_t;
-	if ($d > 0.1) {
-	    my $c = $animation[$animation_index];
-	    $animation_index = ($animation_index + 1) % @animation;
-	    print $c . ("\b" x length($c));
-	    $last_t = $t;
-	}
+	push(@arg, $self->{progress_what});
     }
     elsif ($status =~ /^\d/) {
-	$status = 1 if $status > 1;
-	my $p = sprintf "%3.0f%%", $status * 100;
-	if ($last_p ne $p) {
-	    my $t = time;
-	    my $d = $t - $last_t;
-	    if ($status == 1 || $d > 0.5) {
-		print $p . ("\b" x length($p));
-		$last_p = $p;
-		$last_t = $t;
-	    }
+	push(@arg, $status);
+	$status = "tick";
+    }
+    elsif ($status eq "end") {
+	unless ($response->is_success) {
+	    push(@arg, $response->code);
 	}
     }
+    ppm_status($status, @arg);
 }
 
 1;

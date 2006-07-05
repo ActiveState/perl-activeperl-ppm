@@ -24,6 +24,7 @@ sub LOG_INFO    () { 6 }
 sub LOG_DEBUG   () { 7 }
 
 my $logger;
+my $status;
 
 sub ppm_logger {
     return $logger ||= ActivePerl::PPM::Logger->new;
@@ -38,7 +39,22 @@ sub ppm_debug {
 }
 
 sub ppm_status {
-    ($logger || ppm_logger())->status(@_);
+    unless ($status) {
+	if (-t *STDOUT) {
+	    require ActivePerl::PPM::Status::Term;
+	    $status = ActivePerl::PPM::Status::Term->new;
+	    $| = 1;
+	}
+	else {
+	    require ActivePerl::PPM::Status;
+	    $status = ActivePerl::PPM::Status->new;
+	}
+    }
+    if (@_) {
+	my $method = shift;
+	$status->$method(@_);
+    }
+    return $status;
 }
 
 #
@@ -110,12 +126,6 @@ sub log {
 	$t[1] ++;      # month
 	$fh->print(sprintf "%04d-%02d-%02dT%02d:%02d:%02d <%d> %s", @t, $prio, $msg);
     }
-}
-
-sub status {
-    my($self, $msg) = @_;
-    $msg = "done" unless $msg;
-    $self->log(LOG_INFO, $msg);
 }
 
 sub logfile {

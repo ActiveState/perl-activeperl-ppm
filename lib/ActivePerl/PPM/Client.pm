@@ -8,7 +8,7 @@ use ActivePerl::PPM::InstallArea ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
-use ActivePerl::PPM::Logger qw(ppm_log ppm_debug);
+use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua);
 
 use ActiveState::Path qw(is_abs_path join_path);
@@ -395,7 +395,7 @@ sub repo_sync {
 	}
 	else {
 	    my $ua = web_ua();
-	    local $ua->{progress_what} = "Syncing $repo->{name}";
+	    local $ua->{progress_what} = "Downloading $repo->{name} packlist";
 	    my $res;
 	    if ($repo->{packlist_last_status_code}) {
 		# if we continue to get errors from repo, only hit it occasionally
@@ -479,16 +479,22 @@ sub repo_sync {
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 		}
 		elsif ($$cref =~ /<REPOSITORY(?:SUMMARY)?\b/) {
+	    warn;
+		    my $status = ppm_status();
+		    $status->begin("Updating $repo->{name} database");
 		    _repo_delete_packages($dbh, $repo->{id});
+		    $status->tick;
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
 			my $pkg = shift;
 			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, $self->{arch});
 			$pkg->{repo_id} = $repo->{id};
 			$pkg->dbi_store($dbh) if $pkg->{codebase};
+			$status->tick;
 		    });
 		    $p->parse_more($$cref);
 		    $p->parse_done;
+		    $status->end;
 		}
 		else {
 		    ppm_log("ERR", "Unrecognized repo type " . $res->content_type);
@@ -528,9 +534,9 @@ sub _check_ppd {
     my $ua = web_ua();
     (my $base_url = $rel_url) =~ s,.*/,,;
     $base_url =~ s,\.ppd$,,;
-    local $ua->{progress_what} = "Syncing $repo->{name} $base_url";
+    local $ua->{progress_what} = "Downloading $repo->{name} $base_url";
     my $ppd_res = $ua->get($abs_url, @h);
-    print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
+    #print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
     if ($row && $ppd_res->code == 304) {  # not modified
 	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
 	delete $delete_package->{$row->{id}} if $delete_package;
@@ -841,6 +847,7 @@ sub install {
     die "No packages to install" unless @pkgs;
 
     my $ua = web_ua();
+    my $status = ppm_status();
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
     my $install_summary;
     eval {
@@ -865,7 +872,7 @@ sub install {
 		}
 	    }
 	    else {
-		print "Downloading $name...";
+		local $ua->{progress_what} = "Downloading $name";
 		my $save = $pkg->{codebase_file} = "$tmpdir/$name.$pkg->{codebase_type}";
 		#print "\n    $codebase ==> $save...";
 		my $res = $ua->get($codebase, ":content_file" => $save);
@@ -877,14 +884,13 @@ sub install {
 		    }
 		}
 		# XXX An MD5 checksum for the tarball would be a good thing
-		print "done\n";
 	    }
 	}
 
 	# unpack
 	for my $pkg (@pkgs) {
 	    my $pname = $pkg->name_version;
-	    print "Unpacking $pname...";
+	    $status->begin("Unpacking $pname");
 	    my $codebase_file = $pkg->{codebase_file};
 	    if ($pkg->{codebase_type} eq "tgz") {
 		require Archive::Tar;
@@ -917,7 +923,7 @@ sub install {
 	    else {
 		die "Don't know how to unpack $pkg->{codebase_type} files";
 	    }
-	    print "done\n";
+	    $status->end;
 	}
 
 	# relocate
@@ -926,7 +932,7 @@ sub install {
 	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
 	    my $prefix = do { require Config; $Config::Config{prefix} };
 	    for my $pkg (@pkgs) {
-		print "Relocating ", $pkg->name_version, "...";
+		$status->begin("Relocating " . $pkg->name_version);
 		ActiveState::RelocateTree::relocate (
 		    to      => $pkg->{blib},
 		    inplace => 1,
@@ -934,7 +940,7 @@ sub install {
 	            replace => $prefix,
                     quiet   => 1,
 		);
-		print "done\n";
+		$status->end;
 	    }
 	}
 
@@ -947,9 +953,9 @@ sub install {
 		for my $pkg (@pkgs) {
 		    my $pname = $pkg->name_version;
 		    next unless -d $pname;
-		    print "Generating HTML for $pname...";
+		    $status->begin("Generating HTML for $pname");
 		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => $pname);
-		    print "done\n";
+		    $status->end;
 		}
 	    };
 	    chdir($pwd) || die "Can't chdir back to $pwd: $!";
@@ -959,13 +965,13 @@ sub install {
 	# install
 	my $to = $area->name;
 	$to = " to $to area" if $to;
-	print "Installing$to...";
+	$status->begin("Installing$to");
 	$install_summary = $area->install(@pkgs);
 	if ($install_summary) {
-	    print "done\n";
+	    $status->end;
 	}
 	else {
-	    print "\n";
+	    $status->end("failed");
 	    die $@;
 	}
 

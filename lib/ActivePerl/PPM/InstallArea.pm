@@ -702,7 +702,7 @@ sub sync_db {
     my $dbh = $self->dbh;
     local $dbh->{AutoCommit} = 0;
     my $name = $self->name || "unnamed";
-    ppm_status("Syncing $name PPM database with .packlists");
+    ppm_status("begin", "Syncing $name PPM database with .packlists");
     my $unchanged = 0;
     require ExtUtils::Packlist;
     my $pkglists = $self->packlists;
@@ -790,7 +790,7 @@ sub sync_db {
     }
     ppm_log("NOTICE", "$unchanged packages found up-to-date")
 	if $unchanged;
-    ppm_status("");
+    ppm_status("end");
 }
 
 sub _dirty_file {
