@@ -1049,7 +1049,7 @@ This will install the "Foo" directory into the archlib area and the
 
 =back
 
-=item $area->uninstall( $pkg )
+=item $area->uninstall( $name )
 
 Removes the given package and its installed files.  Croaks if no such
 package was installed in the first place.  Uninstalling a package
