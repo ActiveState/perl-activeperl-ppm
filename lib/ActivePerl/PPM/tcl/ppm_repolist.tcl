@@ -144,6 +144,12 @@ snit::widgetadaptor repolist {
     }
 
     method tree-details {} {
+	set height [font metrics [$tree cget -font] -linespace]
+	if {$height < 18} {
+	    set height 18
+	}
+	$tree configure -itemheight $height
+
 	foreach {lbl tag opts} {
 	    "Id"           id      {-visible 0}
 	    "Repository"   repo    {-width 150}
