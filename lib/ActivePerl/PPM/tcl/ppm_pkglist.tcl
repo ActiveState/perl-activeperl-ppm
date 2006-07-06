@@ -158,7 +158,7 @@ snit::widgetadaptor pkglist {
 	if {$installed} {
 	    lappend img installed
 	    if {$available} {
-		lappend img upgradeable
+		lappend img upgradable
 	    }
 	} elseif {$available} {
 	    lappend img available
@@ -198,7 +198,7 @@ snit::widgetadaptor pkglist {
     method filter {words args} {
 	array set opts {
 	    fields {name}
-	    type {}
+	    type {all}
 	}
 	array set opts $args
 	set count 0
@@ -211,11 +211,11 @@ snit::widgetadaptor pkglist {
 	    # make everything visible (based on state)
 	    foreach {item} [$tree item children root] {
 		set vis 1
-		if {$opts(type) ne ""} {
+		if {$opts(type) ne "all"} {
 		    set state [$tree item state forcolumn $item name]
 		    if {$opts(type) eq "installed"} {
 			set vis [expr {[lsearch -exact $state "installed"] > -1}]
-		    } elseif {$opts(type) eq "upgradeable"} {
+		    } elseif {$opts(type) eq "upgradable"} {
 			set vis [expr {[lsearch -exact $state "installed"] > -1
 				       && [lsearch -exact $state "available"] > -1}]
 		    } elseif {$opts(type) eq "modified"} {
@@ -239,11 +239,11 @@ snit::widgetadaptor pkglist {
 	    }
 	    foreach {item} [$tree item children root] {
 		set vis 1
-		if {$opts(type) ne ""} {
+		if {$opts(type) ne "all"} {
 		    set state [$tree item state forcolumn $item name]
 		    if {$opts(type) eq "installed"} {
 			set vis [expr {[lsearch -exact $state "installed"] > -1}]
-		    } elseif {$opts(type) eq "upgradeable"} {
+		    } elseif {$opts(type) eq "upgradable"} {
 			set vis [expr {[lsearch -exact $state "installed"] > -1
 				       && [lsearch -exact $state "available"] > -1}]
 		    } elseif {$opts(type) eq "modified"} {
@@ -341,16 +341,16 @@ snit::widgetadaptor pkglist {
 	$tree state define remove
 
 	set imgmap [list]
-	# available + installed == upgradeable
+	# available + installed == upgradable
 	foreach {states imgs} {
 	    {available}	{available}
 	    {available install}		{available install}
 	    {installed}			{installed}
 	    {installed install}		{installed reinstall}
 	    {installed remove}		{installed remove}
-	    {available installed}	{installed upgradeable}
-	    {available installed install} {installed upgradeable reinstall}
-	    {available installed remove}  {installed upgradeable remove}
+	    {available installed}	{installed upgradable}
+	    {available installed install} {installed upgradable reinstall}
+	    {available installed remove}  {installed upgradable remove}
 	} {
 	    lappend imgmap [eval [linsert $imgs 0 ::ppm::img]] $states
 	}

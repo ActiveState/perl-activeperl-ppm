@@ -24,7 +24,7 @@ namespace eval ::ppm {
 	reinstall	{bullet_go.png}
 	remove		{bullet_delete.png}
 	upgrade		{bullet_add.png}
-	upgradeable	{bullet_star.png}
+	upgradable	{bullet_star.png}
 	filter		{zoom_corner.png}
 	modified	{bullet_go.png}
     }

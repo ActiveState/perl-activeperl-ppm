@@ -101,7 +101,7 @@ $FILTER{'filter'} = "";
 $FILTER{'lastfilter'} = "";
 $FILTER{'fields'} = "name abstract";
 $FILTER{'lastfields'} = $FILTER{'fields'};
-$FILTER{'type'} = ""; # "" installed upgradeable modified
+$FILTER{'type'} = "all"; # all installed upgradable modified
 $FILTER{'lasttype'} = $FILTER{'type'};
 
 my %VIEW;
@@ -124,7 +124,7 @@ $IMG{'install'} = [Tkx::ppm__img('package', 'install')];
 $IMG{'remove'} = [Tkx::ppm__img('package', 'remove')];
 $IMG{'go'} = [Tkx::ppm__img('package', 'modified')];
 $IMG{'f_all'} = [Tkx::ppm__img('available', 'filter')];
-$IMG{'f_upgradeable'} = [Tkx::ppm__img('package', 'filter', 'upgradeable')];
+$IMG{'f_upgradable'} = [Tkx::ppm__img('package', 'filter', 'upgradable')];
 $IMG{'f_installed'} = [Tkx::ppm__img('package', 'filter')];
 $IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 
@@ -229,7 +229,7 @@ $filter->g_bind('<Key>', [\&filter_onkey]);
 my $filter_all = $toolbar->new_ttk__radiobutton(
     -text => "All", -image => $IMG{'f_all'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "",
+    -command => [\&filter], -value => "all",
 );
 $toolbar->add($filter_all, -pad => [0, 2]);
 Tkx::tooltip($filter_all, "All packages");
@@ -241,12 +241,12 @@ my $filter_inst = $toolbar->new_ttk__radiobutton(
 $toolbar->add($filter_inst, -pad => [0, 2]);
 Tkx::tooltip($filter_inst, "Installed packages");
 my $filter_upgr = $toolbar->new_ttk__radiobutton(
-    -text => "Upgradeable", -image => $IMG{'f_upgradeable'},
+    -text => "Upgradable", -image => $IMG{'f_upgradable'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "upgradeable",
+    -command => [\&filter], -value => "upgradable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
-Tkx::tooltip($filter_upgr, "Upgradeable packages");
+Tkx::tooltip($filter_upgr, "Upgradable packages");
 my $filter_mod = $toolbar->new_ttk__radiobutton(
     -text => "Modified", -image => $IMG{'f_modified'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
@@ -501,7 +501,7 @@ sub menus {
     my $menu = $mw->new_menu();
     $mw->configure(-menu => $menu);
 
-    my $sm;
+    my ($sm, $ssm);
 
     # File menu
     $sm = $menu->new_menu(-name => "file");
@@ -532,7 +532,24 @@ sub menus {
 			 -variable => \$VIEW{'statusbar'},
 			 -command => [\&view, 'statusbar']);
     $sm->add_separator();
-    my $ssm = $fields_menu = $sm->new_menu(-name => "fields");
+    $sm->add_radiobutton(-label => "All Packages",
+			 -variable => \$FILTER{'type'},
+			 -value => "all",
+			 -command => [\&filter]);
+    $sm->add_radiobutton(-label => "Installed Packages",
+			 -variable => \$FILTER{'type'},
+			 -value => "installed",
+			 -command => [\&filter]);
+    $sm->add_radiobutton(-label => "Upgradable Packages",
+			 -variable => \$FILTER{'type'},
+			 -value => "upgradable",
+			 -command => [\&filter]);
+    $sm->add_radiobutton(-label => "Packages to Install/Remove",
+			 -variable => \$FILTER{'type'},
+			 -value => "modified",
+			 -command => [\&filter]);
+    $sm->add_separator();
+    $ssm = $fields_menu = $sm->new_menu(-name => "fields");
     $sm->add_cascade(-label => "Fields", -menu => $ssm);
     $ssm->add_checkbutton(-label => "Area",
 			  -variable => \$VIEW{'area'},
@@ -676,7 +693,7 @@ sub select_item {
 	$ACTION{$name}{'repo_pkg'} = $repo_pkg;
     }
     # The icon represents the current actionable state:
-    #   default installed upgradeable install remove upgrade
+    #   default installed upgradable install remove upgrade
     $remove_btn->configure(-state => "disabled");
     $install_btn->configure(-state => "disabled");
     $menu->delete(0, 'end');
@@ -985,7 +1002,7 @@ sub on_load {
     $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
     $FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
 	|| "name abstract";
-    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "";
+    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "all";
 
     my @view_keys = keys %VIEW;
     my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
@@ -1006,7 +1023,7 @@ sub on_exit {
     $ppm->config_save(
         "gui.filter" => $FILTER{'lastfilter'},
         "gui.filter.fields" => $FILTER{'lastfields'},
-        "gui.filter.type" => ($FILTER{'lasttype'} eq 'modified' ? "" : $FILTER{'lasttype'}),
+        "gui.filter.type" => ($FILTER{'lasttype'} eq 'modified' ? "all" : $FILTER{'lasttype'}),
     );
 
     ## Current selected package?
