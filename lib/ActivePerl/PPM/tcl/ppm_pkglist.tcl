@@ -31,7 +31,7 @@ snit::widgetadaptor pkglist {
 
     option -selectcommand -default ""
     option -itembackground -default "" -configuremethod C-itembackground
-    option -sortbackground -default "#f7f7f7" -configuremethod C-sortbackground
+    option -sortbackground -default "" -configuremethod C-sortbackground
 
     variable NAMES -array {}
 
@@ -67,17 +67,18 @@ snit::widgetadaptor pkglist {
     }
 
     method C-itembackground {option value} {
-	foreach col [$tree column list] {
-	    $tree column configure $col -itembackground $value
-	}
+	$tree column configure all -itembackground $value
 	# don't lose sort column
-	$tree column configure $sortcolumn \
-	    -itembackground $options(-sortbackground)
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $sortcolumn \
+		-itembackground $options(-sortbackground)
+	}
 	set options($option) $value
     }
 
     method C-sortbackground {option value} {
-	$tree column configure $sortcolumn -itembackground $value
+	$tree column configure $sortcolumn -itembackground \
+	    [expr {[llength $value] ? $value : $options(-itembackground)}]
 	set options($option) $value
     }
 
@@ -306,8 +307,11 @@ snit::widgetadaptor pkglist {
 		-itembackground $options(-itembackground)
 	    set sortcolumn $col
 	}
-	$tree column configure $col -arrow $arrow \
-	    -itembackground $options(-sortbackground)
+	$tree column configure $col -arrow $arrow
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $col \
+		-itembackground $options(-sortbackground)
+	}
 	$self sort
     }
 
@@ -318,19 +322,16 @@ snit::widgetadaptor pkglist {
 	}
 	$tree configure -itemheight $height
 
-	$tree column create -image [::ppm::img installed] \
-	    -text "Package Name" \
-	    -tag name -width 120 -borderwidth 1
-	$tree column create -width  40 -text "Area" -tag area \
-	    -borderwidth 1
-	$tree column create -width  60 -text "Installed" \
-	    -tag installed -borderwidth 1
-	$tree column create -width  60 -text "Available" \
-	    -tag available -borderwidth 1
-	$tree column create -text "Abstract" -tag abstract \
-	    -borderwidth 1 -expand 1 -squeeze 1
-	$tree column create -width 120 -text "Author" -tag author \
-	    -borderwidth 1 -visible 0
+	$tree column create -width 120 -text "Package Name" -tag name \
+	    -image [::ppm::img installed]
+	$tree column create -width  40 -text "Area" -tag area
+	$tree column create -width  60 -text "Installed" -tag installed
+	$tree column create -width  60 -text "Available" -tag available
+	$tree column create -text "Abstract" -tag abstract -expand 1 -squeeze 1
+	$tree column create -width 120 -text "Author" -tag author -visible 0
+	# common configuration options
+	$tree column configure all -borderwidth 1 \
+	    -itembackground $options(-itembackground)
 
 	set selbg $::style::as::highlightbg
 	set selfg $::style::as::highlightfg
@@ -389,8 +390,11 @@ snit::widgetadaptor pkglist {
 	    %T column move %C %b
 	}
 
-	$tree column configure $sortcolumn -arrow up \
-	    -itembackground $options(-sortbackground)
+	$tree column configure $sortcolumn -arrow up
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $sortcolumn \
+		-itembackground $options(-sortbackground)
+	}
     }
 
     method _select {t count lost new} {
