@@ -195,6 +195,13 @@ sub new_dbi {
     my $pkg = $dbh->selectrow_hashref("SELECT * FROM package WHERE $where", undef, @bind);
     return undef unless $pkg;
 
+    # fix up potential Unicode fields
+    for my $f (qw(author abstract)) {
+	if (($pkg->{$f} || "") =~ /[^\x00-\x7F]/) {
+	    utf8::decode($pkg->{$f});
+	}
+    }
+
     if (1) {
         my $sth = $dbh->prepare("SELECT role, name, version FROM feature WHERE package_id = ?");
         $sth->execute($pkg->{id});
