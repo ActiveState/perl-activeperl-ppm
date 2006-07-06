@@ -391,7 +391,7 @@ sub sync {
     $repolist->clear();
     for my $repo_id ($ppm->repos) {
 	my $repo = $REPOS{$repo_id} = $ppm->repo($repo_id);
-	$repolist->add($repoid,
+	$repolist->add($repo_id,
 		       repo => $repo->{name},
 		       url => $repo->{packlist_uri},
 		       num => $repo->{pkgs},
@@ -400,7 +400,7 @@ sub sync {
     }
 
     for my $area_name ($ppm->areas) {
-	$AREA{$area_name} = $ppm->area($area_name);
+	$AREAS{$area_name} = $ppm->area($area_name);
     }
 }
 
@@ -415,7 +415,7 @@ sub full_refresh {
 sub merge_area_items {
     my $count = 0;
     for my $area_name (sort keys %AREAS) {
-	my $area = $AREA{$area_name};
+	my $area = $AREAS{$area_name};
 	my @fields = ("id", "name", "version", "release_date", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
@@ -719,7 +719,8 @@ sub select_item {
 			       -variable => \$ACTION{$name}{'remove'},
 			       -onvalue => $data{'installed'},
 			       -command => $cmd);
-	if ($data{'area'} eq "perl") {
+	if ($data{'area'} && (($data{'area'} eq "perl")
+				  || $AREAS{$data{'area'}}->readonly)) {
 	    # perl area items should not be removed
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $remove_btn->configure(-state => "disabled");
@@ -817,12 +818,12 @@ sub update_actions {
     if ($NUM{'install'} || $NUM{'remove'}) {
 	$go_btn->configure(-state => "normal");
 	$filter_mod->configure(-state => "normal");
-	$view_menu->entryconfigure("Packages to Install/Upgrade",
+	$view_menu->entryconfigure("Packages to Install/Remove",
 				   -state => "normal");
     } else {
 	$go_btn->configure(-state => "disabled");
 	$filter_mod->configure(-state => "disabled");
-	$view_menu->entryconfigure("Packages to Install/Upgrade",
+	$view_menu->entryconfigure("Packages to Install/Remove",
 				   -state => "disabled");
     }
 }
