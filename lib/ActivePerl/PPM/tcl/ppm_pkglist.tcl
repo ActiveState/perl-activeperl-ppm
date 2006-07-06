@@ -1,6 +1,11 @@
 # pkglist.tcl --
 #
-#	This file implements package pkglist, which  ...
+#	This file implements package pkglist, which defines a megawidget
+#	for use in displaying ppm packages.
+#
+#	This can be implemented in pure Perl with the Tkx::MegaConfig
+#	module, but is implemented here in Tcl as an example of the
+#	possibility of integration.
 #
 # Copyright (c) 2006 ActiveState Software Inc
 #
