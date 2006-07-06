@@ -13,8 +13,8 @@ my $ppm = $::ppm;
 $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 
 # these will be filled in the sync()
-my @areas;
-my @repos;
+my %AREAS;
+my %REPOS;
 
 my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
@@ -130,6 +130,7 @@ $IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 
 my $action_menu;
 my $fields_menu;
+my $view_menu;
 
 on_load();
 
@@ -387,10 +388,9 @@ sub refresh {
 
 sub sync {
     $ppm->repo_sync;
-    @repos = $ppm->repos;
     $repolist->clear();
-    for my $repoid (@repos) {
-	my $repo = $ppm->repo($repoid);
+    for my $repo_id ($ppm->repos) {
+	my $repo = $REPOS{$repo_id} = $ppm->repo($repo_id);
 	$repolist->add($repoid,
 		       repo => $repo->{name},
 		       url => $repo->{packlist_uri},
@@ -399,7 +399,9 @@ sub sync {
 		   );
     }
 
-    @areas = $ppm->areas;
+    for my $area_name ($ppm->areas) {
+	$AREA{$area_name} = $ppm->area($area_name);
+    }
 }
 
 sub full_refresh {
@@ -412,8 +414,8 @@ sub full_refresh {
 
 sub merge_area_items {
     my $count = 0;
-    for my $area_name ($ppm->areas) {
-	my $area = $ppm->area($area_name);
+    for my $area_name (sort keys %AREAS) {
+	my $area = $AREA{$area_name};
 	my @fields = ("id", "name", "version", "release_date", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
@@ -523,7 +525,7 @@ sub menus {
     }
 
     # View menu
-    $sm = $menu->new_menu(-name => "view");
+    $sm = $view_menu = $menu->new_menu(-name => "view");
     $menu->add_cascade(-label => "View", -menu => $sm);
     $sm->add_checkbutton(-label => "Toolbar",
 			 -variable => \$VIEW{'toolbar'},
@@ -544,6 +546,7 @@ sub menus {
 			 -variable => \$FILTER{'type'},
 			 -value => "upgradable",
 			 -command => [\&filter]);
+    # this text linked in update_actions for entryconfigure
     $sm->add_radiobutton(-label => "Packages to Install/Remove",
 			 -variable => \$FILTER{'type'},
 			 -value => "modified",
@@ -711,10 +714,16 @@ sub select_item {
 	};
 	$remove_btn->configure(-state => "normal",
 			       -command => [$cmd, 1]);
-	$menu->add_checkbutton(-label => "Remove $name $data{'installed'}",
+	my $txt = "Remove $name $data{'installed'}";
+	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$name}{'remove'},
 			       -onvalue => $data{'installed'},
 			       -command => $cmd);
+	if ($data{'area'} eq "perl") {
+	    # perl area items should not be removed
+	    $menu->entryconfigure($txt, -state => "disabled");
+	    $remove_btn->configure(-state => "disabled");
+	}
     }
     if ($data{'available'} && $data{'installed'}) {
 	my $cmd = sub {
@@ -808,9 +817,13 @@ sub update_actions {
     if ($NUM{'install'} || $NUM{'remove'}) {
 	$go_btn->configure(-state => "normal");
 	$filter_mod->configure(-state => "normal");
+	$view_menu->entryconfigure("Packages to Install/Upgrade",
+				   -state => "normal");
     } else {
 	$go_btn->configure(-state => "disabled");
 	$filter_mod->configure(-state => "disabled");
+	$view_menu->entryconfigure("Packages to Install/Upgrade",
+				   -state => "disabled");
     }
 }
 
