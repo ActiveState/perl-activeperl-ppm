@@ -48,6 +48,7 @@ Tkx::package_require('widget::dialog');
 Tkx::package_require('widget::statusbar');
 Tkx::package_require('widget::toolbar');
 Tkx::package_require('widget::menuentry');
+Tkx::package_require('widget::panelframe');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('ppm::repolist');
 Tkx::package_require('style::as');
@@ -63,6 +64,13 @@ if ($AQUA) {
 if ($windowingsystem eq "win32") {
     $mw->g_wm_iconbitmap(-default => $^X);
 }
+
+# This code makes themed frames use the notebook's background color.
+# We restrict the use of this to those frames in notebooks.
+Tkx::style(layout => "NotebookPane",
+	   ["NotebookPane.background", -sticky => "news", -expand => 1]);
+Tkx::option_add("*TNotebook.TFrame.style", "NotebookPane");
+Tkx::option_add("*TNotebook.TLabelframe.style", "NotebookPane");
 
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
@@ -111,7 +119,7 @@ my %ACTION;
 
 my %IMG;
 $IMG{'refresh'} = [Tkx::ppm__img('refresh')];
-$IMG{'config'} = [Tkx::ppm__img('config')];
+$IMG{'prefs'} = [Tkx::ppm__img('config')];
 $IMG{'install'} = [Tkx::ppm__img('package', 'install')];
 $IMG{'remove'} = [Tkx::ppm__img('package', 'remove')];
 $IMG{'go'} = [Tkx::ppm__img('package', 'modified')];
@@ -185,14 +193,16 @@ Tkx::grid($statusbar, -sticky => "ew");
 Tkx::grid(rowconfigure => $mw, 1, -weight => 1);
 Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
-my $config_dlg = $mw->new_widget__dialog(-title => 'PPM Configuration',
-					 -parent => $mw, -place => 'over',
-					 -type => 'ok',  -modal => 'none',
-					 -synchronous => 0);
+my $prefs_dialog = $mw->new_widget__dialog(
+    -title => 'PPM Preferences', -padding => 4,
+    -parent => $mw, -place => 'over',
+    -type => 'ok', -modal => 'none',
+    -synchronous => 0, -separator => 0,
+);
 my $repolist;
 my $repo_add;
 my $repo_del;
-build_config_dialog($config_dlg);
+build_prefs_dialog($prefs_dialog);
 
 ## Toolbar items
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
@@ -264,22 +274,22 @@ my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 $toolbar->add($go_btn, -pad => [0, 2]);
 
 # Sync/config buttons
-my $sync = $toolbar->new_ttk__button(-text => "Sync",
-				     -image => $IMG{'refresh'},
-				     -style => "Toolbutton",
-				     -command => [\&full_refresh]);
-Tkx::tooltip($sync, "Synchronize database");
-$toolbar->add($sync, -separator => 1, -pad => [4, 2, 0]);
+my $sync_btn = $toolbar->new_ttk__button(-text => "Sync",
+					 -image => $IMG{'refresh'},
+					 -style => "Toolbutton",
+					 -command => [\&full_refresh]);
+Tkx::tooltip($sync_btn, "Synchronize database");
+$toolbar->add($sync_btn, -separator => 1, -pad => [4, 2, 0]);
 
-my $config = $toolbar->new_ttk__button(-text => "Config",
-				       -image => $IMG{'config'},
-				       -style => "Toolbutton",
-				       -command => sub {
-					   $config_dlg->display();
-					   Tkx::focus(-force => $config_dlg);
+my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
+					  -image => $IMG{'prefs'},
+					  -style => "Toolbutton",
+					  -command => sub {
+					   $prefs_dialog->display();
+					   Tkx::focus(-force => $prefs_dialog);
 				       });
-Tkx::tooltip($config, "PPM Configuration");
-$toolbar->add($config, -pad => [0, 2]);
+Tkx::tooltip($prefs_btn, "PPM Configuration");
+$toolbar->add($prefs_btn, -pad => [0, 2]);
 
 ## Statusbar items
 my %NUM;
@@ -503,6 +513,11 @@ sub menus {
     $sm->add_command(-label => "Cut", -state => "disabled");
     $sm->add_command(-label => "Copy", -state => "disabled");
     $sm->add_command(-label => "Paste", -state => "disabled");
+    if (!$AQUA) {
+	$sm->add_separator();
+	$sm->add_command(-label => "Preferences",
+			 -command => sub { $prefs_dialog->display(); });
+    }
 
     # View menu
     $sm = $menu->new_menu(-name => "view");
@@ -583,7 +598,8 @@ sub menus {
 	$sm->add_command(-label => "About PPM");
 	$sm->add_separator();
 	$sm->add_command(-label => "Preferences...",
-			 -accelerator => "Command-,");
+			 -accelerator => "Command-,",
+			 -command => sub { $prefs_dialog->display(); });
     }
 
     return $menu;
@@ -874,10 +890,27 @@ sub select_repo_item {
     $repo_del->configure(-state => "normal");
 }
 
-sub build_config_dialog {
+sub build_prefs_dialog {
     my $top = shift;
-    my $f = Tkx::widget->new($top->getframe());
-    $f->configure(-padding => 4);
+
+    # Preferences tabs
+    my $nb = $top->new_ttk__notebook();
+    Tkx::ttk__notebook__enableTraversal($nb);
+    $top->setwidget($nb);
+
+    my $f;
+    # Areas tab
+    $f = $nb->new_ttk__frame(-padding => 8);
+    $nb->add($f, -text => "Areas", -underline => 0);
+    # Select this tab as default
+    $nb->select($f);
+
+    Tkx::grid(columnconfigure => $f, 0, -weight => 1);
+    Tkx::grid(rowconfigure => $f, 0, -weight => 1);
+
+    # Repositories tab
+    $f = $nb->new_ttk__frame(-padding => 8);
+    $nb->add($f, -text => "Repositories", -underline => 0);
 
     my $sw = $f->new_widget__scrolledwindow();
     $repolist = $sw->new_repolist(-width => 450, -height => 100,
@@ -889,9 +922,9 @@ sub build_config_dialog {
 				    -image => Tkx::ppm__img('add'));
     $repo_del = $f->new_ttk__button(-text => "Delete", -state => "disabled",
 				    -image => Tkx::ppm__img('delete'));
-    my $addl = $f->new_ttk__label(-text => "Add Repository:",
-				  -font => 'ASfontBold');
-    my $addf = $f->new_ttk__frame(-padding => [6, 2, 6, 0]);
+    my $addl = $f->new_widget__panelframe(-text => "Add Repository:");
+    my $addf = $addl->new_ttk__frame(-padding => [6, 2]);
+    $addl->setwidget($addf);
     my $rnamel = $addf->new_ttk__label(-text => "Name:", -anchor => 'w');
     my $rnamee = $addf->new_ttk__entry();
     my $rlocnl = $addf->new_ttk__label(-text => "Location:", -anchor => 'w');
@@ -902,16 +935,43 @@ sub build_config_dialog {
     my $rpasse = $addf->new_ttk__entry();
     my $opttxt = "(optional, for FTP and HTTP repositories only)";
     my $opt0 = $addf->new_ttk__label(-text => $opttxt, -font => "ASfont-1");
-    #my $opt1 = $addf->new_ttk__label(-text => $opttxt, -font => "ASfont-1");
+    my $add_sub = sub {
+	my $name = $rnamee->get();
+	my $url = $rlocne->get();
+	my $user = $rusere->get();
+	my $pass = $rpasse->get();
+	return unless $name && $url;
+	# This requires duplication of code from do_repo
+	if (-d $url) {
+	    require URI::file;
+	    $url = URI::file->new_abs($url);
+	}
+	if ($user) {
+	    $user .= ":$pass" if defined $pass;
+	    $url = URI->new($url);
+	    $url->userinfo($user);
+	    $url = $url->as_string;
+	}
+	eval { $ppm->repo_add(name => $name, packlist_uri => $url); };
+	if ($@) {
+	    Tkx::tk___messageBox(-title => "Error Adding Repository",
+				 -message => "Error adding repository:\n$@",
+				 -type => "ok", -icon => "error");
+	} else {
+	    full_refresh();
+	}
+    };
+    my $save_btn = $addf->new_ttk__button(-text => "Add",
+					  -command => $add_sub);
     Tkx::grid($rnamel, $rnamee, '-', -sticky => 'sew', -pady => 1);
     Tkx::grid($rlocnl, $rlocne, '-', -sticky => 'sew', -pady => 1);
     Tkx::grid($ruserl, $rusere, $opt0, -sticky => 'sew', -pady => 1);
-    Tkx::grid($rpassl, $rpasse, 'x', -sticky => 'sew', -pady => 1);
+    Tkx::grid($rpassl, $rpasse, $save_btn, -sticky => 'sew', -pady => 1);
+    Tkx::grid(configure => $save_btn, -sticky => 'e');
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
-    Tkx::grid($sw, '-', '-', -sticky => 'news');
-    Tkx::grid($addl, $repo_add, $repo_del, -sticky => 'sw', -pady => [4, 0]);
-    Tkx::grid($addf, '-', '-', -sticky => 'news');
+    Tkx::grid($sw, -sticky => 'news');
+    Tkx::grid($addl, -sticky => 'news', -pady => [4, 0]);
     Tkx::grid(columnconfigure => $f, 0, -weight => 1);
     Tkx::grid(rowconfigure => $f, 0, -weight => 1);
 }
