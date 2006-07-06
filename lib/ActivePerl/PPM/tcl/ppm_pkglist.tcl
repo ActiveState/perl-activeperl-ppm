@@ -105,12 +105,14 @@ snit::widgetadaptor pkglist {
 
 	# determine appropriate state (adjusts icon)
 	set state ""
-	if {[info exists opts(installed)] && $opts(installed) ne ""} {
-	    lappend state installed
-	}
-	if {[info exists opts(available)] && $opts(available) ne ""} {
-	    lappend state available
-	}
+	set available [$tree item text $item available]
+	set installed [$tree item text $item installed]
+	lappend state [expr {$installed eq "" ? "!installed" : "installed"}]
+	lappend state [expr {$available eq "" ? "!available" : "available"}]
+	lappend state [expr {(($installed eq "")
+			      || ($available eq "")
+			      || $installed eq $available) ?
+			     "!upgradable" : "upgradable"}]
 	$self state $name $state
 
 	if {$new} {
@@ -148,29 +150,26 @@ snit::widgetadaptor pkglist {
 	if {$state ne ""} {
 	    $tree item state forcolumn $item name $state
 	}
-	# get full state
+	# get state into array
 	set state [$tree item state forcolumn $item name]
-	set available [expr {[lsearch -exact $state "available"] > -1}]
-	set installed [expr {[lsearch -exact $state "installed"] > -1}]
-	set install   [expr {[lsearch -exact $state "install"] > -1}]
-	set remove    [expr {[lsearch -exact $state "remove"] > -1}]
+	foreach s $state  { set S($s) {} }
 
 	set img ""; # make sure to get base image name before modifiers
-	if {$installed} {
+	if {[info exists S(installed)]} {
 	    lappend img installed
-	    if {$available} {
+	    if {[info exists S(upgradable)]} {
 		lappend img upgradable
 	    }
-	} elseif {$available} {
+	} elseif {[info exists S(available)]} {
 	    lappend img available
 	} else {
 	    lappend img package
 	}
-	if {$remove} {
+	if {[info exists S(remove)]} {
 	    lappend img remove
 	}
-	if {$install} {
-	    if {$installed} {
+	if {[info exists S(install)]} {
+	    if {[info exists S(installed)]} {
 		lappend img reinstall
 	    } else {
 		lappend img install
@@ -213,15 +212,14 @@ snit::widgetadaptor pkglist {
 	    foreach {item} [$tree item children root] {
 		set vis 1
 		if {$opts(type) ne "all"} {
-		    set state [$tree item state forcolumn $item name]
+		    set s [$tree item state forcolumn $item name]
 		    if {$opts(type) eq "installed"} {
-			set vis [expr {[lsearch -exact $state "installed"] > -1}]
+			set vis [expr {[lsearch -exact $s "installed"] > -1}]
 		    } elseif {$opts(type) eq "upgradable"} {
-			set vis [expr {[lsearch -exact $state "installed"] > -1
-				       && [lsearch -exact $state "available"] > -1}]
+			set vis [expr {[lsearch -exact $s "upgradable"] > -1}]
 		    } elseif {$opts(type) eq "modified"} {
-			set vis [expr {[lsearch -exact $state "install"] > -1
-				       || [lsearch -exact $state "remove"] > -1}]
+			set vis [expr {[lsearch -exact $s "install"] > -1
+				       || [lsearch -exact $s "remove"] > -1}]
 		    }
 		}
 		$tree item configure $item -visible $vis
@@ -241,15 +239,14 @@ snit::widgetadaptor pkglist {
 	    foreach {item} [$tree item children root] {
 		set vis 1
 		if {$opts(type) ne "all"} {
-		    set state [$tree item state forcolumn $item name]
+		    set s [$tree item state forcolumn $item name]
 		    if {$opts(type) eq "installed"} {
-			set vis [expr {[lsearch -exact $state "installed"] > -1}]
+			set vis [expr {[lsearch -exact $s "installed"] > -1}]
 		    } elseif {$opts(type) eq "upgradable"} {
-			set vis [expr {[lsearch -exact $state "installed"] > -1
-				       && [lsearch -exact $state "available"] > -1}]
+			set vis [expr {[lsearch -exact $s "upgradable"] > -1}]
 		    } elseif {$opts(type) eq "modified"} {
-			set vis [expr {[lsearch -exact $state "install"] > -1
-				       || [lsearch -exact $state "remove"] > -1}]
+			set vis [expr {[lsearch -exact $s "install"] > -1
+				       || [lsearch -exact $s "remove"] > -1}]
 		    }
 		}
 		if {$vis} {
@@ -338,27 +335,13 @@ snit::widgetadaptor pkglist {
 
 	$tree state define available
 	$tree state define installed
+	# upgradable == (available && installed) && (available != installed)
+	$tree state define upgradable
 	$tree state define install
 	$tree state define remove
 
-	set imgmap [list]
-	# available + installed == upgradable
-	foreach {states imgs} {
-	    {available}	{available}
-	    {available install}		{available install}
-	    {installed}			{installed}
-	    {installed install}		{installed reinstall}
-	    {installed remove}		{installed remove}
-	    {available installed}	{installed upgradable}
-	    {available installed install} {installed upgradable reinstall}
-	    {available installed remove}  {installed upgradable remove}
-	} {
-	    lappend imgmap [eval [linsert $imgs 0 ::ppm::img]] $states
-	}
-
 	# See vpage.tcl for examples
 	$tree element create elemImg image
-	#$tree element configure elemImg -image $imgmap
 	$tree element create elemText text -lines 1 \
 	    -fill [list $selfg {selected focus}]
 	$tree element create selRect rect \
