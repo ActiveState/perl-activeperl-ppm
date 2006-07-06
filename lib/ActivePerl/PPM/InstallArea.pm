@@ -3,7 +3,7 @@ package ActivePerl::PPM::InstallArea;
 use strict;
 use Config qw(%Config);
 use Carp qw(croak);
-use ActiveState::ModInfo qw(fname2mod);
+use ActiveState::ModInfo qw(fname2mod parse_version);
 use ActiveState::Path qw(join_path);
 use File::Compare ();
 use File::Basename ();
@@ -751,13 +751,12 @@ sub sync_db {
 	    }
 
 	    if ($f =~ /\.pm$/) {
-		require ExtUtils::MakeMaker;
 		my $mod = $f;
 		$mod =~ s,\\,/,g if $^O eq "MSWin32";
 		$mod =~ s,^$self->{dirs}{archlib}/,, or
 		    $mod =~ s,^$self->{dirs}{lib}/,,;
 		$mod = fname2mod($mod);
-		my $vers = eval { MM->parse_version($f) };
+		my $vers = eval { parse_version($f) };
 		undef($vers) if $vers && $vers eq "undef"; # Arrgh!
 		(my $mod_pkg = $mod) =~ s/::/-/g;
 		if ($mod_pkg eq $pkg && defined($vers)) {

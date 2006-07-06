@@ -663,9 +663,8 @@ sub feature_have {
 
     if (!@_ && $feature =~ /::/) {
 	require ActiveState::ModInfo;
-	require ExtUtils::MakeMaker;
 	if (my $path = ActiveState::ModInfo::find_module($feature, $self->{inc})) {
-	    return MM->parse_version($path) || 0;
+	    return ActiveState::ModInfo::parse_version($path) || 0;
 	}
 	ppm_debug("Module $feature not found in \@INC");
     }
