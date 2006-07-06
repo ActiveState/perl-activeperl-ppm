@@ -227,7 +227,7 @@ $filter->g_bind('<Key>', [\&filter_onkey]);
 
 # Filter state buttons
 my $filter_all = $toolbar->new_ttk__radiobutton(
-    -text => "Installed", -image => $IMG{'f_all'},
+    -text => "All", -image => $IMG{'f_all'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "",
 );
@@ -982,7 +982,7 @@ sub on_load {
     $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
     $FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
 	|| "name abstract";
-    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || 0;
+    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "";
 
     my @view_keys = keys %VIEW;
     my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
@@ -1003,7 +1003,7 @@ sub on_exit {
     $ppm->config_save(
         "gui.filter" => $FILTER{'lastfilter'},
         "gui.filter.fields" => $FILTER{'lastfields'},
-        "gui.filter.type" => $FILTER{'lasttype'},
+        "gui.filter.type" => ($FILTER{'lasttype'} eq 'modified' ? "" : $FILTER{'lasttype'}),
     );
 
     ## Current selected package?
