@@ -261,17 +261,20 @@ my $install_btn = $toolbar->new_ttk__button(-text => "Install",
 					    -style => "Toolbutton",
 					    -state => "disabled");
 $toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
+Tkx::tooltip($install_btn, "Mark for install");
 my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
 					   -image => $IMG{'remove'},
 					   -style => "Toolbutton",
 					   -state => "disabled");
 $toolbar->add($remove_btn, -pad => [0, 2]);
+Tkx::tooltip($remove_btn, "Mark for remove");
 my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 				       -image => $IMG{'go'},
 				       -style => "Toolbutton",
 				       -state => "disabled",
 				       -command => [\&run_actions]);
 $toolbar->add($go_btn, -pad => [0, 2]);
+Tkx::tooltip($go_btn, "Run marked actions");
 
 # Sync/config buttons
 my $sync_btn = $toolbar->new_ttk__button(-text => "Sync",
@@ -288,7 +291,7 @@ my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 					   $prefs_dialog->display();
 					   Tkx::focus(-force => $prefs_dialog);
 				       });
-Tkx::tooltip($prefs_btn, "PPM Configuration");
+Tkx::tooltip($prefs_btn, "PPM Preferences");
 $toolbar->add($prefs_btn, -pad => [0, 2]);
 
 ## Statusbar items
