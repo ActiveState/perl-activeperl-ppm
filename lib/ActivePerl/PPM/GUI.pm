@@ -810,13 +810,15 @@ sub commit_actions {
 	    my $area_name = $area->name;
 	    my $txt = "Remove $name from $area_name area\n";
 	    $action_box->insert('end', $txt);
-	    Tkx::update();
+	    Tkx::update('idletasks');
 	    print $txt;
 	    eval { $area->uninstall($name); };
 	    if ($@) {
 		$txt = "\tERROR:\n$@\n";
 		$action_box->insert('end', $txt);
 		print $txt;
+	    } else {
+		$action_box->insert('end', "\tRemoved $name\n");
 	    }
 	}
     }
@@ -827,13 +829,15 @@ sub commit_actions {
 	    my $area_name = $ppm->default_install_area;
 	    my $txt = "Install $name to $area_name area\n";
 	    $action_box->insert('end', $txt);
-	    Tkx::update();
+	    Tkx::update('idletasks');
 	    print $txt;
 	    eval { $ppm->install(packages => [$repo_pkg]); };
 	    if ($@) {
 		$txt = "\tERROR:\n$@\n";
 		$action_box->insert('end', $txt);
 		print $txt;
+	    } else {
+		$action_box->insert('end', "\tInstalled $name\n");
 	    }
 	}
     }
