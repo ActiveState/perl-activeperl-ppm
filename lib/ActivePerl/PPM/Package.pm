@@ -2,6 +2,7 @@ package ActivePerl::PPM::Package;
 
 use strict;
 use Carp qw(croak);
+use ActivePerl::PPM::Logger qw(ppm_status);
 
 sub BASE_FIELDS {
     return (
@@ -267,9 +268,10 @@ sub run_script {
 
     my @commands;
     if (defined(my $uri = $script->{uri})) {
-	print "Downloading ", $self->name_version, " $kind script...";
 	require ActivePerl::PPM::Web;
-	my $res = ActivePerl::PPM::Web::web_ua()->get(URI->new_abs($uri, $self->{ppd_uri}));
+	my $ua = ActivePerl::PPM::Web::web_ua();
+	local $ua->{progress_what} = "Downloading " . $self->name_version . " $kind script";
+	my $res = $ua->get(URI->new_abs($uri, $self->{ppd_uri}));
 	die $res->status_line unless $res->is_success;
 	if (my $len = $res->content_length) {
 	    my $save_len = length($res->content);
@@ -288,7 +290,6 @@ sub run_script {
 	else {
 	    push(@commands, grep length, split(/\n/, $res->decoded_content));
 	}
-	print "done\n";
     }
     else {
 	if (my $exec = $script->{exec}) {
@@ -326,10 +327,11 @@ sub run_script {
 	local $ENV{PPM_PERL} = $^X;
 	eval {
 	    chdir $tmpdir;
-	    print "Running ", $self->name_version, " $kind script...\n";
+	    ppm_status("begin", "Running " . $self->name_version . " $kind script");
 	    for my $cmd (@commands) {
 		ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
 	    }
+            ppm_status("end");
 	};
 	chdir($old_cwd) || die "Can't chdir back to '$old_cwd': $!";
 	die if $@;
