@@ -149,12 +149,6 @@ $mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
 
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
-my $det_sw = $pw->new_widget__scrolledwindow();
-my $details = $det_sw->new_text(-height => 7, -width => 60, -borderwidth => 1,
-				-font => "ASfont", -state => "disabled",
-				-wrap => "word",
-				-tabs => ["10", "left", "90", "left"]);
-$det_sw->setwidget($details);
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item],
 			       -borderwidth => 1, -relief => 'sunken',
@@ -171,25 +165,47 @@ Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      }
 }, Tkx::Ev("%x", "%y", "%X", "%Y")]);
 Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
-my $toolbar = $mw->new_widget__toolbar();
 
-$details->tag('configure', 'h1', -font => 'ASfontBold2');
-$details->tag('configure', 'h2', -font => 'ASfontBold1');
-$details->tag('configure', 'abstract', -font => 'ASfontBold',
-	      -lmargin1 => 10, -lmargin2 => 10, -rmargin => 10);
-$details->tag_configure('link', -underline => 1, -foreground => 'blue');
-$details->tag_bind('link', "<Enter>", sub {
-    $details->configure(-cursor => "hand2");
-});
-$details->tag_bind('link', "<Leave>", sub {
-    $details->configure(-cursor => "");
-});
+# Details / Status areas
+my @text_opts = (-height => 7, -width => 40, -borderwidth => 0,
+		 -font => "ASfont", -state => "disabled",
+		 -wrap => "word", -highlightthickness => 0);
+my $pw_nb = $pw->new_ttk__notebook();
 
+my $status_sw = $pw_nb->new_widget__scrolledwindow();
+my $status_box = $status_sw->new_text(@text_opts);
+$status_sw->setwidget($status_box);
 
-my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
+my $details_sw = $pw_nb->new_widget__scrolledwindow();
+my $details = $details_sw->new_text(@text_opts,
+				    -tabs => ["10", "left", "90", "left"]);
+$details_sw->setwidget($details);
+
+for my $tw ($details, $status_box) {
+    # Allow each text widget the same tag set
+    $tw->tag('configure', 'h1', -font => 'ASfontBold2');
+    $tw->tag('configure', 'h2', -font => 'ASfontBold1');
+    $tw->tag('configure', 'abstract', -font => 'ASfontBold',
+	     -lmargin1 => 10, -lmargin2 => 10, -rmargin => 10);
+    $tw->tag_configure('link', -underline => 1, -foreground => 'blue');
+    $tw->tag_bind('link', "<Enter>", sub {
+		      $tw->configure(-cursor => "hand2");
+		  });
+    $tw->tag_bind('link', "<Leave>", sub {
+		      $tw->configure(-cursor => "");
+		  });
+}
+
+$pw_nb->add($status_sw, -text => "Status");
+$pw_nb->add($details_sw, -text => "Details");
+$pw_nb->select($status_sw);
 
 $pw->add($pkglist, -weight => 3);
-$pw->add($det_sw, -weight => 1);
+$pw->add($pw_nb, -weight => 1);
+
+my $toolbar = $mw->new_widget__toolbar();
+
+my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
 Tkx::grid($toolbar, -sticky => "ew", -padx => 2);
 Tkx::grid($pw, -sticky => "news", -padx => 4, -pady => 4);
@@ -338,26 +354,6 @@ $lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
 $statusbar->add($lbl, -weight => 1);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
 
-## Action dialog for committing to install/remove
-my $action_box;
-my $action_dialog = $mw->new_widget__dialog(-title => 'Commit Actions',
-					    -parent => $mw, -place => 'over',
-					    -type => 'ok',
-					    -synchronous => 0);
-build_action_dialog($action_dialog);
-
-## Wait dialog for when we sync
-my $sync_dialog = $mw->new_widget__dialog(-title => 'Synchronize Database',
-					  -parent => $mw, -place => 'over',
-					  -type => 'ok',  -modal => 'local',
-					  -synchronous => 0);
-# Not all platforms have -topmost attribute
-eval { $sync_dialog->g_wm_attributes(-topmost => 1); };
-my $sfrm = $sync_dialog->new_ttk__frame();
-my $slbl = $sfrm->new_ttk__label(-text => "We are sync'ing");
-$sync_dialog->setwidget($sfrm);
-Tkx::grid($slbl, -sticky => "ew");
-
 map view($_), keys %VIEW;
 
 # Now let's get started ...
@@ -409,11 +405,11 @@ sub sync {
 }
 
 sub full_refresh {
-    $sync_dialog->display();
+    status_message("Synchronizing Database ... ", tag => "h2");
     Tkx::update();
     sync();
     refresh();
-    $sync_dialog->close('ok');
+    status_message("DONE\n", tag => "h2");
 }
 
 sub merge_area_items {
@@ -689,6 +685,7 @@ sub select_item {
     # Remove trailing newline and prevent editing of widget
     $details->delete('end-1c');
     $details->configure(-state => "disabled");
+    $pw_nb->select($details_sw);
 
     ## Record "allowable" actions based on package info
     # XXX work on constraints
@@ -794,12 +791,13 @@ sub queue_for_install {
     if ($ver) {
 	$state = $pkglist->state($name, "install");
 	$NUM{'install'}++;
+	status_message("$name marked for install\n");
     } else {
 	$state = $pkglist->state($name, "!install");
 	$NUM{'install'}--;
+	status_message("$name unmarked for install\n");
     }
     update_actions();
-    print "$name $ver :: STATE: $state\n";
 }
 
 sub queue_for_remove {
@@ -810,12 +808,13 @@ sub queue_for_remove {
     if ($ver) {
 	$state = $pkglist->state($name, "remove");
 	$NUM{'remove'}++;
+	status_message("$name marked for remove\n");
     } else {
 	$state = $pkglist->state($name, "!remove");
 	$NUM{'remove'}--;
+	status_message("$name unmarked for remove\n");
     }
     update_actions();
-    print "$name $ver :: STATE: $state\n";
 }
 
 sub update_actions {
@@ -854,25 +853,19 @@ sub run_actions {
 }
 
 sub commit_actions {
-    $action_dialog->display();
-    $action_box->configure(-state => "normal");
     for my $name (sort keys %ACTION) {
 	# First remove any area pacakges
 	my $area = $ACTION{$name}{'area'};
 	my $area_pkg = $ACTION{$name}{'area_pkg'};
 	if ($ACTION{$name}{'remove'}) {
 	    my $area_name = $area->name;
-	    my $txt = "Remove $name from $area_name area\n";
-	    $action_box->insert('end', $txt);
-	    Tkx::update('idletasks');
-	    print $txt;
+	    my $txt = "Remove $name from $area_name area ... ";
+	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
-		$txt = "\tERROR:\n$@\n";
-		$action_box->insert('end', $txt);
-		print $txt;
+		status_message("\nERROR:\n$@\n", tag => "abstract");
 	    } else {
-		$action_box->insert('end', "\tRemoved $name\n");
+		status_message("DONE\n");
 	    }
 	}
     }
@@ -882,40 +875,16 @@ sub commit_actions {
 	if ($ACTION{$name}{'install'}) {
 	    my $area_name = $ppm->default_install_area;
 	    my $txt = "Install $name to $area_name area\n";
-	    $action_box->insert('end', $txt);
-	    Tkx::update('idletasks');
-	    print $txt;
+	    status_message($txt);
 	    eval { $ppm->install(packages => [$repo_pkg]); };
 	    if ($@) {
-		$txt = "\tERROR:\n$@\n";
-		$action_box->insert('end', $txt);
-		print $txt;
+		status_message("ERROR:\n$@\n", tag => "abstract");
 	    } else {
-		$action_box->insert('end', "\tInstalled $name\n");
+		status_message("\tInstalled $name\n");
 	    }
 	}
     }
-    $action_box->configure(-state => "disabled");
     refresh();
-}
-
-sub build_action_dialog {
-    my $top = shift;
-    my $f = Tkx::widget->new($top->getframe());
-    $f->configure(-padding => 4);
-
-    my $l = $f->new_ttk__label(-text => "Commit actions:");
-    my $sw = $f->new_widget__scrolledwindow();
-    $action_box = $sw->new_text(
-	-height => 8, -width => 60, -borderwidth => 1,
-	-font => "ASfont", -state => "disabled",
-	-wrap => "word",
-    );
-    $sw->setwidget($action_box);
-    Tkx::grid($l, -sticky => "w");
-    Tkx::grid($sw, -sticky => "news");
-    Tkx::grid(columnconfigure => $f, 0, -weight => 1);
-    Tkx::grid(rowconfigure => $f, 1, -weight => 1);
 }
 
 sub select_repo_item {
@@ -1071,6 +1040,25 @@ ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
 }
 
+sub status_message {
+    my $msg = shift;
+    my %opts = @_;
+    my $tag = delete $opts{tag} || "";
+    my $ins = delete $opts{insert} || "end";
+    my $clr = delete $opts{clear} || 0;
+
+    $pw_nb->select($status_sw);
+    $status_box->configure(-state => "normal");
+    $status_box->delete("1.0", "end") if $clr;
+    $status_box->insert($ins, $msg, $tag);
+    $status_box->configure(-state => "disabled");
+    $status_box->see($ins);
+    Tkx::update('idletasks');
+    if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
+	print $msg;
+    }
+}
+
 BEGIN {
     package ActivePerl::PPM::GUI::Status;
 
@@ -1082,44 +1070,29 @@ BEGIN {
     sub begin {
 	my $self = shift;
 	my $what = shift;
-	$action_box->configure(-state => "normal");
-	$action_box->insert('end', "$what ... ");
-	$action_box->configure(-state => "disabled");
-	Tkx::update('idletasks');
-	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
-	    print "$what ... ";
-	}
+	ActivePerl::PPM::GUI::status_message("$what ... ");
 	$prefixed = 1;
 	$self->SUPER::begin($what, @_);
     }
 
     sub tick {
-	$action_box->configure(-state => "normal");
-	$action_box->insert('end', "#");
-	$action_box->configure(-state => "disabled");
+	# XXX update some progressbar
+	Tkx::update('idletasks');
 	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 	    print "#";
 	}
-	# XXX update some progressbar
-	Tkx::update('idletasks');
     }
 
     sub end {
 	my $self = shift;
 	my $outcome = shift || "DONE";
 	my $what = $self->SUPER::end;
-	$action_box->configure(-state => "normal");
 	if ($prefixed) {
 	    $outcome .= "\n";
 	    $prefixed = 0;
 	} else {
 	    $outcome = "$what $outcome\n";
 	}
-	$action_box->insert('end', $outcome);
-	$action_box->configure(-state => "disabled");
-	Tkx::update('idletasks');
-	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
-	    print $outcome;
-	}
+	ActivePerl::PPM::GUI::status_message($outcome);
     }
 }
