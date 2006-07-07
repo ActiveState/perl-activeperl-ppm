@@ -122,7 +122,7 @@ $IMG{'refresh'} = [Tkx::ppm__img('refresh')];
 $IMG{'prefs'} = [Tkx::ppm__img('config')];
 $IMG{'install'} = [Tkx::ppm__img('package', 'install')];
 $IMG{'remove'} = [Tkx::ppm__img('package', 'remove')];
-$IMG{'go'} = [Tkx::ppm__img('package', 'modified')];
+$IMG{'go'} = [Tkx::ppm__img('go')];
 $IMG{'f_all'} = [Tkx::ppm__img('available', 'filter')];
 $IMG{'f_upgradable'} = [Tkx::ppm__img('package', 'filter', 'upgradable')];
 $IMG{'f_installed'} = [Tkx::ppm__img('package', 'filter')];
@@ -274,7 +274,7 @@ my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 				       -style => "Toolbutton",
 				       -state => "disabled",
 				       -command => [\&run_actions]);
-$toolbar->add($go_btn, -pad => [0, 2]);
+$toolbar->add($go_btn, -pad => [4, 2, 0]);
 Tkx::tooltip($go_btn, "Run marked actions");
 
 # Sync/config buttons
@@ -283,7 +283,7 @@ my $sync_btn = $toolbar->new_ttk__button(-text => "Sync",
 					 -style => "Toolbutton",
 					 -command => [\&full_refresh]);
 Tkx::tooltip($sync_btn, "Synchronize database");
-$toolbar->add($sync_btn, -separator => 1, -pad => [4, 2, 0]);
+$toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
 
 my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 					  -image => $IMG{'prefs'},
@@ -293,7 +293,7 @@ my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 					   Tkx::focus(-force => $prefs_dialog);
 				       });
 Tkx::tooltip($prefs_btn, "PPM Preferences");
-$toolbar->add($prefs_btn, -pad => [0, 2]);
+$toolbar->add($prefs_btn);
 
 ## Statusbar items
 my %NUM;

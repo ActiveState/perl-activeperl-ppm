@@ -38,6 +38,7 @@ namespace eval ::ppm {
 	add		{add.png}
 	delete		{delete.png}
 	accept		{accept.png}
+	go		{go.png}
     }
 }
 namespace eval ::ppm::img {
