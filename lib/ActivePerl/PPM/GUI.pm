@@ -152,7 +152,8 @@ my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
 			       -selectcommand => [\&select_item],
 			       -borderwidth => 1, -relief => 'sunken',
-			       -itembackground => ["#F7F7FF", ""]);
+			       -itembackground => ["#F7F7FF", ""],
+			       -takefocus => 1);
 
 Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      my ($x, $y, $X, $Y) = @_;
@@ -203,6 +204,14 @@ $pw_nb->select($status_sw);
 $pw->add($pkglist, -weight => 3);
 $pw->add($pw_nb, -weight => 1);
 
+my $scroll_cmd = sub {
+    my $dir = shift;
+    my $tw = ($pw_nb->select() eq $status_sw ? $status_box : $details);
+    $tw->yview("scroll", $dir, "page");
+};
+Tkx::bind($mw, "<Key-space>", [$scroll_cmd, 1]);
+Tkx::bind($mw, "<Shift-Key-space>", [$scroll_cmd, -1]);
+
 my $toolbar = $mw->new_widget__toolbar();
 
 my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
@@ -226,25 +235,6 @@ my $repo_del;
 build_prefs_dialog($prefs_dialog);
 
 ## Toolbar items
-my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
-my $filter = $toolbar->new_widget__menuentry(
-    -width => 1,
-    -menu => $filter_menu,
-    -textvariable => \$FILTER{'filter'},
-);
-Tkx::tooltip($filter, "Filter packages");
-$toolbar->add($filter, -weight => 2);
-$filter_menu->add('radiobutton', -label => "Name", -value => "name",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Name or Abstract",
-		  -value => "name abstract",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Author", -value => "author",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter->g_bind('<Return>', [\&filter]);
-$filter->g_bind('<Key>', [\&filter_onkey]);
 
 # Filter state buttons
 my $filter_all = $toolbar->new_ttk__radiobutton(
@@ -276,19 +266,40 @@ my $filter_mod = $toolbar->new_ttk__radiobutton(
 $toolbar->add($filter_mod, -pad => [0, 2]);
 Tkx::tooltip($filter_mod, "Packages to install/remove");
 
+# Filter entry with filter.fields menu
+my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
+my $filter = $toolbar->new_widget__menuentry(
+    -width => 1, -takefocus => 1,
+    -menu => $filter_menu,
+    -textvariable => \$FILTER{'filter'},
+);
+Tkx::tooltip($filter, "Filter packages");
+$toolbar->add($filter, -weight => 2);
+$filter_menu->add('radiobutton', -label => "Name", -value => "name",
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Name or Abstract",
+		  -value => "name abstract",
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
+$filter_menu->add('radiobutton', -label => "Author", -value => "author",
+		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
+$filter->g_bind('<Return>', [\&filter]);
+$filter->g_bind('<Key>', [\&filter_onkey]);
+
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
 					    -image => $IMG{'install'},
 					    -style => "Toolbutton",
 					    -state => "disabled");
 $toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
-Tkx::tooltip($install_btn, "Mark for install");
+Tkx::tooltip($install_btn, "Mark for install [+]");
 my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
 					   -image => $IMG{'remove'},
 					   -style => "Toolbutton",
 					   -state => "disabled");
 $toolbar->add($remove_btn, -pad => [0, 2]);
-Tkx::tooltip($remove_btn, "Mark for remove");
+Tkx::tooltip($remove_btn, "Mark for remove [-]");
 my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 				       -image => $IMG{'go'},
 				       -style => "Toolbutton",
