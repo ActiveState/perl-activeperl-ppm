@@ -15,6 +15,7 @@ $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 # these will be filled in the sync()
 my %AREAS;
 my %REPOS;
+my $HAVE_WRITABLE_AREA = 0;
 
 my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
@@ -399,8 +400,11 @@ sub sync {
 		   );
     }
 
+    $HAVE_WRITABLE_AREA = 0;
     for my $area_name ($ppm->areas) {
 	$AREAS{$area_name} = $ppm->area($area_name);
+	$HAVE_WRITABLE_AREA = $HAVE_WRITABLE_AREA
+	    || !$AREAS{$area_name}->readonly;
     }
 }
 
@@ -754,10 +758,15 @@ sub select_item {
 	    "Reinstall" : "Upgrade";
 	$install_btn->configure(-state => "normal",
 				-command => [$cmd, 1]);
-	$menu->add_checkbutton(-label => "$txt $name to $data{'available'}",
+	$txt = "$txt $name to $data{'available'}";
+	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
+	if (!$HAVE_WRITABLE_AREA) {
+	    $menu->entryconfigure($txt, -state => "disabled");
+	    $install_btn->configure(-state => "disabled");
+	}
     } elsif ($data{'available'}) {
 	my $cmd = sub {
 	    my $was_btn = shift || 0;
@@ -772,10 +781,15 @@ sub select_item {
 	};
 	$install_btn->configure(-state => "normal",
 				-command => [$cmd, 1]);
-	$menu->add_checkbutton(-label => "Install $name $data{'available'}",
+	my $txt = "Install $name $data{'available'}";
+	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
+	if (!$HAVE_WRITABLE_AREA) {
+	    $menu->entryconfigure($txt, -state => "disabled");
+	    $install_btn->configure(-state => "disabled");
+	}
     }
     if (!$data{'available'} && !$data{'installed'}) {
 	# Oddball packages that have no version?
