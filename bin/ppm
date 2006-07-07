@@ -761,8 +761,9 @@ sub do_describe {
     }
     my $repo = $ppm->repo($pkg->{repo_id});
     print "${pad}Repo: $repo->{name}\n";
-    print "${pad}CPAN: http://search.cpan.org/dist/$pkg->{name}-$pkg->{version}/\n"
-	if is_cpan_package($pkg->{name});
+    if (my $name = is_cpan_package($pkg->{name})) {
+	print "${pad}CPAN: http://search.cpan.org/dist/$name-$pkg->{version}/\n";
+    }
     for my $area ($ppm->areas) {
 	my $area_pkg = $ppm->area($area)->package($pkg->{name});
 	next unless $area_pkg;
