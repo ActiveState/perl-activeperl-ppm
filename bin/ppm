@@ -8,6 +8,8 @@ use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
 use ActivePerl::PPM::Util qw(is_cpan_package);
 
+Win32::SetChildShowWindow(0) if defined &Win32::SetChildShowWindow;
+
 $SIG{__WARN__} = sub { ppm_log("WARNING", $_[0]) };
 
 (my $PROGNAME = $0) =~ s,.*[\\/],,;
