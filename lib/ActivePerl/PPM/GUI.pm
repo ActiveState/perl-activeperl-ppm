@@ -15,7 +15,6 @@ $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 # these will be filled in the sync()
 my %AREAS;
 my %REPOS;
-my $HAVE_WRITABLE_AREA = 0;
 
 my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
@@ -404,11 +403,8 @@ sub sync {
 		   );
     }
 
-    $HAVE_WRITABLE_AREA = 0;
     for my $area_name ($ppm->areas) {
 	$AREAS{$area_name} = $ppm->area($area_name);
-	$HAVE_WRITABLE_AREA = $HAVE_WRITABLE_AREA
-	    || !$AREAS{$area_name}->readonly;
     }
 }
 
@@ -767,7 +763,7 @@ sub select_item {
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
-	if (!$HAVE_WRITABLE_AREA) {
+	if (!defined($ppm->default_install_area)) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -790,7 +786,7 @@ sub select_item {
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
-	if (!$HAVE_WRITABLE_AREA) {
+	if (!defined($ppm->default_install_area)) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
