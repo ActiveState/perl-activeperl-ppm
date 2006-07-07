@@ -62,7 +62,11 @@ if ($AQUA) {
 }
 
 if ($windowingsystem eq "win32") {
-    $mw->g_wm_iconbitmap(-default => $^X);
+    # Due to a bug in Tk when wrapped as tkkit, we need to call the
+    # iconbitmap setting on the main window an extra time.
+    my $icon = Tkx::wm_iconbitmap($mw);
+    Tkx::wm_iconbitmap($mw, $icon);
+    Tkx::wm_iconbitmap($mw, -default => $^X);
 }
 
 # This code makes themed frames use the notebook's background color.
