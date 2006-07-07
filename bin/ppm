@@ -237,9 +237,11 @@ sub do_area {
 	    my $name = $area;
 	    $name = "$name*" if defined($default) && $name eq $default;
 	    $name = "($name)" if $o->readonly;
+	    my $pkgs = $o->packages;
+	    $pkgs = "n/a" unless defined $pkgs;
 	    $tab->add_row({
 	        name => $name,
-                pkgs => scalar($o->packages),
+                pkgs => $pkgs,
                 lib => $o->lib,
             });
 	}
@@ -251,6 +253,12 @@ sub do_area {
 	    print $tab->as_box(null => "", show_header => $show_header, show_trailer => 0, align => {pkgs => "right"}, box_chars => $BOX_CHARS, max_width => terminal_width());
 	}
     }
+    elsif ($cmd eq "init") {
+	$USAGE = "area init <area>";
+	usage() unless @ARGV == 1;
+	my $name = shift(@ARGV);
+	$ppm->area($name)->initialize;
+    }
     elsif ($cmd eq "sync") {
 	$USAGE = "area sync [<area>...]";
 	for my $area (map $ppm->area($_), @ARGV ? @ARGV : $ppm->areas) {
@@ -258,7 +266,7 @@ sub do_area {
 	}
     }
     else {
-	$cmd = _try_abbrev("area", $cmd, qw(list sync));
+	$cmd = _try_abbrev("area", $cmd, qw(list sync init));
 	goto AGAIN;
     }
 }
@@ -411,6 +419,7 @@ sub do_files {
     my $pkg = shift(@ARGV);
     my $foundit;
     for my $area (map $ppm->area($_), $ppm->areas) {
+	next unless $area->initialized;
 	my $id = $area->package_id($pkg, sloppy => 1);
 	next unless defined($id);
 	$foundit++;
@@ -435,7 +444,7 @@ sub do_verify {
 	$opt{package} = shift(@ARGV) if @ARGV;
 	usage() if @ARGV;
     }
-    my @areas = map $ppm->area($_), $ppm->areas;
+    my @areas = grep $_->initialized, map $ppm->area($_), $ppm->areas;
     if ($opt{package}) {
 	@areas = grep $_->package_id($opt{package}), @areas;
 	not_installed($opt{package}) unless @areas;
@@ -966,6 +975,7 @@ sub do_remove {
 	else {
 	    for my $a ($ppm->areas) {
 		$area = $ppm->area($a);
+		next unless $area->initialized;
 		$pkg_o = $area->package($pkg, sloppy => 1);
 		if ($pkg_o) {
 		    die "Can't remove from 'perl' area without explicit area specification"
@@ -1079,6 +1089,23 @@ are recognized:
 
 =over
 
+=item B<ppm area init> I<area>
+
+Will initialize the given area so that PPM starts tracking the
+packages it contains.
+
+PPM allows for the addition of new install areas, which is useful for
+shared ActivePerl installations where the user does not have write
+permissions for the I<site> and I<perl> areas.  New install areas are
+added by simply setting up new library directories for perl to search,
+and PPM will set up install areas to match.  The easiest way to add
+library directories for perl is to specify them in the C<PERL5LIB>
+environment variable, see L<perlrun> for details.  PPM will create
+F<etc>, F<bin>, F<html> directories as needed when installing
+packages.  If the last segment of the library directory path is F<lib>
+then the other directories will be created as siblings of the F<lib>
+directory, otherwise they will be subdirectories.
+
 =item B<ppm area list> [ B<--csv> [ I<sep> ] ] [ B<--no-header> ]
 
 Lists the available install areas.  The list displays the name, number
@@ -1096,18 +1123,6 @@ output. The default field separator can be overridden by the argument
 following B<--cvs>.
 
 The B<--no-header> option suppresses column headings.
-
-PPM allows for the addition of new install areas, which is useful for
-shared ActivePerl installations where the user does not have write
-permissions for the I<site> and I<perl> areas.  New install areas are
-added by simply setting up new library directories for perl to search,
-and PPM will set up install areas to match.  The easiest way to add
-library directories for perl is to specify them in the C<PERL5LIB>
-environment variable, see L<perlrun> for details.  PPM will create
-F<etc>, F<bin>, F<html> directories as needed when installing
-packages.  If the last segment of the library directory path is F<lib>
-then the other directories will be created as siblings of the F<lib>
-directory, otherwise they will be subdirectories.
 
 =item B<ppm area sync> [ I<area> ... ]
 

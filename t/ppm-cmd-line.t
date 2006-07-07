@@ -6,7 +6,7 @@ use ActiveState::Run qw(shell_quote);
 use ActiveState::Path qw(abs_path);
 use Config qw(%Config);
 
-plan tests => 17;
+plan tests => 18;
 
 my $prefix_base = "xx$$.d";
 (my $prefix = abs_path($prefix_base)) =~ s,\\,/,g;
@@ -67,6 +67,9 @@ ok(ppm("help", "help"), qr/this file/);
 ok(ppm("help", "foo"), "Sorry, no help for 'foo'\n");
 ok($ppm_err, "");
 
+ppm("area", "list", "--csv= ");
+ok($ppm_out, qr/^\(\Q$prefix_base\E\)\s+n\/a\s+/m);
+ppm("area", "init", $prefix_base);
 ppm("area", "list", "--csv= ");
 ok($ppm_out, qr/^\Q$prefix_base\E\*?\s+0\s+/m);
 ok($ppm_out, qr/^site\*?\s+(\d+)/m);

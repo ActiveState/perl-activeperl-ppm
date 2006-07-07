@@ -22,7 +22,7 @@ sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 
 use ActivePerl::PPM::InstallArea;
 
-my $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+my $dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, autoinit => 1);
 ok($dir->name, "");
 ok($dir->prefix, $prefix);
 ok($dir->lib, "$prefix/lib");
@@ -196,7 +196,7 @@ $dir = undef;
 
 rmtree($prefix, 1);
 mkdir($prefix, 0555);  # non-writable directory
-$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix);
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, autoinit => 1);
 ok($dir->lib, "$prefix/lib");
 unless ($^O eq "MSWin32") {
     ok($dir->readonly);
@@ -204,11 +204,11 @@ unless ($^O eq "MSWin32") {
 else {
     skip("No readonly directories on Windows");
 }
-ok($dir->packages, 0);
+ok($dir->packages, undef);
 ok(j($dir->packages), "");
 
 chmod(0755, $prefix) || warn "Can't make $prefix writable: $!";
-$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, name => "foo");
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, name => "foo", autoinit => 1);
 ok($dir->name, "foo");
 ok($dir->lib, "$prefix/lib");
 ok(!$dir->readonly);

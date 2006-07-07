@@ -83,6 +83,7 @@ sub new {
             prefix => $dir,
             lib => $lib,
             archlib => $archlib,
+            autoinit => 0,
         );
     }
 
@@ -172,7 +173,7 @@ sub area {
     return undef unless $name;
     return $self->{area}{$name} ||= do {
 	die "Install area '$name' does not exist" unless grep $_ eq $name, @{$self->{area_seq}};
-	ActivePerl::PPM::InstallArea->new($name);
+	ActivePerl::PPM::InstallArea->new(name => $name, autoinit => 1);
     }
 }
 
@@ -654,6 +655,7 @@ sub feature_have {
     my $feature = shift;
     for my $area_name (@_ ? @_ : $self->areas) {
 	my $area = $self->area($area_name);
+	next if !@_ && !$area->initialized;
 	if (defined(my $have = $area->feature_have($feature))) {
 	    ppm_debug("Feature $feature found in $area_name");
 	    return $have;

@@ -83,6 +83,7 @@ sub new {
     my $self = bless {
         name => $name,
         dirs => \%dirs,
+        autoinit => $opt{autoinit},
     }, $class;
     $self->dirty_cleanup;
     return $self;
@@ -131,7 +132,7 @@ sub etc {
 sub packages {
     my $self = shift;
     my $dbh = eval { $self->dbh };
-    return wantarray ? () : 0 unless $dbh;
+    return wantarray ? () : undef unless $dbh;
     if (@_) {
 	return @{$dbh->selectall_arrayref("SELECT " . join(",", @_) .
 					  " FROM package ORDER BY name")};
@@ -634,29 +635,39 @@ sub uninstall {
 
 sub _init_db {
     my $self = shift;
-    my $etc = $self->etc;
 
-    unless (-d $etc) {
-	require File::Path;
-	File::Path::mkpath($etc) || die "Can't mkpath($etc): $!";
-    }
-    require DBI;
+    my $etc = $self->etc;
     my $db_file = "ppm-area.db";
-    if (my $name = $self->name) {
-	$db_file = "ppm-$name-area.db";
+    my $name = $self->name;
+    $db_file = "ppm-$name-area.db" if $name;
+    $db_file = "$etc/$db_file";
+    unless (-f $db_file) {
+	unless ($self->{autoinit}) {
+	    my $msg = "Uninitialized install area ";
+	    $msg .= $name ? $name : " _at " . $self->prefix;
+	    #require Carp; Carp::confess($msg);
+	    die $msg;
+	}
+
+	unless (-d $etc) {
+	    require File::Path;
+	    File::Path::mkpath($etc) || die "Can't mkpath($etc): $!";
+	}
     }
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$etc/$db_file", "", "", {
+
+    require DBI;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
         AutoCommit => 1,
         RaiseError => 1,
     });
-    die "$etc/$db_file: $DBI::errstr" unless $dbh;
+    die "$db_file: $DBI::errstr" unless $dbh;
     $self->{dbh} = $dbh;
 
     local $dbh->{AutoCommit} = 0;
     my $v = $dbh->selectrow_array("PRAGMA user_version");
     die "Assert" unless defined $v;
     if ($v == 0) {
-	ppm_log("WARN", "Setting up schema for $etc/$db_file");
+	ppm_log("WARN", "Setting up schema for $db_file");
 	_init_ppm_schema($dbh);
 	$dbh->do("PRAGMA user_version = 1");
 	$dbh->commit;
@@ -664,7 +675,7 @@ sub _init_db {
 	return;
     }
     if ($v != 1) {
-	die "Unrecognized database schema $v for $etc/$db_file";
+	die "Unrecognized database schema $v for $db_file";
     }
 
     # check if we have opened a readonly database based on technique
@@ -674,6 +685,17 @@ sub _init_db {
     unless ($dbh->do("UPDATE package SET rowid=0 WHERE 0")) {
 	$self->{readonly}++;
     }
+}
+
+sub initialize {
+    my $self = shift;
+    local $self->{autoinit} = 1;
+    return !!$self->dbh;
+}
+
+sub initialized {
+    my $self = shift;
+    return !!eval { $self->dbh };
 }
 
 sub readonly {
@@ -960,6 +982,10 @@ passing them as key/value pair %opts.  Only C<prefix> is mandatory.
 All other directories are derived from this, except for the C<man*>
 directories will only set up if specified explicitly.
 
+The option C<autoinit> will if TRUE make the install area call
+$self->initialize automatically when some method need access to the
+database.
+
 =item $area->name
 
 Returns the name.  This returns the empty string for nameless I<InstallArea>.
@@ -984,16 +1010,38 @@ Returns the name.  This returns the empty string for nameless I<InstallArea>.
 
 Returns the corresponding path.
 
+=item $area->inc
+
+Returns the list of directories to be pushed onto perl's @INC for the
+current install area.
+
+=item $area->initialized
+
+Returns TRUE if this area has been initialized.  If C<autoinit> was
+specified for the constructor, then this method might have the side
+effect of actually initializing the database, in which case this
+returns TRUE.
+
+=item $area->initialize
+
+Set up the database used to track packages for the install area if not
+already set up.  This invokes sync_db() if the database was created.
+
+Most methods will croak unless the install area has been initialized.
+Exceptions are name(), readonly(), initialized(), packages() and the
+directory accessors (like lib(), script(),...).
+
+The C<autoinit> option can be specified for the constructor to make
+the database be automatically set up on during the first method call
+than need it.
+
 =item $area->readonly
 
 Returns TRUE if it is not possible to install or remove packages from
 the area.  This is usually caused by the user does not have permission
 to modify the files of the area.
 
-=item $area->inc
-
-Returns the list of directories to be pushed onto perl's @INC for the
-current install area.
+This also returns TRUE for unintialized install areas.
 
 =item $area->install( \%pkg1, \%pkg2, ... )
 
@@ -1079,7 +1127,7 @@ Only verify the given package.
 
 Without arguments returns the sorted list of names of packages
 currently installed.  In scalar context returns the number of packages
-installed.
+installed, or C<undef> if database has not been initialized.
 
 With arguments return a list of array references each one representing
 an installed package.  The elements of each array are the fields
