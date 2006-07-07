@@ -298,6 +298,10 @@ my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 $toolbar->add($go_btn, -pad => [4, 2, 0]);
 Tkx::tooltip($go_btn, "Run marked actions");
 
+# Add [+] and [-] key bindings for install/remove to pkglist
+Tkx::bind($pkglist, "<Key-plus>", sub { $install_btn->invoke(); });
+Tkx::bind($pkglist, "<Key-minus>", sub { $remove_btn->invoke(); });
+
 # Sync/config buttons
 my $sync_btn = $toolbar->new_ttk__button(-text => "Sync",
 					 -image => $IMG{'refresh'},
