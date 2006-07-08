@@ -687,6 +687,54 @@ sub feature_fixup_case {
     return $name;
 }
 
+sub packages_depending_on {
+    my($self, $pkg, $area_name) = @_;
+    my $pkg_name;
+    if (ref $pkg) {
+	$pkg_name = $pkg->name;
+    }
+    else {
+	$pkg_name = $pkg;
+	$pkg = undef;
+    }
+    unless ($area_name) {
+	for $a ($self->areas) {
+	    my $area = $self->area($a);
+	    next unless $area->initialized;
+	    if (defined $area->package_id($pkg_name)) {
+		$area_name = $a;
+		last;
+	    }
+	}
+	die "Can't find $pkg_name in any area" unless $area_name;
+	#print "Found $pkg_name in $area_name\n";
+    }
+    $pkg = $self->area($area_name)->package($pkg_name) unless $pkg;
+
+    my %provide = $pkg->provides;
+    #print "$pkg_name provide: @{[sort keys %provide]}\n";
+    my $feature_sql = join(",", map "'$_'", sort keys %provide);
+
+    # find packages that require any of the features $pkg provide
+    my @dep_pkgs;
+    for $a ($self->areas) {
+	my $area = $self->area($a);
+	next unless $area->initialized;
+	my $dbh = $area->dbh;
+	my $pkg_ids = $dbh->selectcol_arrayref("SELECT package_id FROM feature WHERE role = 'r' AND name in ($feature_sql)");
+	next unless $pkg_ids && @$pkg_ids;
+	for my $dep_pkg (map $area->package($_), @$pkg_ids) {
+	    next if $a eq $area_name && $pkg->name eq $dep_pkg->name;
+	    push(@dep_pkgs, $dep_pkg);
+	}
+    }
+
+    # XXX Check versions
+    # XXX Check if dependant features are provided by other package
+
+    return @dep_pkgs;
+}
+
 sub packages_missing {
     my($self, %args) = @_;
     my @pkg_have = @{delete $args{have} || []};
@@ -1189,6 +1237,15 @@ C<undef> if none of the installed packages provide this feature.
 
 If one or more @areas are provided, only look in the areas given by
 these names.
+
+=item $client->packages_depending_on( $pkg, $area )
+
+Returns the packages (as C<ActivePerl::PPM::Package> objects) that
+would "break" if the given package was uninstalled.  This means that
+the returned packages are those that depend on features that the given
+package provide.  In scalar context return number of packages.
+
+The $pkg argument can be either a package name or a package object.
 
 =item $client->packages_missing( %args )
 

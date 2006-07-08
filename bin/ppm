@@ -956,11 +956,13 @@ Run 'ppm help area' to learn how to set up private areas.";
 }
 
 sub do_remove {
-    $USAGE = "remove [--area <area>] <package> ...";
+    $USAGE = "remove [--area <area>] [--force] <package> ...";
     my $opt_area;
+    my $opt_force;
     require Getopt::Long;
     Getopt::Long::GetOptions(
 	'area=s' => \$opt_area,
+	'force' => \$opt_force,
      ) || usage();
     usage() unless @ARGV;
 
@@ -990,6 +992,12 @@ sub do_remove {
 	}
 	if (lc($pkg_o->{name}) ne lc(do{my $p = $pkg; $p =~ s/::/-/g; $p})) {
 	    die "'ppm remove $pkg_o->{name}' will uninstall package providing $pkg";
+	}
+	unless ($opt_force) {
+	    if (my @d = $ppm->packages_depending_on($pkg_o, $area->name)) {
+		print "$pkg: required by " . join(", ", sort map $_->name, @d), "\n";
+		next;
+	    }
 	}
 	eval {
 	    $pkg_o->run_script("uninstall", $area, undef, {
@@ -1047,7 +1055,7 @@ Install, upgrade and remove packages:
     ppm upgrade [--install]
     ppm upgrade <pkg>
     ppm upgrade <module>
-    ppm remove [--area <area>] <pkg>
+    ppm remove [--area <area>] [--force] <pkg>
 
 Manage and search install areas:
 
@@ -1245,9 +1253,12 @@ warnings, trace and debug events.
 Alias for B<ppm list --matching> I<pattern>.  Provided for PPM version
 3 compatibility.
 
-=item B<ppm remove> I<pkg> ...
+=item B<ppm remove> [ B<--area> I<area> ] [ B<--force> ] I<pkg> ...
 
-Uninstalls the specified package.
+Uninstalls the specified package.  If I<area> is provided unininstall
+from the specified area only.  With B<--force> uninstall even if there
+are other packages that depend on features provided by the given
+package.
 
 =item B<ppm rep> ...
 
