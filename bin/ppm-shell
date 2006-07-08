@@ -4,6 +4,9 @@ use strict;
 use Term::ReadLine ();
 use Text::ParseWords qw(shellwords);
 
+system("ppm", "--version");
+exit 1 if $? != 0;
+
 my $term = new Term::ReadLine 'PPM';
 my $prompt = "ppm> ";
 my $OUT = $term->OUT || \*STDOUT;
