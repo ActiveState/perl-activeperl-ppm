@@ -68,6 +68,9 @@ if ($windowingsystem eq "win32") {
     Tkx::wm_iconbitmap($mw, $icon);
     Tkx::wm_iconbitmap($mw, -default => $^X);
 }
+elsif ($windowingsystem eq "x11") {
+    Tkx::wm_iconphoto($mw, "-default", Tkx::ppm__img('perl'));
+}
 
 # This code makes themed frames use the notebook's background color.
 # We restrict the use of this to those frames in notebooks.

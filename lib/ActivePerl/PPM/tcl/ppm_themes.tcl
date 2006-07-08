@@ -35,6 +35,7 @@ namespace eval ::ppm {
 	refresh		{refresh.png}
 	config		{cog.png}
 	gecko		{gecko.png}
+        perl            {perl_48x48.png}
 	add		{add.png}
 	delete		{delete.png}
 	accept		{accept.png}
