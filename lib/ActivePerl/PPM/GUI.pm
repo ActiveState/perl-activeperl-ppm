@@ -138,6 +138,7 @@ $IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 my $action_menu;
 my $fields_menu;
 my $view_menu;
+my $file_menu;
 
 on_load();
 
@@ -524,11 +525,27 @@ sub menus {
     my ($sm, $ssm);
 
     # File menu
-    $sm = $menu->new_menu(-name => "file");
+    $sm = $file_menu = $menu->new_menu(-name => "file");
     $menu->add_cascade(-label => "File", -menu => $sm);
-    $sm->add_command(-label => "Exit", -accelerator => "Ctrl-q",
-		     -command => [\&on_exit]);
-    $mw->g_bind("<Control-q>" => [\&on_exit]);
+    $sm->add_command(-label => "Run Marked Actions", -state => "disabled",
+		     -command => sub { $go_btn->invoke(); });
+    $mw->g_bind("<<RunActions>>" => sub { $go_btn->invoke(); });
+    if ($AQUA) {
+	$sm->entryconfigure("Run Marked Actions",
+			    -accelerator => "Command-Enter");
+	Tkx::event("add", "<<RunActions>>", "<Command-Key-Return>",
+		   "<Command-Key-KP_Enter>");
+	$mw->g_bind("<Command-q>" => [\&on_exit]);
+    } else {
+	$sm->entryconfigure("Run Marked Actions",
+			    -accelerator => "Ctrl+Enter");
+	Tkx::event("add", "<<RunActions>>", "<Control-Key-Return>",
+		   "<Control-Key-KP_Enter>");
+	$sm->add_separator();
+	$sm->add_command(-label => "Exit", -command => [\&on_exit]);
+	$sm->entryconfigure("Exit", -accelerator => "Ctrl+q");
+	$mw->g_bind("<Control-q>" => [\&on_exit]);
+    }
 
     # Edit menu
     $sm = $menu->new_menu(-name => "edit");
@@ -848,11 +865,13 @@ sub queue_for_remove {
 sub update_actions {
     if ($NUM{'install'} || $NUM{'remove'}) {
 	$go_btn->configure(-state => "normal");
+	$file_menu->entryconfigure("Run Marked Actions", -state => "normal");
 	$filter_mod->configure(-state => "normal");
 	$view_menu->entryconfigure("Packages to Install/Remove",
 				   -state => "normal");
     } else {
 	$go_btn->configure(-state => "disabled");
+	$file_menu->entryconfigure("Run Marked Actions", -state => "disabled");
 	$filter_mod->configure(-state => "disabled");
 	$view_menu->entryconfigure("Packages to Install/Remove",
 				   -state => "disabled");
