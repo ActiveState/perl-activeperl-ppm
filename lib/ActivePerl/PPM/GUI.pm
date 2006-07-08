@@ -317,11 +317,11 @@ Tkx::bind($pkglist, "<Key-plus>", sub { $install_btn->invoke(); });
 Tkx::bind($pkglist, "<Key-minus>", sub { $remove_btn->invoke(); });
 
 # Sync/config buttons
-my $sync_btn = $toolbar->new_ttk__button(-text => "Sync",
+my $sync_btn = $toolbar->new_ttk__button(-text => "Refresh",
 					 -image => $IMG{'refresh'},
 					 -style => "Toolbutton",
 					 -command => [\&full_refresh]);
-Tkx::tooltip($sync_btn, "Synchronize database");
+Tkx::tooltip($sync_btn, "Refresh all data");
 $toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
 
 my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
@@ -527,6 +527,8 @@ sub menus {
     # File menu
     $sm = $file_menu = $menu->new_menu(-name => "file");
     $menu->add_cascade(-label => "File", -menu => $sm);
+    $sm->add_command(-label => "Refresh All Data",
+		     -command => sub { $sync_btn->invoke(); });
     $sm->add_command(-label => "Run Marked Actions", -state => "disabled",
 		     -command => sub { $go_btn->invoke(); });
     $mw->g_bind("<<RunActions>>" => sub { $go_btn->invoke(); });
