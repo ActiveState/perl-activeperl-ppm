@@ -76,7 +76,7 @@ sub provides {
 
 sub requires {
     my $self = shift;
-    return %{$self->{require} || []};
+    return %{$self->{require} || {}};
 }
 
 #
