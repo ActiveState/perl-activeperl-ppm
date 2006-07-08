@@ -608,6 +608,7 @@ sub menus {
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
     $menu->add_cascade(-label => "Action", -menu => $sm);
+    $sm->add_command(-label => "No Selected Package", -state => "disabled");
 
     # Help menu
     $sm = $menu->new_menu(-name => "help"); # must be named "help"
