@@ -34,6 +34,7 @@ rmtree("dummy", 1);
 mkdir("dummy", 0755);
 my $area = ActivePerl::PPM::InstallArea->new(prefix => "dummy");
 $area->{name} = $area_name;
+$area->initialize;
 my $dbh = $area->dbh;
 
 for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
