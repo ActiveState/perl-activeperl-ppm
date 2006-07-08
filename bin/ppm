@@ -994,9 +994,14 @@ sub do_remove {
 	    die "'ppm remove $pkg_o->{name}' will uninstall package providing $pkg";
 	}
 	unless ($opt_force) {
-	    if (my @d = $ppm->packages_depending_on($pkg_o, $area->name)) {
-		print "$pkg: required by " . join(", ", sort map $_->name, @d), "\n";
-		next;
+	    my @d = map $_->name, $ppm->packages_depending_on($pkg_o, $area->name);
+	    if (@d) {
+		my %args = map { $_ => 1 } @ARGV;
+		@d = grep !$args{$_}, @d;
+		if (@d) {
+		    print "$pkg: required by " . join(", ", sort @d), "\n";
+		    next;
+		}
 	    }
 	}
 	eval {
