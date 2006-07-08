@@ -1,0 +1,39 @@
+#!/usr/bin/perl -w
+
+use strict;
+use ActivePerl::PPM::limited_inc;
+
+use ActivePerl::PPM::Client;
+
+my $ppm = ActivePerl::PPM::Client->new;
+
+for my $area_name ($ppm->areas) {
+    my $area = $ppm->area($area_name);
+    my $area_printed;
+    for my $pkg ($area->packages) {
+	$pkg = $area->package($pkg);
+	my %req_vers = $pkg->requires;
+	next unless %req_vers;
+	print "$area_name area:\n" unless $area_printed++;
+	print " - ", $pkg->name_version, "\n";
+	for my $feature (sort keys %req_vers) {
+	    my $need = $req_vers{$feature};
+	    print "   * need $feature ";
+	    print "v$need " if $need;
+	    my $have = $ppm->feature_have($feature);
+	    if (defined $have) {
+		if ($have < $need) {
+		    print "*** only v$have provided ***";
+		}
+		else {
+		    print "ok";
+		    print " v$have provided" if $have != $need;
+		}
+	    }
+	    else {
+		print "*** not provided ***";
+	    }
+	    print "\n";
+	}
+    }
+}
