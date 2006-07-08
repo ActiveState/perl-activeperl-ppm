@@ -1,8 +1,6 @@
 #!/usr/bin/perl -w
 
 use strict;
-use ActivePerl::PPM::limited_inc;
-
 use ActivePerl::PPM::Client;
 
 my $ppm = ActivePerl::PPM::Client->new;
