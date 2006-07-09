@@ -333,6 +333,20 @@ my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 Tkx::tooltip($prefs_btn, "PPM Preferences");
 $toolbar->add($prefs_btn);
 
+if ($AQUA) {
+    # Aqua isn't properly displaying the button disabled, so get the
+    # effect through a greyed image
+    for my $w ($filter_all, $filter_inst, $filter_upgr, $filter_mod,
+	       $install_btn, $remove_btn, $go_btn, $sync_btn, $prefs_btn) {
+	my $img = $w->cget("-image");
+	if ($img) {
+	    my $disimg = Tkx::ppm__img(
+		Tkx::SplitList(Tkx::ppm__imgname($img)), "gray");
+	    $w->configure(-image => [$img, disabled => $disimg]);
+	}
+    }
+}
+
 ## Statusbar items
 my %NUM;
 $NUM{'total'} = 0;

@@ -10,6 +10,7 @@
 
 package require img::png
 package require tile
+package require treectrl ; # for imagetint
 package provide ppm::themes 1.0
 
 namespace eval ::ppm {
@@ -70,14 +71,18 @@ proc ::ppm::img {what args} {
 	}
 	set IMG($key) [image create photo ::ppm::img::$key -file $IMGDIR/$file]
 	foreach mod $args {
-	    set mimg [img $MOD($mod)]
-	    $IMG($key) copy $mimg; # overlay modifier
+	    if {$mod eq "grey" || $mod eq "gray"} {
+		imagetint $IMG($key) gray 200
+	    } else {
+		set mimg [img $MOD($mod)]
+		$IMG($key) copy $mimg; # overlay modifier
+	    }
 	}
     }
     return $IMG($key)
 }
 
-proc ::ppm::img_name {img} {
+proc ::ppm::imgname {img} {
     # get regular name from image made up of [list $what ?$mod ...?]
     return [split [namespace tail $img] /]
 }
