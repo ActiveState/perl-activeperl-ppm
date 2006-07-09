@@ -31,11 +31,11 @@ if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 
     Tkx::package_require('tkcon');
     if ($AQUA) {
-	$mw->g_bind("<Command-F12>", 'catch {tkcon show}');
-	$mw->g_bind("<Command-F11>", 'catch {tkcon hide}');
+	Tkx::bind(all => "<Command-F12>", 'catch {tkcon show}');
+	Tkx::bind(all => "<Command-F11>", 'catch {tkcon hide}');
     } else {
-	$mw->g_bind("<F12>", 'catch {tkcon show}');
-	$mw->g_bind("<F11>", 'catch {tkcon hide}');
+	Tkx::bind(all => "<F12>", 'catch {tkcon show}');
+	Tkx::bind(all => "<F11>", 'catch {tkcon hide}');
     }
     Tkx::catch("tkcon hide");
 }
@@ -77,7 +77,6 @@ elsif ($windowingsystem eq "x11") {
 Tkx::style(layout => "NotebookPane",
 	   ["NotebookPane.background", -sticky => "news", -expand => 1]);
 Tkx::option_add("*TNotebook.TFrame.style", "NotebookPane");
-Tkx::option_add("*TNotebook.TLabelframe.style", "NotebookPane");
 
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
@@ -234,8 +233,6 @@ my $prefs_dialog = $mw->new_widget__dialog(
     -synchronous => 0, -separator => 0,
 );
 my $repolist;
-my $repo_add;
-my $repo_del;
 build_prefs_dialog($prefs_dialog);
 
 ## Toolbar items
@@ -406,6 +403,7 @@ sub refresh {
 }
 
 sub sync {
+    %REPOS = ();
     $ppm->repo_sync;
     $repolist->clear();
     for my $repo_id ($ppm->repos) {
@@ -416,8 +414,10 @@ sub sync {
 		       num => $repo->{pkgs},
 		       checked => $repo->{packlist_last_access},
 		   );
+	$repolist->enable($repo_id, $repo->{enabled});
     }
 
+    %AREAS = ();
     for my $area_name ($ppm->areas) {
 	$AREAS{$area_name} = $ppm->area($area_name);
     }
@@ -537,7 +537,7 @@ sub menus {
 			    -accelerator => "Command-Enter");
 	Tkx::event("add", "<<RunActions>>", "<Command-Key-Return>",
 		   "<Command-Key-KP_Enter>");
-	$mw->g_bind("<Command-q>" => [\&on_exit]);
+	Tkx::bind(all => "<Command-q>" => [\&on_exit]);
     } else {
 	$sm->entryconfigure("Run Marked Actions",
 			    -accelerator => "Ctrl+Enter");
@@ -546,7 +546,7 @@ sub menus {
 	$sm->add_separator();
 	$sm->add_command(-label => "Exit", -command => [\&on_exit]);
 	$sm->entryconfigure("Exit", -accelerator => "Ctrl+q");
-	$mw->g_bind("<Control-q>" => [\&on_exit]);
+	Tkx::bind(all => "<Control-q>" => [\&on_exit]);
     }
 
     # Edit menu
@@ -939,13 +939,37 @@ sub commit_actions {
 
 sub select_repo_item {
     my $item = shift;
-    $repo_del->configure(-state => "disabled");
     return unless $item;
-
-    # We need to figure out how we want details formatted
+    my $what = shift || "";
     my %data = Tkx::SplitList($repolist->data($item));
-    $repo_del->configure(-state => "normal");
-}
+    # We need to figure out how we want details formatted
+    if ($what eq "destroy") {
+	my $res = Tkx::tk___messageBox(
+	    -title => "Delete Repository?",
+	    -icon => "warning",
+	    -type => "yesno",
+	    -message => "Really delete repository?",
+	    -parent => $prefs_dialog,
+	);
+	return unless $res eq "yes";
+	$ppm->repo_delete($data{id});
+	full_refresh();
+	return;
+    }
+    if ($what eq "enable") {
+	my $state = $repolist->enable($data{id});
+	$state = $ppm->repo_enable($data{id}, $state);
+	# feed back result, in case we aren't allowed to change state
+	$repolist->enable($data{id}, $state);
+	full_refresh();
+	return;
+    }
+    if ($what eq "setname") {
+	my $newname = shift;
+	$ppm->repo_set_name($data{id}, $newname);
+	return;
+    }
+};
 
 sub build_prefs_dialog {
     my $top = shift;
@@ -975,10 +999,6 @@ sub build_prefs_dialog {
 				  -borderwidth => 1, -relief => 'sunken',
 				  -itembackground => ["#F7F7FF", ""]);
     $sw->setwidget($repolist);
-    $repo_add = $f->new_ttk__button(-text => "Add",
-				    -image => Tkx::ppm__img('add'));
-    $repo_del = $f->new_ttk__button(-text => "Delete", -state => "disabled",
-				    -image => Tkx::ppm__img('delete'));
     my $addl = $f->new_widget__panelframe(-text => "Add Repository:");
     my $addf = $addl->new_ttk__frame(-padding => [6, 2]);
     $addl->setwidget($addf);

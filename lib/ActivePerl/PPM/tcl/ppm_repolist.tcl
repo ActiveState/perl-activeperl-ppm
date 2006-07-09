@@ -12,6 +12,7 @@ package require snit
 package require treectrl
 package require style::as
 package require widget::scrolledwindow
+package require tooltip
 package provide ppm::repolist 1.0
 
 snit::widgetadaptor repolist {
@@ -27,6 +28,8 @@ snit::widgetadaptor repolist {
     option -selectcommand -default ""
     option -itembackground -default "" -configuremethod C-itembackground
     option -sortbackground -default "#f7f7f7" -configuremethod C-sortbackground
+
+    variable REPOIDS -array {}
 
     # color to use on details view sorted column
     variable sortcolumn "repo"
@@ -46,7 +49,7 @@ snit::widgetadaptor repolist {
 
 	$self tree-details
 
-	bindtags $tree [linsert [bindtags $tree] 1 $win]
+	bindtags $tree [linsert [bindtags $tree] 1 $win TreeCtrlFileList]
 
 	$self configurelist $args
     }
@@ -69,14 +72,36 @@ snit::widgetadaptor repolist {
     method add {id args} {
 	# There should be no duplication of repos
 	set item [$tree item create -button 0 -open 0 -parent 0 -visible 1]
+	set REPOIDS($id) $item
+	set REPOIDS($id,enabled) 1
 	$tree item style set $item \
 	    id styText \
-	    repo styText \
+	    repo styMixed \
 	    url styText \
 	    num styText \
 	    checked styDate
 	array set opts $args
 	set opts(id) $id
+	# Use classic buttons for better "inlined" look
+	set db [button $tree.repo_destroy$id \
+		    -image [::ppm::img delete] \
+		    -padx 0 -pady 0 \
+		    -background white -borderwidth 1 -highlightthickness 0 \
+		    -command [mymethod _select $item "destroy"] \
+		   ]
+	tooltip::tooltip $db "Destroy Repository"
+	$tree item element configure $item repo elemDestroy -window $db
+	set cb [checkbutton $tree.repo_enable$id \
+		    -selectcolor white -background white \
+		    -padx 0 -pady 0 -offrelief flat \
+		    -indicatoron 0 -borderwidth 1 -highlightthickness 0 \
+		    -variable [myvar REPOIDS($id,enabled)] \
+		    -image [::ppm::img available] \
+		    -selectimage [::ppm::img package] \
+		    -command [mymethod _select $item "enable"] \
+		   ]
+	tooltip::tooltip $cb "Enable/Disable Repository"
+	$tree item element configure $item repo elemEnable -window $cb
 	if {[info exists opts(checked)]} {
 	    $tree item element configure \
 		$item checked elemDate -data $opts(checked)
@@ -101,8 +126,17 @@ snit::widgetadaptor repolist {
 	}
     }
 
+    method enable {repoid {bool {}}} {
+	if {$bool ne ""} {
+	    set REPOIDS($repoid,enabled) [string is true -strict $bool]
+	}
+	return $REPOIDS($repoid,enabled)
+    }
+
     method clear {} {
 	$tree item delete all
+	array unset REPOIDS
+	array set REPOIDS {}
     }
 
     method numitems {} {
@@ -145,16 +179,16 @@ snit::widgetadaptor repolist {
 
     method tree-details {} {
 	set height [font metrics [$tree cget -font] -linespace]
-	if {$height < 18} {
-	    set height 18
+	if {$height < 20} {
+	    set height 20
 	}
 	$tree configure -itemheight $height
 
 	foreach {lbl tag opts} {
-	    "Id"           id      {-visible 0}
-	    "Repository"   repo    {-width 150}
-	    "URL"          url     {-width 120}
-	    "\# packages"  num     {-width 60}
+	    ""             id      {-width 0}
+	    "Repository"   repo    {-minwidth 120 -expand 1 -squeeze 1}
+	    "URL"          url     {-minwidth 100 -expand 1 -squeeze 1}
+	    "\# Pkgs"      num     {-width 60}
 	    "Last Checked" checked {-width 120}
 	} {
 	    eval [list $tree column create -text $lbl -tag $tag \
@@ -165,6 +199,8 @@ snit::widgetadaptor repolist {
 	set selfg $::style::as::highlightfg
 
 	# Create elements
+	$tree element create elemDestroy window -destroy 1
+	$tree element create elemEnable window -destroy 1
 	$tree element create elemText text -lines 1 \
 	    -fill [list $selfg {selected focus}]
 	$tree element create elemDate text -lines 1 \
@@ -172,6 +208,15 @@ snit::widgetadaptor repolist {
 	    -datatype time -format "%x %X"
 	$tree element create selRect rect \
 	    -fill [list $selbg {selected focus} gray {selected !focus}]
+
+	# text + image style
+	set S [$tree style create styMixed -orient horizontal]
+	$tree style elements $S {selRect elemDestroy elemEnable elemText}
+	$tree style layout $S selRect -iexpand news \
+	    -union {elemDestroy elemEnable elemText}
+	$tree style layout $S elemDestroy -expand ns -padx 2
+	$tree style layout $S elemEnable -expand ns -padx 2
+	$tree style layout $S elemText -squeeze x -expand ns -padx 2
 
 	# text style
 	set S [$tree style create styText]
@@ -188,7 +233,7 @@ snit::widgetadaptor repolist {
 	$tree notify install <Header-invoke>
 	$tree notify bind $tree <Header-invoke> [mymethod _headerinvoke %T %C]
 
-	$tree notify bind $tree <Selection> [mymethod _select %T %c %D %S]
+	$tree notify bind $tree <Selection> [mymethod _select %S]
 
 	#$tree column dragconfigure -enable 1
 	$tree notify install <ColumnDrag-begin>
@@ -203,23 +248,55 @@ snit::widgetadaptor repolist {
 	$tree notify install <Drag-end>
 	$tree notify install <Drag-receive>
 
+	$tree notify install <Edit-begin>
+	$tree notify install <Edit-end>
+	$tree notify install <Edit-accept>
+
+	# List of lists: {column style element ...} specifying elements
+	# the user can click on or select with the selection rectangle
 	TreeCtrl::SetSensitive $tree {
-	    {repo styText selRect elemText}
+	    {repo styMixed selRect elemText}
 	    {url styText selRect elemText}
 	    {num styText selRect elemText}
 	}
 
+	# List of lists: {column style element ...} specifying elements
+	# added to the drag image when dragging selected items
 	TreeCtrl::SetDragImage $tree {
-	    {repo styText selRect elemText}
+	    {repo styMixed selRect elemText}
+	}
+
+	# List of lists: {column style element ...} specifying text elements
+	# the user can edit
+	TreeCtrl::SetEditable $tree {
+	    {repo styMixed elemText}
+	}
+
+	# During editing, hide the text and selection-rectangle elements.
+	$tree notify bind $tree <Edit-begin> {
+		%T item element configure %I %C \
+		    elemText -draw no + selRect -draw no
+	}
+	$tree notify bind $tree <Edit-accept> \
+	    [mymethod _edit_accept %I %C %E %t]
+	$tree notify bind $tree <Edit-end> {
+		%T item element configure %I %C \
+		    elemText -draw yes + selRect -draw yes
 	}
 
 	$tree column configure $sortcolumn -arrow up \
 	    -itembackground $options(-sortbackground)
     }
 
-    method _select {t count lost new} {
+    method _edit_accept {item col elem txt} {
+	if {$txt eq ""} { return }
+	$self _select $item setname $txt
+	$tree item element configure $item $col $elem -text $txt
+    }
+
+    method _select {new args} {
 	if {$options(-selectcommand) ne ""} {
-	    uplevel 1 $options(-selectcommand) $new
+	    uplevel 1 $options(-selectcommand) $new $args
 	}
     }
 }
