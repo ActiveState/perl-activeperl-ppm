@@ -729,6 +729,7 @@ sub menus {
 	# OS X enables the Preferences item when you create this proc
 	Tkx::proc("tk::mac::ShowPreferences", "args",
 		  sub { $prefs_dialog->display(); });
+	Tkx::bind(all => "<Command-comma>", "tk::mac::ShowPreferences");
     }
 
     return $menu;
