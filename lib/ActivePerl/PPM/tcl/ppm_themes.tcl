@@ -40,6 +40,10 @@ namespace eval ::ppm {
 	delete		{delete.png}
 	accept		{accept.png}
 	go		{go.png}
+	radio-on	{radio-on.gif}
+	radio-off	{radio-off.gif}
+	locked		{lock.png}
+	unlocked	{lock_open.png}
     }
 }
 namespace eval ::ppm::img {
