@@ -517,6 +517,32 @@ sub view {
     }
 }
 
+sub verify {
+    # Copied from ppm:do_verify
+    my %opt;
+    $opt{package} = shift;
+    my @areas = grep $_->initialized, map $ppm->area($_), $ppm->areas;
+    if ($opt{package}) {
+	@areas = grep $_->package_id($opt{package}), @areas;
+	unless (@areas) {
+	    status_message("Package '$opt{package}' is not installed\n");
+	    return;
+	}
+    }
+    my %status;
+    for my $area (@areas) {
+	my %s = $area->verify(%opt);
+	while (my($k,$v) = each %s) {
+	    $status{$k} += $v;
+	}
+    }
+    for my $v (qw(verified missing modified)) {
+	next if $v ne "verified" && !$status{$v};
+	my $s = $status{$v} == 1 ? "" : "s";
+	status_message("$status{$v} file$s $v\n");
+    }
+}
+
 sub menus {
     Tkx::option_add("*Menu.tearOff", 0);
     my $menu = $mw->new_menu();
@@ -529,6 +555,8 @@ sub menus {
     $menu->add_cascade(-label => "File", -menu => $sm);
     $sm->add_command(-label => "Refresh All Data",
 		     -command => sub { $sync_btn->invoke(); });
+    $sm->add_command(-label => "Verify Packages",
+		     -command => [\&verify]);
     $sm->add_command(-label => "Run Marked Actions", -state => "disabled",
 		     -command => sub { $go_btn->invoke(); });
     $mw->g_bind("<<RunActions>>" => sub { $go_btn->invoke(); });
@@ -828,6 +856,12 @@ sub select_item {
     if (!$data{'available'} && !$data{'installed'}) {
 	# Oddball packages that have no version?
 	$menu->add_command(-label => "$name", -state => "disabled");
+    }
+    if ($data{'installed'}) {
+	# Add "Verify" action
+	$menu->add_separator();
+	$menu->add_command(-label => "Verify $name $data{'installed'}",
+			   -command => [\&verify, $name]);
     }
 }
 
