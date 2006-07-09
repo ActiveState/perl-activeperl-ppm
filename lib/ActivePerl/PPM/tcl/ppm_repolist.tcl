@@ -27,7 +27,7 @@ snit::widgetadaptor repolist {
 
     option -selectcommand -default ""
     option -itembackground -default "" -configuremethod C-itembackground
-    option -sortbackground -default "#f7f7f7" -configuremethod C-sortbackground
+    option -sortbackground -default "" -configuremethod C-sortbackground
 
     variable REPOIDS -array {}
 
@@ -55,17 +55,18 @@ snit::widgetadaptor repolist {
     }
 
     method C-itembackground {option value} {
-	foreach col [$tree column list] {
-	    $tree column configure $col -itembackground $value
-	}
+	$tree column configure all -itembackground $value
 	# don't lose sort column
-	$tree column configure $sortcolumn \
-	    -itembackground $options(-sortbackground)
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $sortcolumn \
+		-itembackground $options(-sortbackground)
+	}
 	set options($option) $value
     }
 
     method C-sortbackground {option value} {
-	$tree column configure $sortcolumn -itembackground $value
+	$tree column configure $sortcolumn -itembackground \
+	    [expr {[llength $value] ? $value : $options(-itembackground)}]
 	set options($option) $value
     }
 
@@ -172,8 +173,11 @@ snit::widgetadaptor repolist {
 		-itembackground $options(-itembackground)
 	    set sortcolumn $col
 	}
-	$tree column configure $col -arrow $arrow \
-	    -itembackground $options(-sortbackground)
+	$tree column configure $col -arrow $arrow
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $col \
+		-itembackground $options(-sortbackground)
+	}
 	$self sort
     }
 
@@ -284,8 +288,11 @@ snit::widgetadaptor repolist {
 		    elemText -draw yes + selRect -draw yes
 	}
 
-	$tree column configure $sortcolumn -arrow up \
-	    -itembackground $options(-sortbackground)
+	$tree column configure $sortcolumn -arrow up
+	if {[llength $options(-sortbackground)]} {
+	    $tree column configure $sortcolumn \
+		-itembackground $options(-sortbackground)
+	}
     }
 
     method _edit_accept {item col elem txt} {
