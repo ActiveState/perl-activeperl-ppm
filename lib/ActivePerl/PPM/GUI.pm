@@ -546,20 +546,34 @@ sub view {
 }
 
 sub verify {
-    # Copied from ppm:do_verify
-    my %opt;
-    $opt{package} = shift;
+    my $package = shift;
     my @areas = grep $_->initialized, map $ppm->area($_), $ppm->areas;
-    if ($opt{package}) {
-	@areas = grep $_->package_id($opt{package}), @areas;
+    if ($package) {
+	@areas = grep $_->package_id($package), @areas;
 	unless (@areas) {
-	    status_message("Package '$opt{package}' is not installed\n");
+	    # can't happen
+	    status_message("Package '$package' is not installed\n");
 	    return;
 	}
+	status_message("Verifying $package ...\n", tag => "h2");
+    }
+    else {
+	status_message("Verifying all packages ...\n", tag => "h2");
     }
     my %status;
     for my $area (@areas) {
-	my %s = $area->verify(%opt);
+	my %s = $area->verify(
+	    package => $package,
+            badfile_cb => sub {
+               my $what = shift;
+               if ($what eq "wrong_mode") {
+                   status_message(sprintf "%s: wrong mode %03o expected %03o\n", @_);
+               }
+               else {
+		   status_message("$_[0]: $what\n");
+               }
+            },
+        );
 	while (my($k,$v) = each %s) {
 	    $status{$k} += $v;
 	}
