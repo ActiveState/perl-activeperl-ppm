@@ -451,7 +451,24 @@ sub do_verify {
     }
     my %status;
     for my $area (@areas) {
-	my %s = $area->verify(%opt);
+	my %s = $area->verify(
+            package => $opt{package},
+            badfile_cb => sub {
+		my $what = shift;
+		my $file = shift;
+		print "$file: ";
+		if ($what eq "wrong_mode") {
+		    printf "wrong mode %03o expected %03o\n", @_;
+		}
+		else {
+		    print "$what\n";
+		}
+            },
+	    file_cb => !$opt{verbose} ? undef : sub {
+		my($file, $md5, $mode) = @_;
+		printf "V %s %s %03o\n", $file, $md5, $mode;
+            },
+	);
 	while (my($k,$v) = each %s) {
 	    $status{$k} += $v;
 	}

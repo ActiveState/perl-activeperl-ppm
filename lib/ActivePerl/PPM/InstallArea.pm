@@ -174,6 +174,8 @@ sub verify {
     my($self, %opt) = @_;
     my $dbh = $self->dbh;
     my $pkg = delete $opt{package};
+    my $file_cb = delete $opt{file_cb};
+    my $badfile_cb = delete $opt{badfile_cb};
     my $pkg_id;
     if ($pkg) {
 	$pkg_id = $self->package_id($pkg);
@@ -189,19 +191,19 @@ sub verify {
     $status{id} = $pkg_id if $pkg_id;
     while (my($path, $md5, $mode) = $sth->fetchrow_array) {
 	$path = $self->_expand_path($path);
-	printf "V $path $md5 %03o\n", $mode if $opt{verbose};
+	&$file_cb($path, $md5, $mode) if $file_cb;
 	if (my $info = _file_info($path)) {
 	    if (defined($mode) && $mode != $info->{mode}) {
-		printf "%s: wrong mode %03o expected %03o\n", $path, $info->{mode}, $mode;
+		&$badfile_cb("wrong_mode", $path, $info->{mode}, $mode) if $badfile_cb;
 		$status{wrong_mode}++;
 	    }
 	    if (defined $md5 && $md5 ne $info->{md5}) {
-		print "$path: modified\n";
+		&$badfile_cb("modified", $path, $info->{md5}, $md5) if $badfile_cb;;
 		$status{modified}++;
 	    }
 	}
 	else {
-	    print "$path: missing\n";
+	    &$badfile_cb("missing", $path, $info->{md5}, $info->{mode}) if $badfile_cb;;
 	    $status{missing}++;
 	}
 	$status{verified}++;
@@ -1105,7 +1107,7 @@ provided.
 =item $area->verify( %opts )
 
 Verify that the files of the installed packages are still present and
-unmodified.  Prints messages to STDOUT about files that are missing or modified.
+unmodified.
 
 In scalar context returns TRUE if all files where still found good.
 In array context return key/value pairs suitable for assignment to a
@@ -1120,6 +1122,19 @@ The following options are recognized:
 =item package => $name
 
 Only verify the given package.
+
+=item file_cb => \&sub
+
+Function called back for each file visited.  The function is called
+with 3 arguments; the file name, expected md5 checksum and expected
+file mode.
+
+=item badfile_cb => \&sub
+
+Function called back each time a bad file is found.  The first
+argument is what kind of badness (same as the status keys in the
+return value), the second is the file name and the addtional info
+varies depending on kind.
 
 =back
 
