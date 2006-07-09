@@ -228,7 +228,8 @@ snit::widgetadaptor pkglist {
 	} else {
 	    # Fields-based and/or state-based searches
 	    set ptns [list]
-	    foreach word $words {
+	    # Use split on words to ensure list-ification
+	    foreach word [split $words] {
 		if {[string first "*" $word] == -1} {
 		    # no wildcard in pattern - add to each end
 		    lappend ptns *$word*
