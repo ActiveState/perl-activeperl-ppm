@@ -51,6 +51,7 @@ Tkx::package_require('widget::menuentry');
 Tkx::package_require('widget::panelframe');
 Tkx::package_require('ppm::pkglist');
 Tkx::package_require('ppm::repolist');
+Tkx::package_require('ppm::arealist');
 Tkx::package_require('style::as');
 Tkx::package_require('BWidget');
 Tkx::Widget__theme(1);
@@ -89,7 +90,7 @@ if ($windowingsystem ne "x11") {
 }
 
 # purely for reciprocity debugging, expose the ppm command in Tcl
-Tkx::interp(alias => "", "ppm", "", [\&::ppm]);
+Tkx::interp(alias => "", "ppm", "", [\&ppm]);
 
 # Use Tk scroll on OS X, but Ttk scrollbar elsewhere by default
 if ($AQUA) {
@@ -233,6 +234,7 @@ my $prefs_dialog = $mw->new_widget__dialog(
     -synchronous => 0, -separator => 0,
 );
 my $repolist;
+my $arealist;
 build_prefs_dialog($prefs_dialog);
 
 ## Toolbar items
@@ -402,7 +404,7 @@ sub refresh {
     $pkglist->sort();
 }
 
-sub sync {
+sub repo_sync {
     %REPOS = ();
     $ppm->repo_sync;
     $repolist->clear();
@@ -416,17 +418,29 @@ sub sync {
 		   );
 	$repolist->enable($repo_id, $repo->{enabled});
     }
+}
 
+sub area_sync {
     %AREAS = ();
+    $arealist->clear();
     for my $area_name ($ppm->areas) {
-	$AREAS{$area_name} = $ppm->area($area_name);
+	my $area = $AREAS{$area_name} = $ppm->area($area_name);
+	$arealist->add($area->name,
+		       num => scalar $area->packages,
+		       prefix => $area->prefix,
+		       inc => $area->inc,
+		   );
+	$arealist->state($area->name, "default")
+	    if $area->name eq $ppm->default_install_area;
+	$arealist->state($area->name, "readonly") if $area->readonly;
     }
 }
 
 sub full_refresh {
     status_message("Synchronizing Database ... ", tag => "h2");
     Tkx::update();
-    sync();
+    repo_sync();
+    area_sync();
     refresh();
     status_message("DONE\n", tag => "h2");
 }
@@ -1005,6 +1019,13 @@ sub select_repo_item {
     }
 };
 
+sub select_area_item {
+    my $item = shift;
+    return unless $item;
+
+    my %data = Tkx::SplitList($arealist->data($item));
+}
+
 sub build_prefs_dialog {
     my $top = shift;
 
@@ -1013,13 +1034,27 @@ sub build_prefs_dialog {
     Tkx::ttk__notebook__enableTraversal($nb);
     $top->setwidget($nb);
 
-    my $f;
+    my ($f, $sw);
     # Areas tab
     $f = $nb->new_ttk__frame(-padding => 8);
     $nb->add($f, -text => "Areas", -underline => 0);
     # Select this tab as default
     $nb->select($f);
 
+    $sw = $f->new_widget__scrolledwindow();
+    $arealist = $sw->new_arealist(-width => 450, -height => 100,
+				  -selectcommand => [\&select_area_item],
+				  -borderwidth => 1, -relief => 'sunken',
+				  -itembackground => ["#F7F7FF", ""]);
+    $sw->setwidget($arealist);
+    my $areal = $f->new_widget__panelframe(-text => "Add Area:");
+    my $areaf = $areal->new_ttk__frame(-padding => [6, 2]);
+    $areal->setwidget($areaf);
+
+    Tkx::grid(columnconfigure => $areaf, 0, -weight => 1);
+
+    Tkx::grid($sw, -sticky => 'news');
+    Tkx::grid($areal, -sticky => 'news', -pady => [4, 0]);
     Tkx::grid(columnconfigure => $f, 0, -weight => 1);
     Tkx::grid(rowconfigure => $f, 0, -weight => 1);
 
@@ -1027,7 +1062,7 @@ sub build_prefs_dialog {
     $f = $nb->new_ttk__frame(-padding => 8);
     $nb->add($f, -text => "Repositories", -underline => 0);
 
-    my $sw = $f->new_widget__scrolledwindow();
+    $sw = $f->new_widget__scrolledwindow();
     $repolist = $sw->new_repolist(-width => 450, -height => 100,
 				  -selectcommand => [\&select_repo_item],
 				  -borderwidth => 1, -relief => 'sunken',
