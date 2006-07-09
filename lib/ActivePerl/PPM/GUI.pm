@@ -608,9 +608,18 @@ sub menus {
     # Edit menu
     $sm = $menu->new_menu(-name => "edit");
     $menu->add_cascade(-label => "Edit", -menu => $sm);
-    $sm->add_command(-label => "Cut", -state => "disabled");
-    $sm->add_command(-label => "Copy", -state => "disabled");
-    $sm->add_command(-label => "Paste", -state => "disabled");
+    $sm->add_command(-label => "Cut",
+		     -command => sub {
+			 Tkx::event_generate(Tkx::focus(), "<<Cut>>");
+		     });
+    $sm->add_command(-label => "Copy",
+		     -command => sub {
+			 Tkx::event_generate(Tkx::focus(), "<<Copy>>");
+		     });
+    $sm->add_command(-label => "Paste",
+		     -command => sub {
+			 Tkx::event_generate(Tkx::focus(), "<<Paste>>");
+		     });
     if (!$AQUA) {
 	$sm->add_separator();
 	$sm->add_command(-label => "Preferences",
@@ -705,18 +714,21 @@ sub menus {
         );
     }
 
-    $sm->add_separator;
-    $sm->add_command(-label => "About", -command => sub { about(); });
+    if (!$AQUA) {
+	$sm->add_separator;
+	$sm->add_command(-label => "About", -command => sub { about(); });
+    }
 
     # Special menu on OS X
     if ($AQUA) {
 	$sm = $menu->new_menu(-name => 'apple'); # must be named "apple"
 	$menu->add_cascade(-label => "PPM", -menu => $sm);
-	$sm->add_command(-label => "About PPM");
+	$sm->add_command(-label => "About PPM",
+			 -command => sub { about(); });
 	$sm->add_separator();
-	$sm->add_command(-label => "Preferences...",
-			 -accelerator => "Command-,",
-			 -command => sub { $prefs_dialog->display(); });
+	# OS X enables the Preferences item when you create this proc
+	Tkx::proc("tk::mac::ShowPreferences", "args",
+		  sub { $prefs_dialog->display(); });
     }
 
     return $menu;
