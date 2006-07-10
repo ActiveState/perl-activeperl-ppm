@@ -82,14 +82,36 @@ snit::widgetadaptor pkglist {
 	set options($option) $value
     }
 
-    method add {name id args} {
+    method add {name args} {
+	set opts(name) $name
+	array set opts {
+	    area "" installed "" available "" abstract "" author ""
+	}
+	array set opts $args
+	set new 0
 	if {[info exists NAMES($name)]} {
-	    set item [lindex $NAMES($name) 0]
-	    lappend NAMES($name) $id
-	    set new 0
+	    set item $NAMES($name)
+	    array set cur [$self data $item]
+	    foreach key {area installed available} {
+		if {$opts($key) ne "" && $cur($key) ne ""
+		    && $cur($key) ne $opts($key)} {
+		    set new 1
+		    break
+		}
+	    }
+	    if {$new} {
+		# we need a child item
+		set item [$tree item create -button 0 -parent $item -visible 1]
+	    } else {
+		array set opts [array get cur]
+		array set opts $args
+	    }
 	} else {
-	    set item [$tree item create -button 0 -open 0 -parent 0 -visible 1]
-	    set NAMES($name) [list $item $id]
+	    set item [$tree item create -button 0 -parent 0 -visible 1]
+	    set NAMES($name) $item
+	    set new 1
+	}
+	if {$new} {
 	    $tree item style set $item \
 		name styName \
 		area styText \
@@ -97,10 +119,7 @@ snit::widgetadaptor pkglist {
 		available styText \
 		abstract styText \
 		author styText
-	    set new 1
 	}
-	array set opts $args
-	set opts(name) $name
 	eval [linsert [array get opts] 0 $tree item text $item]
 
 	# determine appropriate state (adjusts icon)
@@ -113,7 +132,7 @@ snit::widgetadaptor pkglist {
 			      || ($available eq "")
 			      || $installed eq $available) ?
 			     "!upgradable" : "upgradable"}]
-	$self state $name $state
+	$self state $item $state
 
 	if {$new} {
 	    incr visible
@@ -136,17 +155,9 @@ snit::widgetadaptor pkglist {
 	}
     }
 
-    method pkgids {name} {
-	if {[info exists NAMES($name)]} {
-	    # Returns package ids associated with name
-	    return [lrange $NAMES($name) 1 end]
-	}
-	return ""
-    }
-
-    method state {name {state {}}} {
+    method state {item {state {}}} {
 	# This should return the current item state
-	set item [lindex $NAMES($name) 0]
+	#if {[info exists NAMES($item)]} { set item $NAMES($item) }
 	if {$state ne ""} {
 	    $tree item state forcolumn $item name $state
 	}
@@ -192,7 +203,7 @@ snit::widgetadaptor pkglist {
 	    # return only # visible
 	    return $visible
 	}
-	return [$tree item numchildren root]
+	return [expr {[$tree item count] - 1}]
     }
 
     method filter {words args} {

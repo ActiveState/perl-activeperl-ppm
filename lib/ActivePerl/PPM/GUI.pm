@@ -474,11 +474,11 @@ sub merge_area_items {
     my $count = 0;
     for my $area_name (sort keys %AREAS) {
 	my $area = $AREAS{$area_name};
-	my @fields = ("id", "name", "version", "release_date", "abstract", "author");
+	my @fields = ("name", "version", "release_date", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	    my ($id, $name, $version, $release_date, $abstract, $author) = @$pkg;
-	    $pkglist->add($name, $id,
+	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
+	    $pkglist->add($name,
 			  area => $area_name,
 			  installed => $version,
 			  abstract => $abstract,
@@ -491,13 +491,13 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("id", "name", "version", "release_date", "abstract", "author");
+    my @fields = ("name", "version", "release_date", "abstract", "author");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($id, $name, $version, $release_date, $abstract, $author) = @$_;
-	$pkglist->add($name, $id,
+	my ($name, $version, $release_date, $abstract, $author) = @$_;
+	$pkglist->add($name,
 		   available => $version,
 		   abstract => $abstract,
 		   author => $author,
@@ -774,12 +774,11 @@ sub select_item {
     my %data = Tkx::SplitList($pkglist->data($item));
     my $name = $data{'name'};
     my $areaid = $data{'area'};
-    my @ids = $pkglist->pkgids($name);
     my $area = $ppm->area($areaid) if $areaid;
-    my ($pkg, $repo_pkg, $area_pkg);
+    my ($pkg, $repo_pkg);
     $pkg = $repo_pkg = $ppm->package($name, $data{'available'} || undef);
     if ($areaid) {
-	$pkg = $area_pkg = $area->package($name);
+	$pkg = $area->package($name);
     }
     my $pad = "\t";
     $details->configure(-state => "normal");
@@ -821,12 +820,11 @@ sub select_item {
 
     ## Record "allowable" actions based on package info
     # XXX work on constraints
-    if (!defined($ACTION{$name})) {
-	$ACTION{$name}{'install'} = 0;
-	$ACTION{$name}{'remove'} = 0;
-	$ACTION{$name}{'area'} = $area;
-	$ACTION{$name}{'area_pkg'} = $area_pkg;
-	$ACTION{$name}{'repo_pkg'} = $repo_pkg;
+    if (!defined($ACTION{$item})) {
+	$ACTION{$item}{'install'} = 0;
+	$ACTION{$item}{'remove'} = 0;
+	$ACTION{$item}{'area'} = $area;
+	$ACTION{$item}{'repo_pkg'} = $repo_pkg;
     }
     # The icon represents the current actionable state:
     #   default installed upgradable install remove upgrade
@@ -837,20 +835,19 @@ sub select_item {
 	my $cmd = sub {
 	    my $was_btn = shift || 0;
 	    if ($was_btn) {
-		if ($ACTION{$name}{'remove'}) {
-		    $ACTION{$name}{'remove'} = 0;
+		if ($ACTION{$item}{'remove'}) {
+		    $ACTION{$item}{'remove'} = 0;
 		} else {
-		    $ACTION{$name}{'remove'} = $data{'installed'};
+		    $ACTION{$item}{'remove'} = 1;
 		}
 	    }
-	    queue_for_remove(%data);
+	    queue_for_remove($item, $name);
 	};
 	$remove_btn->configure(-state => "normal",
 			       -command => [$cmd, 1]);
 	my $txt = "Remove $name $data{'installed'}";
 	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$name}{'remove'},
-			       -onvalue => $data{'installed'},
+			       -variable => \$ACTION{$item}{'remove'},
 			       -command => $cmd);
 	if ($data{'area'} && (($data{'area'} eq "perl")
 				  || $AREAS{$data{'area'}}->readonly)) {
@@ -864,23 +861,23 @@ sub select_item {
 	    my $was_btn = shift || 0;
 	    if ($was_btn) {
 		# Add in reversal of previous state
-		if ($ACTION{$name}{'install'}) {
-		    $ACTION{$name}{'install'} = 0;
-		    $ACTION{$name}{'remove'} = 0;
+		if ($ACTION{$item}{'install'}) {
+		    $ACTION{$item}{'install'} = 0;
+		    $ACTION{$item}{'remove'} = 0;
 		} else {
-		    $ACTION{$name}{'install'} = $data{'available'};
-		    $ACTION{$name}{'remove'} = $data{'installed'};
+		    $ACTION{$item}{'install'} = 1;
+		    $ACTION{$item}{'remove'} = 1;
 		}
 	    } else {
 		# the checkbutton only modifies install, take care remove
-		if ($ACTION{$name}{'install'}) {
-		    $ACTION{$name}{'remove'} = $data{'installed'};
+		if ($ACTION{$item}{'install'}) {
+		    $ACTION{$item}{'remove'} = 1;
 		} else {
-		    $ACTION{$name}{'remove'} = 0;
+		    $ACTION{$item}{'remove'} = 0;
 		}
 	    }
-	    queue_for_remove(%data);
-	    queue_for_install(%data);
+	    queue_for_remove($item, $name);
+	    queue_for_install($item, $name);
 	};
 	my $txt = ($data{'installed'} eq $data{'available'}) ?
 	    "Reinstall" : "Upgrade";
@@ -888,8 +885,7 @@ sub select_item {
 				-command => [$cmd, 1]);
 	$txt = "$txt $name to $data{'available'}";
 	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$name}{'install'},
-			       -onvalue => $data{'available'},
+			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
 	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
@@ -899,20 +895,19 @@ sub select_item {
 	my $cmd = sub {
 	    my $was_btn = shift || 0;
 	    if ($was_btn) {
-		if ($ACTION{$name}{'install'}) {
-		    $ACTION{$name}{'install'} = 0;
+		if ($ACTION{$item}{'install'}) {
+		    $ACTION{$item}{'install'} = 0;
 		} else {
-		    $ACTION{$name}{'install'} = $data{'available'};
+		    $ACTION{$item}{'install'} = 1;
 		}
 	    }
-	    queue_for_install(%data);
+	    queue_for_install($item, $name);
 	};
 	$install_btn->configure(-state => "normal",
 				-command => [$cmd, 1]);
 	my $txt = "Install $name $data{'available'}";
 	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$name}{'install'},
-			       -onvalue => $data{'available'},
+			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
 	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
@@ -932,16 +927,13 @@ sub select_item {
 }
 
 sub queue_for_install {
-    my %data = @_;
-    my $name = $data{'name'};
-    my $ver = $ACTION{$name}{'install'};
-    my $state;
-    if ($ver) {
-	$state = $pkglist->state($name, "install");
+    my ($item, $name) = @_;
+    if ($ACTION{$item}{'install'}) {
+	$pkglist->state($item, "install");
 	$NUM{'install'}++;
 	status_message("$name marked for install\n");
     } else {
-	$state = $pkglist->state($name, "!install");
+	$pkglist->state($item, "!install");
 	$NUM{'install'}--;
 	status_message("$name unmarked for install\n");
     }
@@ -949,16 +941,13 @@ sub queue_for_install {
 }
 
 sub queue_for_remove {
-    my %data = @_;
-    my $name = $data{'name'};
-    my $ver = $ACTION{$name}{'remove'};
-    my $state;
-    if ($ver) {
-	$state = $pkglist->state($name, "remove");
+    my ($item, $name) = @_;
+    if ($ACTION{$item}{'remove'}) {
+	$pkglist->state($item, "remove");
 	$NUM{'remove'}++;
 	status_message("$name marked for remove\n");
     } else {
-	$state = $pkglist->state($name, "!remove");
+	$pkglist->state($item, "!remove");
 	$NUM{'remove'}--;
 	status_message("$name unmarked for remove\n");
     }
@@ -1003,11 +992,11 @@ sub run_actions {
 }
 
 sub commit_actions {
-    for my $name (sort keys %ACTION) {
+    for my $item (sort keys %ACTION) {
 	# First remove any area pacakges
-	my $area = $ACTION{$name}{'area'};
-	my $area_pkg = $ACTION{$name}{'area_pkg'};
-	if ($ACTION{$name}{'remove'}) {
+	if ($ACTION{$item}{'remove'}) {
+	    my $name = $pkglist->data($item, "name");
+	    my $area = $ACTION{$item}{'area'};
 	    my $area_name = $area->name;
 	    my $txt = "Remove $name from $area_name area ... ";
 	    status_message($txt);
@@ -1019,10 +1008,11 @@ sub commit_actions {
 	    }
 	}
     }
-    for my $name (sort keys %ACTION) {
+    for my $item (sort keys %ACTION) {
 	# Then install
-	my $repo_pkg = $ACTION{$name}{'repo_pkg'};
-	if ($ACTION{$name}{'install'}) {
+	if ($ACTION{$item}{'install'}) {
+	    my $name = $pkglist->data($item, "name");
+	    my $repo_pkg = $ACTION{$item}{'repo_pkg'};
 	    my $area_name = $INSTALL_AREA;
 	    my $txt = "Install $name to $area_name area\n";
 	    status_message($txt);
