@@ -176,7 +176,7 @@ Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
 my @text_opts = (-height => 7, -width => 40, -borderwidth => 0,
 		 -font => "ASfont", -state => "disabled",
 		 -wrap => "word", -highlightthickness => 0);
-my $pw_nb = $pw->new_ttk__notebook();
+my $pw_nb = $pw->new_ttk__notebook(-padding => 0);
 
 my $status_sw = $pw_nb->new_widget__scrolledwindow();
 my $status_box = $status_sw->new_text(@text_opts);
