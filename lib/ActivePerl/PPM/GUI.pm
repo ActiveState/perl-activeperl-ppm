@@ -456,7 +456,7 @@ sub area_sync {
     if (!defined($AREAS{$INSTALL_AREA})) {
 	$INSTALL_AREA = $ppm->default_install_area;
     }
-    if (defined($INSTALL_AREA)) {
+    if ($INSTALL_AREA) {
 	$arealist->state($INSTALL_AREA, "default");
     }
 }
