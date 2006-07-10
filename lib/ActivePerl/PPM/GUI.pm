@@ -702,8 +702,10 @@ sub menus {
     $menu->add_cascade(-label => "Action", -menu => $sm);
     $sm->add_command(-label => "No Selected Package", -state => "disabled");
 
-    # Help menu
-    $sm = $menu->new_menu(-name => "help"); # must be named "help"
+    # Help menu - name it help for special behavior, but not on OS X, where
+    # that causes us to not get cascades allowed.
+    my $mname = ($AQUA ? "nothelp" : "help");
+    $sm = $menu->new_menu(-name => $mname);
     $menu->add_cascade(-label => "Help", -menu => $sm);
     if (ActiveState::Browser::can_open("faq/ActivePerl-faq2.html")) {
 	$sm->add_command(
