@@ -286,7 +286,7 @@ sub activestate_repo {
     my $os = lc($^O);
     $os = "windows" if $os eq "mswin32";
     my $repo_uri = "http://ppm.activestate.com/PPMPackages/5.8-$os/";
-    if ($os =~ /^(windows|linux|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
+    if ($os =~ /^(windows|linux|darwin|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
 	return $repo_uri unless wantarray;
 	return ("ActiveState Package Repository", $repo_uri);
     }
