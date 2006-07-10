@@ -209,6 +209,8 @@ snit::widgetadaptor arealist {
 
 	$tree notify bind $tree <Selection> [mymethod _select %S]
 
+	bind $tree <1> [mymethod _check_default %W %x %y]
+
 	$tree notify install <Edit-begin>
 	$tree notify install <Edit-end>
 	$tree notify install <Edit-accept>
@@ -242,6 +244,16 @@ snit::widgetadaptor arealist {
 	if {$txt eq ""} { return }
 	$self _select $item setname $txt
 	$tree item element configure $item $col $elem -text $txt
+    }
+
+    method _check_default {w x y} {
+	if {$w eq $tree} {
+	    set item [$tree identify $x $y]
+	    if {[lindex $item end] eq "elemDefault"} {
+		$self _select [lindex $item 1] default
+		return -code break
+	    }
+	}
     }
 
     method _select {new args} {

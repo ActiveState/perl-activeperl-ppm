@@ -15,6 +15,7 @@ $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 # these will be filled in the sync()
 my %AREAS;
 my %REPOS;
+my $INSTALL_AREA = $ppm->default_install_area;
 
 my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
@@ -383,8 +384,14 @@ $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'});
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
 $lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
-$statusbar->add($lbl, -weight => 1);
+$statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
+
+$lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e');
+$statusbar->add($lbl, -separator => 1, -weight => 1);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA,
+				  -font => "ASfontBold");
+$statusbar->add($lbl);
 
 map view($_), keys %VIEW;
 
@@ -444,9 +451,13 @@ sub area_sync {
 		       prefix => $area->prefix,
 		       inc => $area->inc,
 		   );
-	$arealist->state($area->name, "default")
-	    if $area->name eq $ppm->default_install_area;
 	$arealist->state($area->name, "readonly") if $area->readonly;
+    }
+    if (!defined($AREAS{$INSTALL_AREA})) {
+	$INSTALL_AREA = $ppm->default_install_area;
+    }
+    if (defined($INSTALL_AREA)) {
+	$arealist->state($INSTALL_AREA, "default");
     }
 }
 
@@ -880,7 +891,7 @@ sub select_item {
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
-	if (!defined($ppm->default_install_area)) {
+	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -903,7 +914,7 @@ sub select_item {
 			       -variable => \$ACTION{$name}{'install'},
 			       -onvalue => $data{'available'},
 			       -command => $cmd);
-	if (!defined($ppm->default_install_area)) {
+	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -1012,10 +1023,13 @@ sub commit_actions {
 	# Then install
 	my $repo_pkg = $ACTION{$name}{'repo_pkg'};
 	if ($ACTION{$name}{'install'}) {
-	    my $area_name = $ppm->default_install_area;
+	    my $area_name = $INSTALL_AREA;
 	    my $txt = "Install $name to $area_name area\n";
 	    status_message($txt);
-	    eval { $ppm->install(packages => [$repo_pkg]); };
+	    eval { $ppm->install(
+		packages => [$repo_pkg],
+		area => $INSTALL_AREA,
+	    ); };
 	    if ($@) {
 		status_message("ERROR:\n$@\n", tag => "abstract");
 	    } else {
@@ -1063,8 +1077,17 @@ sub select_repo_item {
 sub select_area_item {
     my $item = shift;
     return unless $item;
-
+    my $what = shift || "";
     my %data = Tkx::SplitList($arealist->data($item));
+    if ($what eq "default") {
+	if ($AREAS{$data{name}}->readonly) {
+	    Tkx::bell();
+	    return;
+	}
+	eval { $arealist->state($INSTALL_AREA, "!default"); };
+	$INSTALL_AREA = $data{name};
+	$arealist->state($INSTALL_AREA, "default");
+    }
 }
 
 sub build_prefs_dialog {
@@ -1095,7 +1118,7 @@ sub build_prefs_dialog {
     Tkx::grid(columnconfigure => $areaf, 0, -weight => 1);
 
     Tkx::grid($sw, -sticky => 'news');
-    Tkx::grid($areal, -sticky => 'news', -pady => [4, 0]);
+    #Tkx::grid($areal, -sticky => 'news', -pady => [4, 0]);
     Tkx::grid(columnconfigure => $f, 0, -weight => 1);
     Tkx::grid(rowconfigure => $f, 0, -weight => 1);
 
@@ -1170,6 +1193,8 @@ sub on_load {
     $FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
 	|| "name abstract";
     $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "all";
+    $INSTALL_AREA = $ppm->config_get("gui.install_area")
+	|| $ppm->default_install_area;
 
     my @view_keys = keys %VIEW;
     my @view_vals = $ppm->config_get(map "gui.view.$_", @view_keys);
@@ -1194,6 +1219,9 @@ sub on_exit {
     );
 
     ## Current selected package?
+
+    ## Current install area
+    $ppm->config_save("gui.install_area", $INSTALL_AREA || "");
 
     ## Tree column order, widths, visibility, sort
 
