@@ -364,7 +364,7 @@ snit::widgetadaptor pkglist {
 	$tree notify install <Header-invoke>
 	$tree notify bind $tree <Header-invoke> [mymethod _headerinvoke %T %C]
 
-	$tree notify bind $tree <Selection> [mymethod _select %T %c %D %S]
+	$tree notify bind $tree <Selection> [mymethod _select %S]
 
 	$tree column dragconfigure -enable 1
 	$tree notify install <ColumnDrag-begin>
@@ -381,7 +381,7 @@ snit::widgetadaptor pkglist {
 	}
     }
 
-    method _select {t count lost new} {
+    method _select {new} {
 	if {$options(-selectcommand) ne ""} {
 	    uplevel 1 $options(-selectcommand) $new
 	}
