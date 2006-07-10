@@ -454,7 +454,7 @@ sub area_sync {
 	$arealist->state($area->name, "readonly") if $area->readonly;
     }
     if (!defined($AREAS{$INSTALL_AREA})) {
-	$INSTALL_AREA = $ppm->default_install_area;
+	$INSTALL_AREA = $ppm->default_install_area || "";
     }
     if ($INSTALL_AREA) {
 	$arealist->state($INSTALL_AREA, "default");
@@ -887,7 +887,7 @@ sub select_item {
 	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
-	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
+	if (!$INSTALL_AREA || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -909,7 +909,7 @@ sub select_item {
 	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
-	if (!defined($INSTALL_AREA) || $AREAS{$INSTALL_AREA}->readonly) {
+	if (!$INSTALL_AREA || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
