@@ -196,7 +196,8 @@ $dir = undef;
 
 rmtree($prefix, 1);
 mkdir($prefix, 0555);  # non-writable directory
-$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, autoinit => 1);
+my $autoinit = $^O eq "MSWin32" ? 0 : 1;
+$dir = ActivePerl::PPM::InstallArea->new(prefix => $prefix, autoinit => $autoinit);
 ok($dir->lib, "$prefix/lib");
 unless ($^O eq "MSWin32") {
     ok($dir->readonly);
