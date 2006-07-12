@@ -6,7 +6,7 @@ use ActivePerl::PPM::limited_inc;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
-use ActivePerl::PPM::Util qw(is_cpan_package);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
 
 Win32::SetChildShowWindow(0) if defined &Win32::SetChildShowWindow;
 
@@ -1038,14 +1038,6 @@ sub do_remove {
 	}
     }
     die "No packages uninstalled" unless $removed_count;
-}
-
-sub clean_err {
-    my $err = shift;
-    $err =~ s/ at .*//s unless $ENV{ACTIVEPERL_PPM_DEBUG};
-    $err =~ s/ _at / at /g; # escape for when you really want "at" in the message
-    $err =~ s/\n*\z//;
-    return $err;
 }
 
 BEGIN {

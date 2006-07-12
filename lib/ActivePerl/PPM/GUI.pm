@@ -3,7 +3,7 @@ package ActivePerl::PPM::GUI;
 use strict;
 use Tkx ();
 use ActiveState::Browser ();
-use ActivePerl::PPM::Util qw(is_cpan_package);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -1004,7 +1004,7 @@ sub commit_actions {
 	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
-		status_message("\nERROR:\n$@\n", tag => "abstract");
+		status_message("\nERROR:\n" . clean_err($@) . "\n", tag => "abstract");
 	    } else {
 		status_message("DONE\n");
 	    }
@@ -1023,7 +1023,7 @@ sub commit_actions {
 		area => $INSTALL_AREA,
 	    ); };
 	    if ($@) {
-		status_message("ERROR:\n$@\n", tag => "abstract");
+		status_message("ERROR:\n" . clean_err($@) . "\n", tag => "abstract");
 	    } else {
 		status_message("\tInstalled $name\n");
 	    }
@@ -1157,7 +1157,7 @@ sub build_prefs_dialog {
 	eval { $ppm->repo_add(name => $name, packlist_uri => $url); };
 	if ($@) {
 	    Tkx::tk___messageBox(-title => "Error Adding Repository",
-				 -message => "Error adding repository:\n$@",
+				 -message => "Error adding repository:\n" . clean_err($@),
 				 -type => "ok", -icon => "error");
 	} else {
 	    full_refresh();
