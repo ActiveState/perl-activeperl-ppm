@@ -772,6 +772,7 @@ sub sync_db {
 		my $epath = $self->_expand_path($path);
 		my $owner = $dbh->selectrow_array("SELECT package.name FROM package, file WHERE package.id = file.package_id AND file.path = ?", undef, $path);
 		ppm_log("ERR", "Package $pkg: File conflict for $epath already owned by $owner");
+		next;
 	    }
 
 	    if ($f =~ /\.pm$/) {
