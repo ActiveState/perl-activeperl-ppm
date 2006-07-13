@@ -722,7 +722,7 @@ EOT
 }
 
 sub sync_db {
-    my $self = shift;
+    my($self, %opt) = @_;
     my $dbh = $self->dbh;
     local $dbh->{AutoCommit} = 0;
     my $name = $self->name || "unnamed";
@@ -782,9 +782,11 @@ sub sync_db {
 		    $mod =~ s,^$self->{dirs}{lib}/,,;
 		$mod = fname2mod($mod);
 		my $vers = eval { parse_version($f) };
-		(my $mod_pkg = $mod) =~ s/::/-/g;
-		if ($mod_pkg eq $pkg && defined($vers)) {
-		    $dbh->do("UPDATE package SET version = ? WHERE id = ?", undef, $vers, $id);
+		unless ($opt{keep_package_version}) {
+		    (my $mod_pkg = $mod) =~ s/::/-/g;
+		    if ($mod_pkg eq $pkg && defined($vers)) {
+			$dbh->do("UPDATE package SET version = ? WHERE id = ?", undef, $vers, $id);
+		    }
 		}
 		$mod .= "::" unless $mod =~ /::/;
 		$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef, $id, $mod, ($vers || 0), "p");
@@ -1205,11 +1207,22 @@ does not use F<.packlist> files to track the files installed by the
 packages it manage, but it keeps them in sync for other tools that
 manage modules.
 
-=item $area->sync_db
+=item $area->sync_db( %opt )
 
 Synchronize the state of the PPM database with what modules seems to
 be installed in the directories of the current install area.  Packages
 where all files are gone will also be deleted from the PPM database.
+
+The following options are recognized:
+
+=over
+
+=item C<keep_package_version> => $bool
+
+If TRUE don't try to update the package version from the version
+number of the module with the same name as the pacakge.
+
+=back
 
 =back
 
