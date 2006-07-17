@@ -23,7 +23,7 @@ sub MY::postamble {
 ppm-$(INSTALLDIRS)-area.db: ppm.yml
 	$(PERL) mk-area-db $(INSTALLDIRS)
 
-install :: db_$(INSTALLDIRS)_install db_perl_install db_site_install
+install :: db_$(INSTALLDIRS)_install
 	$(NOECHO) $(NOOP)
 
 db_perl_install : ppm-perl-area.db
