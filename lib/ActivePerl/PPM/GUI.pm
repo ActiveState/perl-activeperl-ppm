@@ -1247,13 +1247,15 @@ sub status_message {
     my $ins = delete $opts{insert} || "end";
     my $clr = delete $opts{clear} || 0;
 
-    $pw_nb->select($status_sw);
-    $status_box->configure(-state => "normal");
-    $status_box->delete("1.0", "end") if $clr;
-    $status_box->insert($ins, $msg, $tag);
-    $status_box->configure(-state => "disabled");
-    $status_box->see($ins);
-    Tkx::update('idletasks');
+    if (defined($pw_nb) && defined($status_box)) {
+	$pw_nb->select($status_sw);
+	$status_box->configure(-state => "normal");
+	$status_box->delete("1.0", "end") if $clr;
+	$status_box->insert($ins, $msg, $tag);
+	$status_box->configure(-state => "disabled");
+	$status_box->see($ins);
+	Tkx::update('idletasks');
+    }
     if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 	print $msg;
     }
