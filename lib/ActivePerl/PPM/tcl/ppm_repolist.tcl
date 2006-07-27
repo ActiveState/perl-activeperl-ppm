@@ -84,14 +84,14 @@ snit::widgetadaptor repolist {
 	array set opts $args
 	set opts(id) $id
 	# Use classic buttons for better "inlined" look
-	set db [button $tree.repo_destroy$id \
+	set db [button $tree.repo_remove$id \
 		    -image [::ppm::img delete] \
 		    -padx 0 -pady 0 \
 		    -background white -borderwidth 1 -highlightthickness 0 \
-		    -command [mymethod _select $item "destroy"] \
+		    -command [mymethod _select $item "remove"] \
 		   ]
-	tooltip::tooltip $db "Destroy Repository"
-	$tree item element configure $item repo elemDestroy -window $db
+	tooltip::tooltip $db "Delete Repository"
+	$tree item element configure $item repo elemRemove -window $db
 	set cb [checkbutton $tree.repo_enable$id \
 		    -selectcolor white -background white \
 		    -padx 0 -pady 0 -offrelief flat \
@@ -203,7 +203,7 @@ snit::widgetadaptor repolist {
 	set selfg $::style::as::highlightfg
 
 	# Create elements
-	$tree element create elemDestroy window -destroy 1
+	$tree element create elemRemove window -destroy 1
 	$tree element create elemEnable window -destroy 1
 	$tree element create elemText text -lines 1 \
 	    -fill [list $selfg {selected focus}]
@@ -215,10 +215,10 @@ snit::widgetadaptor repolist {
 
 	# text + image style
 	set S [$tree style create styMixed -orient horizontal]
-	$tree style elements $S {selRect elemDestroy elemEnable elemText}
+	$tree style elements $S {selRect elemRemove elemEnable elemText}
 	$tree style layout $S selRect -iexpand news \
-	    -union {elemDestroy elemEnable elemText}
-	$tree style layout $S elemDestroy -expand ns -padx 2
+	    -union {elemRemove elemEnable elemText}
+	$tree style layout $S elemRemove -expand ns -padx 2
 	$tree style layout $S elemEnable -expand ns -padx 2
 	$tree style layout $S elemText -squeeze x -expand ns -padx 2
 

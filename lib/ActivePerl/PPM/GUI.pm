@@ -1047,12 +1047,12 @@ sub select_repo_item {
     my $what = shift || "";
     my %data = Tkx::SplitList($repolist->data($item));
     # We need to figure out how we want details formatted
-    if ($what eq "destroy") {
+    if ($what eq "remove") {
 	my $res = Tkx::tk___messageBox(
-	    -title => "Delete Repository?",
+	    -title => "Remove Repository?",
 	    -icon => "warning",
 	    -type => "yesno",
-	    -message => "Really delete repository?",
+	    -message => "Really remove repository?",
 	    -parent => $prefs_dialog,
 	);
 	return unless $res eq "yes";
