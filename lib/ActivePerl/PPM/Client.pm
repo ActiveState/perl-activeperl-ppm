@@ -937,7 +937,6 @@ sub install {
 	    my $codebase_file = $pkg->{codebase_file};
 	    if ($pkg->{codebase_type} eq "tgz") {
 		require Archive::Tar;
-		require ExtUtils::MakeMaker;
 		require ActiveState::ModInfo;
 		ppm_log("DEBUG", "Unpacking $codebase_file");
 		my $tar = Archive::Tar->new($codebase_file, 1);
@@ -956,7 +955,7 @@ sub install {
 			if ($mod =~ s,^blib/(?:lib|arch)/,,) {
 			    $mod = ActiveState::ModInfo::fname2mod($mod);
 			    $mod .= "::" unless $mod =~ /::/;
-			    $pkg->{provide}{$mod} = MM->parse_version($extract) || 0;
+			    $pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($extract) || 0;
 			}
 
 		    }
