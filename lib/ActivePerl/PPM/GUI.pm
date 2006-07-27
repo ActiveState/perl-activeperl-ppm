@@ -1,5 +1,13 @@
 package ActivePerl::PPM::GUI;
 
+BEGIN {
+    # Don't allow these env vars to disrupt ppm Tkx usage unless we are
+    # ourselves in debug mode.
+    unless (defined $ENV{ACTIVEPERL_PPM_DEBUG}) {
+        delete $ENV{$_} for qw(PERL_TCL_DLL PERL_TCL_DL_PATH);
+    }
+}
+
 use strict;
 use Tkx ();
 use ActiveState::Browser ();
