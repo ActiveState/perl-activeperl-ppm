@@ -166,6 +166,7 @@ sub do_help {
 	usage();
     }
     my $pod2text = qq("$^X" -MPod::Text -e "Pod::Text->new->parse_from_filehandle");
+    my $pager = $ENV{PAGER} || "more";
     open(my $fh, "<", __FILE__) || die "Can't open " . __FILE__ . ": $!";
     if (@ARGV) {
 	my $cmd = shift(@ARGV);
@@ -177,7 +178,7 @@ sub do_help {
 	    }
 	}
 	if ($foundit) {
-	    open(my $out, "| $pod2text");
+	    open(my $out, "| $pod2text | $pager");
 	    print $out "=over\n\n";
 	    print $out $_;
 	    my $over_depth = 0;
@@ -201,7 +202,6 @@ sub do_help {
     }
     else {
 	use ActivePerl::PPM;
-	my $pager = $ENV{PAGER} || "more";
 	open(my $out, qq(| $pod2text | $pager));
 	while (<$fh>) {
 	    s/version \d+\S*/version $ActivePerl::PPM::VERSION/ if /^ppm -/;
