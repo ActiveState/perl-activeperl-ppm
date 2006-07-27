@@ -152,6 +152,7 @@ Tkx::bind($mw, "<Destroy>", [sub {
 			 }, Tkx::Ev('%W')]);
 $mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
 
+
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
 my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
@@ -173,6 +174,10 @@ Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
 
 # Details / Status areas
+my @smallfont = ();
+if ($AQUA) {
+    @smallfont = (-font => "ASfont-1");
+}
 my @text_opts = (-height => 7, -width => 40, -borderwidth => 0,
 		 -font => "ASfont", -state => "disabled",
 		 -wrap => "word", -highlightthickness => 0);
@@ -356,41 +361,45 @@ $NUM{'installed'} = 0;
 $NUM{'install'} = 0;
 $NUM{'remove'} = 0;
 my $lbl;
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'total'});
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'total'}, @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Total number of known packages");
-$lbl = $statusbar->new_ttk__label(-text => "packages,");
+$lbl = $statusbar->new_ttk__label(-text => "packages,", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Total number of known packages");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'listed'});
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'listed'}, @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages in filtered view");
-$lbl = $statusbar->new_ttk__label(-text => "listed");
+$lbl = $statusbar->new_ttk__label(-text => "listed", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages in filtered view");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'});
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'},
+				  @smallfont);
 $statusbar->add($lbl, -separator => 1);
 Tkx::tooltip($lbl, "Number of packages installed");
-$lbl = $statusbar->new_ttk__label(-text => "installed,");
+$lbl = $statusbar->new_ttk__label(-text => "installed,", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages installed");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'});
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'},
+				  @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for install");
-$lbl = $statusbar->new_ttk__label(-text => "to install/upgrade,");
+$lbl = $statusbar->new_ttk__label(-text => "to install/upgrade,", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for install");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'});
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'}, @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
-$lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w');
+$lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w',
+				  @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
 
-$lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e');
+$lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e',
+				  @smallfont);
 $statusbar->add($lbl, -separator => 1, -weight => 1);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA,
-				  -font => "ASfontBold");
+				  -font => "ASfontBold-1");
 $statusbar->add($lbl);
 
 map view($_), keys %VIEW;
