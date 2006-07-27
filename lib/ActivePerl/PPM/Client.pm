@@ -939,7 +939,8 @@ sub install {
 		require Archive::Tar;
 		require ActiveState::ModInfo;
 		ppm_log("DEBUG", "Unpacking $codebase_file");
-		my $tar = Archive::Tar->new($codebase_file, 1);
+		my $tar = Archive::Tar->new($codebase_file, 1)
+		    || die "Can't extract files from $codebase_file";
 		for my $file ($tar->get_files) {
 		    next unless $file->is_file;  # don't extract links and other crap
 		    my $fname = $file->full_path;
