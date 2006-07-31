@@ -19,24 +19,19 @@ use base 'ActivePerl::PPM::DBH';
 sub new {
     my($class, $dir, $arch) = @_;
 
-    $dir ||= $ENV{ACTIVEPERL_PPM_HOME};
-    unless ($dir) {
-	my $home = do {
+    $dir ||= $ENV{ACTIVEPERL_PPM_HOME} ||
+        do {
 	    if ($^O eq "MSWin32") {
 		require Win32;
 		my $appdata = Win32::GetFolderPath(Win32::CSIDL_APPDATA()) ||
 		    $ENV{APPDATA} || $ENV{HOME};
 		die "No valid setting for APPDATA\n" unless $appdata;
-		"$appdata/ActiveState/ActivePerl";
+		"$appdata/ActiveState/ActivePerl/$ActivePerl::VERSION";
 	    }
 	    else {
-		"$ENV{HOME}/.ActivePerl";
+		"$ENV{HOME}/.ActivePerl/$ActivePerl::VERSION";
 	    }
 	};
-
-	my $vdir = "$home/" . ActivePerl::perl_version();
-	$dir = (-d $vdir) ? $vdir : $home;
-    }
 
     unless ($arch) {
 	$arch =  $Config{archname};
