@@ -2,7 +2,6 @@ package ActivePerl::PPM;
 
 use strict;
 
-our $VERSION = '3.99_02';
-$VERSION = eval $VERSION;
+our $VERSION = '4.00';
 
 1;

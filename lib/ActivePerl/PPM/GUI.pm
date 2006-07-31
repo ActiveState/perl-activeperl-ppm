@@ -1252,7 +1252,7 @@ sub about {
     
     Tkx::tk___messageBox(-title => "About Perl Package Manager",
 			 -icon => "info", -type => "ok",
-			 -message => "PPM version $ActivePerl::PPM::VERSION (Beta 2)
+			 -message => "PPM version $ActivePerl::PPM::VERSION
 ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
 }
