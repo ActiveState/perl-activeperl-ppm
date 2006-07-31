@@ -117,7 +117,7 @@ $FILTER{'filter'} = "";
 $FILTER{'lastfilter'} = "";
 $FILTER{'fields'} = "name abstract";
 $FILTER{'lastfields'} = $FILTER{'fields'};
-$FILTER{'type'} = "all"; # all installed upgradable modified
+$FILTER{'type'} = "installed"; # all installed upgradable modified
 $FILTER{'lasttype'} = $FILTER{'type'};
 
 my %VIEW;
@@ -1198,10 +1198,10 @@ sub build_prefs_dialog {
 sub on_load {
     # Restore state from saved information
     # We would need to make sure these are reflected in UI elements
-    $FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
-    $FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
-	|| "name abstract";
-    $FILTER{'type'} = $ppm->config_get("gui.filter.type") || "all";
+    #$FILTER{'filter'} = $ppm->config_get("gui.filter") || "";
+    #$FILTER{'fields'} = $ppm->config_get("gui.filter.fields")
+    #|| "name abstract";
+    #$FILTER{'type'} = $ppm->config_get("gui.filter.type") || "installed";
     $INSTALL_AREA = $ppm->config_get("gui.install_area")
 	|| $ppm->default_install_area;
 
