@@ -22,7 +22,7 @@ if ($area_name eq "perl") {
         mm_fullext => "Perl",
         author => 'Larry Wall <larry@wall.org>',
         abstract => "Practical Extraction and Report Language",
-	version => ActivePerl::perl_version(),
+	base_version => ActivePerl::perl_version(),
     };
 }
 
@@ -36,14 +36,18 @@ my $area = ActivePerl::PPM::InstallArea->new(prefix => "dummy");
 $area->{name} = $area_name;
 $area->initialize;
 my $dbh = $area->dbh;
+$dbh->{AutoCommit} = 0;
 
 for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
     my $name = $mod->{mm_fullext};
     $name =~ s,/,-,g;
     warn "Warning: Will use $name for $mod->{title}" if $name ne $mod->{title};
+    my $v = $mod->{base_version};
+    $v .= "-r$mod->{revision}" if $mod->{revision};
+
     my $pkg = ActivePerl::PPM::Package->new(
         name => $name,
-        version => $mod->{version},
+        version => $v,
         release_date => $mod->{date},
         author => $mod->{author},
         abstract => $mod->{abstract},
