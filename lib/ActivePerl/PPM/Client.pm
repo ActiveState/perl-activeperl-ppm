@@ -941,9 +941,8 @@ sub install {
 		    my $fname = $file->full_path;
 		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
 		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
-		    my $extract = $fname;
-		    next unless $extract =~ s,^blib/,$pname/,;
-		    $extract = "$tmpdir/$extract";
+		    next if is_abs_path($fname);
+		    my $extract = "$tmpdir/$pname/$fname";
 		    $tar->extract_file($fname, $extract)
 			|| die "Can't extract to $extract";
 		    if ($fname =~ /\.pm$/) {
@@ -956,7 +955,8 @@ sub install {
 
 		    }
 		}
-		$pkg->{blib} = "$tmpdir/$pname";
+		my $blib = "$tmpdir/$pname/blib";
+		$pkg->{blib} = $blib if -d $blib;
 	    }
 	    else {
 		die "Don't know how to unpack $pkg->{codebase_type} files";
@@ -970,6 +970,7 @@ sub install {
 	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
 	    my $prefix = do { require Config; $Config::Config{prefix} };
 	    for my $pkg (@pkgs) {
+		next unless $pkg->{blib};
 		$status->begin("Relocating " . $pkg->name_version);
 		ActiveState::RelocateTree::relocate (
 		    to      => $pkg->{blib},
@@ -989,10 +990,11 @@ sub install {
 	    chdir($tmpdir) || die "Can't chdir $tmpdir: $!";
 	    eval {
 		for my $pkg (@pkgs) {
+		    next unless $pkg->{blib};
 		    my $pname = $pkg->name_version;
 		    next unless -d $pname;
 		    $status->begin("Generating HTML for $pname");
-		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => $pname);
+		    ActivePerl::DocTools::UpdateHTML_blib(verbose => 0, blib => "$pname/blib");
 		    $status->end;
 		}
 	    };
@@ -1015,7 +1017,8 @@ sub install {
 
 	# run install scripts
 	for my $pkg (@pkgs) {
-	    $pkg->run_script("install", $area, $tmpdir, $install_summary->{pkg}{$pkg->{name}});
+	    my $pname = $pkg->name_version;
+	    $pkg->run_script("install", $area, "$tmpdir/$pname", $install_summary->{pkg}{$pkg->{name}});
 	}
     };
     my $err = $@;
