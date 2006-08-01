@@ -852,50 +852,7 @@ sub _file_info {
     $info{mode} &= 07777;
 
     require Digest::MD5;
-    my $ctx = Digest::MD5->new;
-    my $buf;
-    if (0) {
-	# old way, don't care about $Config{prefix}
-	# see http://bugs.activestate.com/show_bug.cgi?id=46438
-	$ctx->addfile($fh);
-    }
-    elsif ($info{size} < 2 * 1024 * 1024) {
-	$buf = do { local $/; <$fh> };  # slurp
-	$buf =~ s/\Q$Config{prefix}\E/*something*/go;
-	$ctx->add($buf);
-    }
-    else {
-	# the hard way; read file in chunks
-	ppm_debug("Calulating MD5 checksum the hard way for $file");
-	my $n;
-	my $prefix = $Config{prefix};
-	my $end_len = -(length($prefix) - 1);
-	$buf = "";
-    CHUNK:
-	while ($n = read($fh, $buf, 1024*1024, length($buf))) {
-	    # need to check that $buf does not end with a string that
-	    # could be the start of $Config{prefix}.  This test is
-	    # expensive so we better keep the size of the chunks we
-	    # read pretty large.
-	    my $end = substr($buf, $end_len);
-	    for my $i (1 .. length($end)) {
-		if (substr($end, -$i) eq substr($prefix, 0, $i)) {
-		    # need to append next chunk to $buf as well
-		    # in order to safely replace $prefix
-		    next CHUNK;
-		}
-	    }
-	    $buf =~ s/\Q$prefix\E/*something*/go;
-	    $ctx->add($buf);
-	    $buf = "";
-	}
-	die "Can't read $file: $!" unless defined($n);
-	if (length $buf) {
-	    $buf =~ s/\Q$prefix\E/*something*/go;
-	    $ctx->add($buf);
-	}
-    }
-    $info{md5} = $ctx->hexdigest;
+    $info{md5} = Digest::MD5->new->addfile($fh)->hexdigest;
 
     return \%info;
 }
