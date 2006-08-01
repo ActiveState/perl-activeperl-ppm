@@ -1,10 +1,19 @@
 require 5.008;
 use ExtUtils::MakeMaker;
 
+use constant DARWIN => $^O eq 'darwin';
+
+my @exe = qw(
+bin/ppm
+bin/ppm-shell
+);
+
+push @exe, 'bin/PPM.app' if DARWIN;
+
 WriteMakefile(
    NAME         => "ActivePerl::PPM",
    VERSION_FROM => "lib/ActivePerl/PPM.pm",
-   EXE_FILES    => ["bin/ppm", "bin/ppm-shell"],
+   EXE_FILES    => [@exe],
    PREREQ_PM    => {
 		       'DBI' => 1.50,
 		       'DBD::SQLite' => 1.12,
@@ -16,7 +25,9 @@ WriteMakefile(
    dist         => { COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
 );
 
-sub MY::postamble {
+package MY;
+
+sub postamble {
     return '' unless -f "ppm.yml";
     return q(
 
@@ -35,4 +46,19 @@ db_site_install : ppm-site-area.db
 	$(CP) ppm-site-area.db $(SITEPREFIX)/etc
 
 );
+}
+
+sub installbin {
+    my $inherited = shift->SUPER::installbin(@_);
+    
+    if (main::DARWIN) {
+        my $rsync = '$(CP) -r bin/PPM.app $(INST_SCRIPT)/PPM.app';
+        my $fixin = q[$(PERLRUN) -MConfig -pi -e's/<perl-bin>/$$Config{bin}/g'];
+
+        $inherited =~ s[\$\(FIXIN\)(.*PPM\.app)][$fixin$1/Contents/MacOS/PPM]g;
+        $inherited =~ s/\$\(RM_F\)/\$(RM_RF)/g;
+        $inherited =~ s/\$\(CP\)(.*PPM\.app)/\$(CP) -r$1/g;
+    }
+
+    $inherited;
 }

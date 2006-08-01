@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>PPM</string>
+	<key>CFBundleExecutable</key>
+	<string>PPM</string>
+	<key>CFBundleGetInfoString</key>
+	<string>PPM 4.0 Copyright 2006 ActiveState Software Inc.</string>
+	<key>CFBundleIconFile</key>
+	<string>appIcon.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.activestate.PPM</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>PPM</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>4.0</string>
+	<key>CFBundleSignature</key>
+	<string>PPM4</string>
+	<key>CFBundleVersion</key>
+	<string>4.0</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>PPM 4.0 Copyright 2006 ActiveState Software Inc.</string>
+</dict>
+</plist>
