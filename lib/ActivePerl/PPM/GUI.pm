@@ -724,10 +724,10 @@ sub menus {
     my $mname = ($AQUA ? "nothelp" : "help");
     $sm = $menu->new_menu(-name => $mname);
     $menu->add_cascade(-label => "Help", -menu => $sm);
-    if (ActiveState::Browser::can_open("faq/ActivePerl-faq2.html")) {
+    if (ActiveState::Browser::can_open("faq/using-ppm.html")) {
 	$sm->add_command(
-	    -label => "PPM FAQ",
-	    -command => [\&ActiveState::Browser::open, "faq/ActivePerl-faq2.html"],
+	    -label => "Contents",
+	    -command => [\&ActiveState::Browser::open, "faq/using-ppm.html"],
 	);
     }
     if (ActiveState::Browser::can_open("http://www.activestate.com")) {
