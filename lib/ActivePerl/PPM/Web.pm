@@ -77,7 +77,15 @@ sub progress {
     }
     elsif ($status eq "end") {
 	unless ($response->is_success) {
-	    push(@arg, $response->code);
+	    my $code = $response->code;
+	    push(@arg, {
+               301 => "redirect",
+               302 => "redirect",
+               303 => "redirect",
+               304 => "not modified",
+               403 => "forbidden",
+               404 => "not found",
+	    }->{$code} || "status $code");
 	}
     }
     ppm_status($status, @arg);
