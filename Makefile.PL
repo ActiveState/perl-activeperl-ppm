@@ -1,11 +1,14 @@
+#!perl -w
+
 require 5.008;
+use strict;
 use ExtUtils::MakeMaker;
 
 use constant DARWIN => $^O eq 'darwin';
 
 my @exe = qw(
-bin/ppm
-bin/ppm-shell
+    bin/ppm
+    bin/ppm-shell
 );
 
 push @exe, 'bin/PPM.app' if DARWIN;
@@ -50,7 +53,7 @@ db_site_install : ppm-site-area.db
 
 sub installbin {
     my $inherited = shift->SUPER::installbin(@_);
-    
+
     if (main::DARWIN) {
         my $fixin = q[$(PERLRUN) -MConfig -pi -e's/<perl-bin>/$$Config{bin}/g'];
 
@@ -59,5 +62,5 @@ sub installbin {
         $inherited =~ s/\$\(CP\)(.*PPM\.app)/\$(CP) -r$1/g;
     }
 
-    $inherited;
+    return $inherited;
 }
