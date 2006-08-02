@@ -26,6 +26,7 @@ snit::widgetadaptor pkglist {
     delegate option -borderwidth to hull
     delegate option -relief to hull
     delegate option -padding to hull
+    delegate option -takefocus to tree
     delegate option * to tree
     delegate method * to tree
 
@@ -62,6 +63,9 @@ snit::widgetadaptor pkglist {
 	$self tree-details
 
 	bindtags $tree [linsert [bindtags $tree] 1 $win]
+
+	# Use Ttk TraverseIn event to handle megawidget focus properly
+	bind $win <<TraverseIn>> [list focus -force $tree]
 
 	$self configurelist $args
     }

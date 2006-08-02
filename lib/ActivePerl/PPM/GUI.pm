@@ -158,6 +158,7 @@ Tkx::bind($mw, "<Destroy>", [sub {
 			 }, Tkx::Ev('%W')]);
 $mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
 
+Tkx::option_add("*takeFocus", "0");
 
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
