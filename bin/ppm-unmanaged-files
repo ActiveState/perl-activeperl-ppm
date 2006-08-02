@@ -1,0 +1,43 @@
+#!/usr/bin/perl -w
+
+# This script will print out any files found in the
+# Perl installation tree that are *not* registered
+# as belonging to a package in any of the PPM
+# area databases.
+
+use strict;
+use ActivePerl::PPM::Client;
+
+my $c = ActivePerl::PPM::Client->new;
+
+my @prefix;
+my %file;
+
+for my $area_name ($c->areas) {
+   my $area = $c->area($area_name);
+   push(@prefix, $area->prefix);
+   my $dbh = $area->dbh;
+   my $sth = $dbh->prepare("SELECT path FROM file ORDER BY path");
+   $sth->execute;
+   while (my $path = $sth->fetchrow) {
+	$path = $area->_expand_path($path);
+        if ($file{$path}) {
+	    warn "$path managed both by $area_name and $file{$path} area";
+	    next;
+        }
+        $file{$path} = $area_name;
+   }
+}
+
+use File::Find qw(find);
+
+my %seen;
+find({
+    wanted => sub {
+        return if $file{$File::Find::name};
+        return if -d $_;
+	return if $seen{$File::Find::name}++;
+        print "$File::Find::name\n";
+    },
+    no_chdir => 1,
+}, @prefix);
