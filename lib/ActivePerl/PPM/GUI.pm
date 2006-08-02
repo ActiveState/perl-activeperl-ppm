@@ -304,6 +304,11 @@ $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
+if ($AQUA) {
+    Tkx::bind(all => "<Command-f>" => sub { Tkx::focus($filter); });
+} else {
+    Tkx::bind(all => "<Control-f>" => sub { Tkx::focus($filter); });
+}
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__button(-text => "Install",
@@ -421,7 +426,7 @@ Tkx::update('idletasks');
 
 Tkx::after(idle => sub {
 	       $mw->g_wm_deiconify();
-	       Tkx::focus(-force => $mw);
+	       Tkx::focus(-force => $filter);
 	       full_refresh();
 });
 
