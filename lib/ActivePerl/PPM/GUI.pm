@@ -468,7 +468,8 @@ sub area_sync {
 		       prefix => $area->prefix,
 		       inc => $area->inc,
 		   );
-	$arealist->state($area->name, "readonly") if $area->readonly;
+	$arealist->state($area->name, "readonly") if
+	    ($area->readonly || $area_name eq "perl");
     }
     if (!defined($AREAS{$INSTALL_AREA})) {
 	$INSTALL_AREA = $ppm->default_install_area || "";
@@ -908,7 +909,8 @@ sub select_item {
 	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
-	if (!$INSTALL_AREA || $AREAS{$INSTALL_AREA}->readonly) {
+	if (!$INSTALL_AREA
+	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -930,7 +932,8 @@ sub select_item {
 	$menu->add_checkbutton(-label => $txt,
 			       -variable => \$ACTION{$item}{'install'},
 			       -command => $cmd);
-	if (!$INSTALL_AREA || $AREAS{$INSTALL_AREA}->readonly) {
+	if (!$INSTALL_AREA
+	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->entryconfigure($txt, -state => "disabled");
 	    $install_btn->configure(-state => "disabled");
 	}
@@ -1091,7 +1094,7 @@ sub select_area_item {
     my $what = shift || "";
     my %data = Tkx::SplitList($arealist->data($item));
     if ($what eq "default") {
-	if ($AREAS{$data{name}}->readonly) {
+	if ($data{name} eq "perl" || $AREAS{$data{name}}->readonly) {
 	    Tkx::bell();
 	    return;
 	}
