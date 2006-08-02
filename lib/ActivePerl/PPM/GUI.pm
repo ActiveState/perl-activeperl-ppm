@@ -181,8 +181,10 @@ Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
 
 # Details / Status areas
 my @smallfont = ();
+my @smallfontbold = (-font => "ASfontBold");
 if ($AQUA) {
     @smallfont = (-font => "ASfont-1");
+    @smallfontbold = (-font => "ASfontBold-1");
 }
 my @text_opts = (-height => 7, -width => 40, -borderwidth => 0,
 		 -font => "ASfont", -state => "disabled",
@@ -405,7 +407,7 @@ $lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e',
 				  @smallfont);
 $statusbar->add($lbl, -separator => 1, -weight => 1);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA,
-				  -font => "ASfontBold-1");
+				  @smallfontbold);
 $statusbar->add($lbl);
 
 # Run preferences loading handler after UI has been instantiated
