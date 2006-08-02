@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>PPM</string>
 	<key>CFBundleGetInfoString</key>
-	<string>PPM 4.0 Copyright 2006 ActiveState Software Inc.</string>
+	<string>PPM <ppm-ver> Copyright 2006 ActiveState Software Inc.</string>
 	<key>CFBundleIconFile</key>
 	<string>appIcon.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -19,12 +19,12 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>4.0</string>
+	<string><ppm-ver></string>
 	<key>CFBundleSignature</key>
 	<string>PPM4</string>
 	<key>CFBundleVersion</key>
-	<string>4.0</string>
+	<string><ppm-ver></string>
 	<key>NSHumanReadableCopyright</key>
-	<string>PPM 4.0 Copyright 2006 ActiveState Software Inc.</string>
+	<string>PPM <ppm-ver> Copyright 2006 ActiveState Software Inc.</string>
 </dict>
 </plist>
