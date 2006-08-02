@@ -810,7 +810,9 @@ sub select_item {
     }
     $details->insert('end', "${pad}Author:\t$pkg->{author}\n") if $pkg->{author};
     if (my $name = is_cpan_package($pkg->{name})) {
-	my $cpan_url = "http://search.cpan.org/dist/$name-$pkg->{version}/";
+	my $v = $pkg->{version};
+	$v =~ s/-r\d+$//;
+	my $cpan_url = "http://search.cpan.org/dist/$name-$v/";
 	if ($pkg->{name} eq "Perl") {
 	    $cpan_url = sprintf "http://search.cpan.org/dist/perl-%vd", $^V;
 	}
