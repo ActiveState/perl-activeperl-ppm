@@ -52,7 +52,6 @@ sub installbin {
     my $inherited = shift->SUPER::installbin(@_);
     
     if (main::DARWIN) {
-        my $rsync = '$(CP) -r bin/PPM.app $(INST_SCRIPT)/PPM.app';
         my $fixin = q[$(PERLRUN) -MConfig -pi -e's/<perl-bin>/$$Config{bin}/g'];
 
         $inherited =~ s[\$\(FIXIN\)(.*PPM\.app)][$fixin$1/Contents/MacOS/PPM]g;
