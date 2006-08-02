@@ -1163,6 +1163,12 @@ sub build_prefs_dialog {
 	my $pass = $rpasse->get();
 	return unless $name && $url;
 	# This requires duplication of code from do_repo
+	if ($url =~ m,\?urn:/,) {
+	    Tkx::tk___messageBox(-title => "Error Adding Repository",
+				 -message => "PPM3 SOAP repositories are not supported",
+				 -type => "ok", -icon => "error");
+	    return;
+	}
 	if (-d $url) {
 	    require URI::file;
 	    $url = URI::file->new_abs($url);
