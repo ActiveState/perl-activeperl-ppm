@@ -23,7 +23,7 @@ $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 # these will be filled in the sync()
 my %AREAS;
 my %REPOS;
-my $INSTALL_AREA = $ppm->default_install_area;
+my $INSTALL_AREA;
 
 my $mw = Tkx::widget->new(".");
 $mw->g_wm_withdraw();
@@ -148,8 +148,6 @@ my $action_menu;
 my $fields_menu;
 my $view_menu;
 my $file_menu;
-
-on_load();
 
 # Create the menu structure
 menus();
@@ -409,6 +407,9 @@ $statusbar->add($lbl, -separator => 1, -weight => 1);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA,
 				  -font => "ASfontBold-1");
 $statusbar->add($lbl);
+
+# Run preferences loading handler after UI has been instantiated
+on_load();
 
 map view($_), keys %VIEW;
 
