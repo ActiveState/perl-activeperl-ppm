@@ -361,6 +361,15 @@ sub repo_set_name {
     $dbh->do("UPDATE repo SET name = ? WHERE id = ?", undef, $name, $id);
 }
 
+sub repo_set_packlist_uri {
+    my($self, $id, $uri) = @_;
+    my $dbh = $self->dbh;
+    $dbh->{AutoCommit} = 0;
+    $dbh->do("UPDATE repo SET packlist_uri = ?, packlist_last_status_code = NULL, packlist_last_access = NULL, packlist_etag = NULL, packlist_size = NULL, packlist_lastmod = NULL, packlist_fresh_until =  NULL WHERE id = ?", undef, $uri, $id);
+    _repo_delete_packages($dbh, $id);
+    $dbh->commit;
+}
+
 sub repo_sync {
     my($self, %opt) = @_;
     my @repos;
@@ -1168,14 +1177,26 @@ value is TRUE if the given repository was enabled.
 
 Will update the name by which the given repo is known.
 
+=item $client->repo_set_packlist_uri( $repo_id, $uri )
+
+Will update the address of the packlist to monitor for the given
+repository.  Will croak if the $uri is already used by some other
+repo.
+
+Updating the URI will loose all cached information about the repo.  A
+new 'repo_sync' is needed to update this information.
+
 =item $client->repo_sync
 
 =item $client->repo_sync( force => 1 )
 
+=item $client->repo_sync( repo => $id )
+
 Will sync the local cache of packages from the enabled repositories.
 Remote repositories are not contacted if the cache is not considered
 stale yet.  Pass the C<force> option with a TRUE value to force state
-to be transfered again from remote repositories.
+to be transfered again from remote repositories.  Pass C<repo> with an
+identifier to only sync the given repo.
 
 =item $client->search( $pattern )
 
