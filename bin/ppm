@@ -654,6 +654,16 @@ sub do_repo {
 	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
 	$ppm->repo_set_name($repo->{id}, join(" ", @ARGV));
     }
+    elsif ($cmd eq "location") {
+	$USAGE = "repo location <num> <uri>";
+	warn "[@ARGV]";
+	usage() if @ARGV != 2;
+	my($id, $uri) = @ARGV;
+	my $repo = $ppm->repo($id);
+	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
+	$ppm->repo_set_packlist_uri($repo->{id}, $uri);
+	$ppm->repo_sync(repo => $repo->{id});
+    }
     elsif ($cmd =~ /^\d+$/) {
 	@ARGV = ("describe") unless @ARGV;
 	if ($ARGV[0] =~ /^\d+$/) {
@@ -710,7 +720,7 @@ sub do_repo {
 	}
     }
     else {
-	$cmd = _try_abbrev("repo", $cmd, qw(list search sync on off delete describe add rename suggest));
+	$cmd = _try_abbrev("repo", $cmd, qw(list location search sync on off delete describe add rename suggest));
 	goto AGAIN;
     }
 }
@@ -1089,6 +1099,7 @@ Manage and search repositories:
     ppm repo describe <num>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
     ppm repo rename <num> <name>
+    ppm repo location <num> <uri>
     ppm repo suggest
     ppm search <pattern>
     ppm describe <num>
@@ -1326,6 +1337,12 @@ B<ppm repo off>.
 =item B<ppm repo rename> I<num> I<name>
 
 Change name by which the given repo is known.
+
+=item B<ppm repo location> I<num> I<uri>
+
+Change the location of the given repo.  This will make PPM
+forget all cached data from the old repository and try to refetch it
+from the new location.
 
 =item B<ppm repo search> ...
 
