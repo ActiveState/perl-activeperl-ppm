@@ -1060,6 +1060,8 @@ sub commit_actions {
 	    }
 	}
     }
+    # Don't remain in "upgradable" or "modified" filter state
+    $FILTER{'type'} = "installed" unless $FILTER{'type'} eq "all";
     refresh();
 }
 
