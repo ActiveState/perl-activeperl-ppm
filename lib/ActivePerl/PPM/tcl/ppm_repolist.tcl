@@ -274,6 +274,7 @@ snit::widgetadaptor repolist {
 	# the user can edit
 	TreeCtrl::SetEditable $tree {
 	    {repo styMixed elemText}
+	    {url styText elemText}
 	}
 
 	# During editing, hide the text and selection-rectangle elements.
@@ -296,14 +297,22 @@ snit::widgetadaptor repolist {
     }
 
     method _edit_accept {item col elem txt} {
-	if {$txt eq ""} { return }
-	$self _select $item setname $txt
-	$tree item element configure $item $col $elem -text $txt
+	set curval [$tree item element cget $item $col $elem -text]
+	if {$txt eq "" || $txt eq $curval} { return }
+	if {$col eq "url"} {
+	    # we don't need to adjust the value, because if this succeeds,
+	    # we should end up doing a full refresh
+	    $self _select $item seturl $txt
+	} else {
+	    # setting the name should always work
+	    $self _select $item setname $txt
+	    $tree item element configure $item $col $elem -text $txt
+	}
     }
 
     method _select {new args} {
 	if {$options(-selectcommand) ne ""} {
-	    uplevel 1 $options(-selectcommand) $new $args
+	    return [uplevel 1 $options(-selectcommand) $new $args]
 	}
     }
 }

@@ -160,6 +160,7 @@ Tkx::bind($mw, "<Destroy>", [sub {
 $mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
 
 Tkx::option_add("*takeFocus", "0");
+Tkx::option_add("*TEntry.takeFocus", "1");
 
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
@@ -1036,6 +1037,16 @@ sub select_repo_item {
     if ($what eq "setname") {
 	my $newname = shift;
 	$ppm->repo_set_name($data{id}, $newname);
+	return;
+    }
+    if ($what eq "seturl") {
+	my $newurl = shift;
+	eval { $ppm->repo_set_packlist_uri($data{id}, $newurl); };
+	if ($@) {
+	    status_message("\nERROR modifying repository URI:\n" . clean_err($@) . "\n", tag => "abstract");
+	} else {
+	    full_refresh();
+	}
 	return;
     }
 };
