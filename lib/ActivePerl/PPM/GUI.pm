@@ -132,6 +132,7 @@ $VIEW{'toolbar'} = 1;
 $VIEW{'statusbar'} = 1;
 
 my %ACTION;
+my $dummy = 0; # used as a dummy tied variable
 
 my %IMG;
 $IMG{'refresh'} = [Tkx::ppm__img('refresh')];
@@ -311,16 +312,18 @@ if ($AQUA) {
 }
 
 # Action buttons
-my $install_btn = $toolbar->new_ttk__button(-text => "Install",
-					    -image => $IMG{'install'},
-					    -style => "Toolbutton",
-					    -state => "disabled");
+my $install_btn = $toolbar->new_ttk__checkbutton(-text => "Install",
+						 -variable => \$dummy,
+						 -image => $IMG{'install'},
+						 -style => "Toolbutton",
+						 -state => "disabled");
 $toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
 Tkx::tooltip($install_btn, "Mark for install [+]");
-my $remove_btn = $toolbar->new_ttk__button(-text => "Remove",
-					   -image => $IMG{'remove'},
-					   -style => "Toolbutton",
-					   -state => "disabled");
+my $remove_btn = $toolbar->new_ttk__checkbutton(-text => "Remove",
+						-variable => \$dummy,
+						-image => $IMG{'remove'},
+						-style => "Toolbutton",
+						-state => "disabled");
 $toolbar->add($remove_btn, -pad => [0, 2]);
 Tkx::tooltip($remove_btn, "Mark for remove [-]");
 my $go_btn = $toolbar->new_ttk__button(-text => "Go",
@@ -398,7 +401,7 @@ $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'},
 				  @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for install");
-$lbl = $statusbar->new_ttk__label(-text => "to install/upgrade,", @smallfont);
+$lbl = $statusbar->new_ttk__label(-text => "to install,", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for install");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'}, @smallfont);
@@ -859,97 +862,41 @@ sub select_item {
     }
     # The icon represents the current actionable state:
     #   default installed upgradable install remove upgrade
-    $remove_btn->configure(-state => "disabled");
-    $install_btn->configure(-state => "disabled");
+    $remove_btn->configure(-state => "disabled", -variable => \$dummy);
+    $install_btn->configure(-state => "disabled", -variable => \$dummy);
     $menu->delete(0, 'end');
     if ($data{'installed'}) {
-	my $cmd = sub {
-	    my $was_btn = shift || 0;
-	    if ($was_btn) {
-		if ($ACTION{$item}{'remove'}) {
-		    $ACTION{$item}{'remove'} = 0;
-		} else {
-		    $ACTION{$item}{'remove'} = 1;
-		}
-	    }
-	    queue_for_remove($item, $name);
-	};
-	$remove_btn->configure(-state => "normal",
-			       -command => [$cmd, 1]);
+	# installed items are removable
 	my $txt = "Remove $name $data{'installed'}";
-	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$item}{'remove'},
-			       -command => $cmd);
 	if ($data{'area'} && (($data{'area'} eq "perl")
 				  || $AREAS{$data{'area'}}->readonly)) {
 	    # perl area items should not be removed
-	    $menu->entryconfigure($txt, -state => "disabled");
-	    $remove_btn->configure(-state => "disabled");
+	    $menu->add_command(-label => $txt, -state => "disabled");
+	} else {
+	    my $cmd = sub { queue_action($item, $name, "remove"); };
+	    $remove_btn->configure(-state => "normal", -command => $cmd,
+				   -variable => \$ACTION{$item}{'remove'});
+	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
+				   -variable => \$ACTION{$item}{'remove'});
 	}
     }
-    if ($data{'available'} && $data{'installed'}) {
-	my $cmd = sub {
-	    my $was_btn = shift || 0;
-	    if ($was_btn) {
-		# Add in reversal of previous state
-		if ($ACTION{$item}{'install'}) {
-		    $ACTION{$item}{'install'} = 0;
-		    $ACTION{$item}{'remove'} = 0;
-		} else {
-		    $ACTION{$item}{'install'} = 1;
-		    $ACTION{$item}{'remove'} = 1;
-		}
-	    } else {
-		# the checkbutton only modifies install, take care remove
-		if ($ACTION{$item}{'install'}) {
-		    $ACTION{$item}{'remove'} = 1;
-		} else {
-		    $ACTION{$item}{'remove'} = 0;
-		}
-	    }
-	    queue_for_remove($item, $name);
-	    queue_for_install($item, $name);
-	};
-	my $txt = ($data{'installed'} eq $data{'available'}) ?
-	    "Reinstall" : "Upgrade";
-	$install_btn->configure(-state => "normal",
-				-command => [$cmd, 1]);
-	$txt = "$txt $name to $data{'available'}";
-	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$item}{'install'},
-			       -command => $cmd);
-	if (!$INSTALL_AREA
-	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
-	    $menu->entryconfigure($txt, -state => "disabled");
-	    $install_btn->configure(-state => "disabled");
-	}
-    } elsif ($data{'available'}) {
-	my $cmd = sub {
-	    my $was_btn = shift || 0;
-	    if ($was_btn) {
-		if ($ACTION{$item}{'install'}) {
-		    $ACTION{$item}{'install'} = 0;
-		} else {
-		    $ACTION{$item}{'install'} = 1;
-		}
-	    }
-	    queue_for_install($item, $name);
-	};
-	$install_btn->configure(-state => "normal",
-				-command => [$cmd, 1]);
+    if ($data{'available'}) {
+	# available items are installable
 	my $txt = "Install $name $data{'available'}";
-	$menu->add_checkbutton(-label => $txt,
-			       -variable => \$ACTION{$item}{'install'},
-			       -command => $cmd);
 	if (!$INSTALL_AREA
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
-	    $menu->entryconfigure($txt, -state => "disabled");
-	    $install_btn->configure(-state => "disabled");
+	    $menu->add_command(-label => $txt, -state => "disabled");
+	} else {
+	    my $cmd = sub { queue_action($item, $name, "install"); };
+	    $install_btn->configure(-state => "normal", -command => $cmd,
+				    -variable => \$ACTION{$item}{'install'});
+	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
+				   -variable => \$ACTION{$item}{'install'});
 	}
     }
     if (!$data{'available'} && !$data{'installed'}) {
 	# Oddball packages that have no version?
-	$menu->add_command(-label => "$name", -state => "disabled");
+	$menu->add_command(-label => $name, -state => "disabled");
     }
     if ($data{'installed'}) {
 	# Add "Verify" action
@@ -959,30 +906,24 @@ sub select_item {
     }
 }
 
-sub queue_for_install {
-    my ($item, $name) = @_;
-    if ($ACTION{$item}{'install'}) {
-	$pkglist->state($item, "install");
-	$NUM{'install'}++;
-	status_message("$name marked for install\n");
-    } else {
-	$pkglist->state($item, "!install");
-	$NUM{'install'}--;
-	status_message("$name unmarked for install\n");
+sub queue_action {
+    my ($item, $name, $action) = @_;
+    my $altact = ($action eq "install") ? "remove" : "install";
+    if ($ACTION{$item}{'remove'} && $ACTION{$item}{'install'}) {
+	# only allow install OR remove, not both.
+	$ACTION{$item}{$altact} = 0;
+	$pkglist->state($item, "!$altact");
+	$NUM{$altact}--;
+	status_message("$name unmarked for $altact\n");
     }
-    update_actions();
-}
-
-sub queue_for_remove {
-    my ($item, $name) = @_;
-    if ($ACTION{$item}{'remove'}) {
-	$pkglist->state($item, "remove");
-	$NUM{'remove'}++;
-	status_message("$name marked for remove\n");
+    if ($ACTION{$item}{$action}) {
+	$pkglist->state($item, $action);
+	$NUM{$action}++;
+	status_message("$name marked for $action\n");
     } else {
-	$pkglist->state($item, "!remove");
-	$NUM{'remove'}--;
-	status_message("$name unmarked for remove\n");
+	$pkglist->state($item, "!$action");
+	$NUM{$action}--;
+	status_message("$name unmarked for $action\n");
     }
     update_actions();
 }

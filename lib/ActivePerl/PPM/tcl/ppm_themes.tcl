@@ -22,7 +22,6 @@ namespace eval ::ppm {
     array set IMG {}
     array set MOD {
 	install		{bullet_add.png}
-	reinstall	{bullet_go.png}
 	remove		{bullet_delete.png}
 	upgrade		{bullet_add.png}
 	upgradable	{bullet_star.png}

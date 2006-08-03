@@ -184,11 +184,7 @@ snit::widgetadaptor pkglist {
 	    lappend img remove
 	}
 	if {[info exists S(install)]} {
-	    if {[info exists S(installed)]} {
-		lappend img reinstall
-	    } else {
-		lappend img install
-	    }
+	    lappend img install
 	}
 	$tree item image $item name [list [eval [linsert $img 0 ::ppm::img]]]
 
