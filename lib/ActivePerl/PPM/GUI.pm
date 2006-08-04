@@ -1183,7 +1183,7 @@ sub build_prefs_dialog {
 	my $next = shift;
 	if ($name_var && $uri_var) {
 	    # Do add
-	    $add_sub;
+	    $save_btn->invoke();
 	} else {
 	    Tkx::focus($next);
 	}
@@ -1193,7 +1193,7 @@ sub build_prefs_dialog {
     Tkx::grid($rnamel, $rnamee, "-", -sticky => 'ew', -padx => 1, -pady => 1);
     Tkx::grid($rlocnl, $rlocne, $dir_btn, -sticky => 'ew',
 	      -padx => 1, -pady => 1);
-    #Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
+    Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
     Tkx::grid($sw, -sticky => 'news');
