@@ -287,8 +287,11 @@ snit::widgetadaptor pkglist {
 	}
 	set id [$tree selection get]
 	if {$id eq "" || ![$tree item cget $id -visible]} {
-	    $tree activate "first visible"
-	    $tree selection modify active all
+	    # no visible items may exist
+	    catch {
+		$tree activate "first visible"
+		$tree selection modify active all
+	    }
 	}
 	$tree see active
 	set visible $count
