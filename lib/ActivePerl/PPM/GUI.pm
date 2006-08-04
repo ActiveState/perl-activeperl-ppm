@@ -15,7 +15,7 @@ use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
-use Cwd qw(abs_path);
+use Cwd qw(cwd abs_path);
 
 my $ppm = $::ppm;
 $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
@@ -87,6 +87,11 @@ elsif ($windowingsystem eq "x11") {
 Tkx::style(layout => "NotebookPane",
 	   ["NotebookPane.background", -sticky => "news", -expand => 1]);
 Tkx::option_add("*TNotebook.TFrame.style", "NotebookPane");
+
+# Make invalid state entry/label widget change color scheme
+Tkx::style(map => "TEntry", -foreground => [invalid => "red"],
+	   -fieldbackground => [invalid => "yellow"]);
+Tkx::style(map => "TLabel", -foreground => [invalid => "red"]);
 
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
@@ -1018,7 +1023,7 @@ sub select_repo_item {
 	    -title => "Remove Repository?",
 	    -icon => "warning",
 	    -type => "yesno",
-	    -message => "Really remove repository?",
+	    -message => "Really remove $data{repo} repository?",
 	    -parent => $prefs_dialog,
 	);
 	return unless $res eq "yes";
@@ -1112,55 +1117,83 @@ sub build_prefs_dialog {
     my $addl = $f->new_widget__panelframe(-text => "Add Repository:");
     my $addf = $addl->new_ttk__frame(-padding => [6, 2]);
     $addl->setwidget($addf);
-    my $rnamel = $addf->new_ttk__label(-text => "Name:", -anchor => 'w');
-    my $rnamee = $addf->new_ttk__entry();
-    my $rlocnl = $addf->new_ttk__label(-text => "Location:", -anchor => 'w');
-    my $rlocne = $addf->new_ttk__entry();
-    my $ruserl = $addf->new_ttk__label(-text => "Username:", -anchor => 'w');
-    my $rusere = $addf->new_ttk__entry();
-    my $rpassl = $addf->new_ttk__label(-text => "Password:", -anchor => 'w');
-    my $rpasse = $addf->new_ttk__entry();
-    my $opttxt = "(optional, for FTP and HTTP repositories only)";
-    my $opt0 = $addf->new_ttk__label(-text => $opttxt, -font => "ASfont-1");
+    my $name_var = "";
+    my $uri_var = "";
+    my ($rnamel, $rnamee, $rlocnl, $rlocne);
+    my $val_cmd = sub {
+	my ($peek, $w) = @_;
+	my $state = $peek ? "!invalid" : "invalid";
+	$w->state($state);
+	return 1;
+    };
+    $rnamel = $addf->new_ttk__label(-text => "Name:", -anchor => 'w');
+    $rnamee = $addf->new_ttk__entry(-textvariable => \$name_var,
+				    -validate => "all",
+				    -validatecommand => [$val_cmd, Tkx::Ev('%P'), $rnamel]);
+    $rlocnl = $addf->new_ttk__label(-text => "Location:", -anchor => 'w');
+    $rlocne = $addf->new_ttk__entry(-textvariable => \$uri_var,
+				    -validate => "all",
+				    -validatecommand => [$val_cmd, Tkx::Ev('%P'), $rlocnl]);
+    $rnamel->state("invalid");
+    $rlocnl->state("invalid");
+    my $lastdir = cwd();
+    my $dircmd = sub {
+	my $dir = Tkx::tk___chooseDirectory(-title => "Repository Directory",
+					    -initialdir => $lastdir,
+					    -parent => $top,
+					    -mustexist => 1);
+	if ($dir) {
+	    $uri_var = $lastdir = $dir;
+	    $rlocne->selection_clear();
+	    $rlocne->icursor("end");
+	    $rlocne->g_focus();
+	}
+    };
+    my $dir_btn = $addf->new_ttk__button(-image => [Tkx::ppm__img('dir')],
+					 -command => $dircmd);
     my $add_sub = sub {
-	my $name = $rnamee->get();
-	my $url = $rlocne->get();
-	my $user = $rusere->get();
-	my $pass = $rpasse->get();
-	return unless $name && $url;
+	return unless $name_var && $uri_var;
 	# This requires duplication of code from do_repo
-	if ($url =~ m,\?urn:/,) {
+	if ($uri_var =~ m,\?urn:/,) {
 	    Tkx::tk___messageBox(-title => "Error Adding Repository",
 				 -message => "PPM3 SOAP repositories are not supported",
 				 -type => "ok", -icon => "error");
 	    return;
 	}
-	if (-d $url) {
+	if (-d $uri_var) {
 	    require URI::file;
-	    $url = URI::file->new_abs($url);
+	    $uri_var = URI::file->new_abs($uri_var);
 	}
-	if ($user) {
-	    $user .= ":$pass" if defined $pass;
-	    $url = URI->new($url);
-	    $url->userinfo($user);
-	    $url = $url->as_string;
-	}
-	eval { $ppm->repo_add(name => $name, packlist_uri => $url); };
+	eval { $ppm->repo_add(name => $name_var, packlist_uri => $uri_var); };
 	if ($@) {
 	    Tkx::tk___messageBox(-title => "Error Adding Repository",
 				 -message => "Error adding repository:\n" . clean_err($@),
 				 -type => "ok", -icon => "error");
 	} else {
+	    $name_var = "";
+	    $uri_var = "";
+	    $rnamel->state("invalid");
+	    $rlocnl->state("invalid");
 	    full_refresh();
 	}
     };
     my $save_btn = $addf->new_ttk__button(-text => "Add",
 					  -command => $add_sub);
-    Tkx::grid($rnamel, $rnamee, '-', -sticky => 'sew', -pady => 1);
-    Tkx::grid($rlocnl, $rlocne, '-', -sticky => 'sew', -pady => 1);
-    Tkx::grid($ruserl, $rusere, $opt0, -sticky => 'sew', -pady => 1);
-    Tkx::grid($rpassl, $rpasse, $save_btn, -sticky => 'sew', -pady => 1);
-    Tkx::grid(configure => $save_btn, -sticky => 'e');
+    my $ret_cmd = sub {
+	my $next = shift;
+	if ($name_var && $uri_var) {
+	    # Do add
+	    $add_sub;
+	} else {
+	    Tkx::focus($next);
+	}
+    };
+    $rnamee->g_bind("<Return>", [$ret_cmd, $rlocne]);
+    $rlocne->g_bind("<Return>", [$ret_cmd, $rnamee]);
+    Tkx::grid($rnamel, $rnamee, "-", -sticky => 'ew', -padx => 1, -pady => 1);
+    Tkx::grid($rlocnl, $rlocne, $dir_btn, -sticky => 'ew',
+	      -padx => 1, -pady => 1);
+    #Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
     Tkx::grid($sw, -sticky => 'news');

@@ -29,6 +29,7 @@ namespace eval ::ppm {
 	modified	{bullet_go.png}
     }
     array set MAP {
+	dir		{folder.png}
 	package		{package.png}
 	available	{package_disabled.png}
 	installed	{package.png}
