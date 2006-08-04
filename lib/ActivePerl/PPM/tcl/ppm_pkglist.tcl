@@ -34,12 +34,10 @@ snit::widgetadaptor pkglist {
     option -itembackground -default "" -configuremethod C-itembackground
     option -sortbackground -default "" -configuremethod C-sortbackground
 
+    option -sortcolumn -default "name" -configuremethod C-sort
+    option -sortorder -default "-increasing" -configuremethod C-sort
+
     variable NAMES -array {}
-
-    # color to use on details view sorted column
-    variable sortcolumn "name"
-    variable sortorder "-increasing"
-
     variable visible 0
 
     constructor {args} {
@@ -74,15 +72,24 @@ snit::widgetadaptor pkglist {
 	$tree column configure all -itembackground $value
 	# don't lose sort column
 	if {[llength $options(-sortbackground)]} {
-	    $tree column configure $sortcolumn \
+	    $tree column configure $options(-sortcolumn) \
 		-itembackground $options(-sortbackground)
 	}
 	set options($option) $value
     }
 
     method C-sortbackground {option value} {
-	$tree column configure $sortcolumn -itembackground \
+	$tree column configure $options(-sortcolumn) -itembackground \
 	    [expr {[llength $value] ? $value : $options(-itembackground)}]
+	set options($option) $value
+    }
+
+    method C-sort {option value} {
+	if {$option eq "-sortcolumn"} {
+	    $self sort $value $options(-sortorder)
+	} else {
+	    $self sort $options(-sortcolumn) $value
+	}
 	set options($option) $value
     }
 
@@ -278,6 +285,9 @@ snit::widgetadaptor pkglist {
 		incr count $vis
 	    }
 	}
+	if {![$tree item cget active -visible]} {
+	    $tree activate "first visible"
+	}
 	set visible $count
 	return $count
     }
@@ -289,39 +299,46 @@ snit::widgetadaptor pkglist {
 	return [$tree column cget $col -visible]
     }
 
-    method sort {} {
-	set opts [list -column $sortcolumn -dictionary]
-	if {$sortcolumn ne "name"} {
+    method sort {{col {}} {order {}}} {
+	if {$order ne ""} {
+	    set options(-sortorder) $order
+	    event generate $win <<SortOrder>>
+	}
+	if {$col ne ""} {
+	    $tree column configure $options(-sortcolumn) -arrow none \
+		-itembackground $options(-itembackground)
+	    set options(-sortcolumn) $col
+	    event generate $win <<SortColumn>>
+	    $tree column configure $options(-sortcolumn) \
+		-arrow [expr {$options(-sortorder) eq "-increasing" ? "up" : "down"}]
+	    if {[llength $options(-sortbackground)]} {
+		$tree column configure $col \
+		    -itembackground $options(-sortbackground)
+	    }
+	}
+
+	set opts [list -column $options(-sortcolumn) -dictionary]
+	if {$options(-sortcolumn) ne "name"} {
 	    # Use package name as second sort order
 	    lappend opts -column "name"
 	}
-	eval [list $tree item sort root $sortorder] $opts
+	eval [list $tree item sort root $options(-sortorder)] $opts
     }
 
     method _headerinvoke {t col} {
-	set sortorder -increasing
-	set arrow up
-	set dir [$tree column cget $sortcolumn -arrow]
-	if {[$tree column compare $col == $sortcolumn]} {
+	set order -increasing
+	set dir [$tree column cget $options(-sortcolumn) -arrow]
+	if {[$tree column compare $col == $options(-sortcolumn)]} {
 	    if {$dir ne "down"} {
-		set sortorder -decreasing
-		set arrow down
+		set order -decreasing
 	    }
 	} else {
 	    if {$dir eq "down"} {
-		set sortorder -decreasing
-		set arrow down
+		set order -decreasing
 	    }
-	    $tree column configure $sortcolumn -arrow none \
-		-itembackground $options(-itembackground)
-	    set sortcolumn $col
 	}
-	$tree column configure $col -arrow $arrow
-	if {[llength $options(-sortbackground)]} {
-	    $tree column configure $col \
-		-itembackground $options(-sortbackground)
-	}
-	$self sort
+	set col [$tree column cget $col -tag]
+	$self sort $col $order
     }
 
     method tree-details {} {
@@ -385,9 +402,9 @@ snit::widgetadaptor pkglist {
 	    %T column move %C %b
 	}
 
-	$tree column configure $sortcolumn -arrow up
+	$tree column configure $options(-sortcolumn) -arrow up
 	if {[llength $options(-sortbackground)]} {
-	    $tree column configure $sortcolumn \
+	    $tree column configure $options(-sortcolumn) \
 		-itembackground $options(-sortbackground)
 	}
     }

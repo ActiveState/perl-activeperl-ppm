@@ -136,6 +136,9 @@ $VIEW{'author'} = 0;
 $VIEW{'toolbar'} = 1;
 $VIEW{'statusbar'} = 1;
 
+$VIEW{'sortcolumn'} = 'name';
+$VIEW{'sortorder'} = '-increasing';
+
 my %ACTION;
 my $dummy = 0; # used as a dummy tied variable
 
@@ -152,6 +155,7 @@ $IMG{'f_modified'} = [Tkx::ppm__img('package', 'filter', 'modified')];
 
 my $action_menu;
 my $fields_menu;
+my $sort_menu;
 my $view_menu;
 my $file_menu;
 
@@ -186,6 +190,11 @@ Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      }
 }, Tkx::Ev("%x", "%y", "%X", "%Y")]);
 Tkx::event('add', "<<PackageMenu>>", "<Button-3>", "<Control-Button-1>");
+# Catch changes in sort behavior by widget for menus
+Tkx::bind($pkglist, "<<SortOrder>>",
+	  sub { $VIEW{'sortorder'} = $pkglist->cget('-sortorder'); });
+Tkx::bind($pkglist, "<<SortColumn>>",
+	  sub { $VIEW{'sortcolumn'} = $pkglist->cget('-sortcolumn'); });
 
 # Details / Status areas
 my @smallfont = ();
@@ -428,7 +437,8 @@ $statusbar->add($lbl);
 # Run preferences loading handler after UI has been instantiated
 on_load();
 
-map view($_), keys %VIEW;
+# map all view items, but only call one of the sort* view items
+map view($_), grep($_ ne "sortorder", keys %VIEW);
 
 # Now let's get started ...
 Tkx::update('idletasks');
@@ -580,7 +590,9 @@ sub ppm {
 
 sub view {
     my $view = shift;
-    if ($view =~ 'bar$') {
+    if ($view =~ '^sort') {
+	$pkglist->sort($VIEW{'sortcolumn'}, $VIEW{'sortorder'});
+    } elsif ($view =~ 'bar$') {
 	my $w = ($view eq 'statusbar' ? $statusbar : $toolbar);
 	if ($VIEW{$view}) {
 	    Tkx::grid($w);
@@ -715,8 +727,8 @@ sub menus {
 			 -value => "modified",
 			 -command => [\&filter]);
     $sm->add_separator();
-    $ssm = $fields_menu = $sm->new_menu(-name => "fields");
-    $sm->add_cascade(-label => "Fields", -menu => $ssm);
+    $ssm = $fields_menu = $sm->new_menu(-name => "cols");
+    $sm->add_cascade(-label => "View Columns", -menu => $ssm);
     $ssm->add_checkbutton(-label => "Area",
 			  -variable => \$VIEW{'area'},
 			  -command => [\&view, 'area']);
@@ -732,6 +744,29 @@ sub menus {
     $ssm->add_checkbutton(-label => "Author",
 			  -variable => \$VIEW{'author'},
 			  -command => [\&view, 'author']);
+    $ssm = $sort_menu = $sm->new_menu(-name => "sort");
+    $sm->add_cascade(-label => "Sort Column", -menu => $ssm);
+    my @sort_opts = (-variable => \$VIEW{'sortcolumn'},
+		     -command => [\&view, 'sort']);
+    $ssm->add_radiobutton(-label => "Package Name", -value => 'name',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Area", -value => 'area',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Installed", -value => 'installed',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Available", -value => 'available',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Abstract", -value => 'abstract',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Author", -value => 'author',
+			  @sort_opts);
+    $ssm->add_separator();
+    @sort_opts = (-variable => \$VIEW{'sortorder'},
+		  -command => [\&view, 'sort']);
+    $ssm->add_radiobutton(-label => "Ascending", -value => '-increasing',
+			  @sort_opts);
+    $ssm->add_radiobutton(-label => "Descending", -value => '-decreasing',
+			  @sort_opts);
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
