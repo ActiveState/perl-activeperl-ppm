@@ -285,9 +285,12 @@ snit::widgetadaptor pkglist {
 		incr count $vis
 	    }
 	}
-	if {![$tree item cget active -visible]} {
+	set id [$tree selection get]
+	if {$id eq "" || ![$tree item cget $id -visible]} {
 	    $tree activate "first visible"
+	    $tree selection modify active all
 	}
+	$tree see active
 	set visible $count
 	return $count
     }
@@ -323,6 +326,7 @@ snit::widgetadaptor pkglist {
 	    lappend opts -column "name"
 	}
 	eval [list $tree item sort root $options(-sortorder)] $opts
+	$tree see active
     }
 
     method _headerinvoke {t col} {
