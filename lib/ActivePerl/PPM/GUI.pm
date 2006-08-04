@@ -88,6 +88,8 @@ Tkx::style(layout => "NotebookPane",
 	   ["NotebookPane.background", -sticky => "news", -expand => 1]);
 Tkx::option_add("*TNotebook.TFrame.style", "NotebookPane");
 
+Tkx::option_add("*TEntry.cursor", "xterm");
+
 # Make invalid state entry/label widget change color scheme
 Tkx::style(map => "TEntry", -foreground => [invalid => "red"],
 	   -fieldbackground => [invalid => "yellow"]);
