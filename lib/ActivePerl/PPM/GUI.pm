@@ -465,9 +465,9 @@ sub refresh {
     $NUM{'install'} = 0;
     $NUM{'remove'} = 0;
     update_actions();
+    $pkglist->sort();
     filter(1);
     $NUM{'listed'} = $pkglist->numitems('visible');
-    $pkglist->sort();
 }
 
 sub repo_sync {
