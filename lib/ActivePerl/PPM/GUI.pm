@@ -942,9 +942,10 @@ sub select_item {
     $remove_btn->configure(-state => "disabled", -variable => \$dummy);
     $install_btn->configure(-state => "disabled", -variable => \$dummy);
     $menu->delete(0, 'end');
+    my $txt;
     if ($data{'installed'}) {
 	# installed items are removable
-	my $txt = "Remove $name $data{'installed'}";
+	$txt = "Remove $name $data{'installed'}";
 	if ($data{'area'} && (($data{'area'} eq "perl")
 				  || $AREAS{$data{'area'}}->readonly)) {
 	    # perl area items should not be removed
@@ -959,7 +960,11 @@ sub select_item {
     }
     if ($data{'available'}) {
 	# available items are installable
-	my $txt = "Install $name $data{'available'}";
+	if ($data{'available'} eq $data{'installed'}) {
+	    $txt = "Reinstall $name $data{'available'}";
+	} else {
+	    $txt = "Install $name $data{'available'}";
+	}
 	if (!$INSTALL_AREA
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->add_command(-label => $txt, -state => "disabled");
