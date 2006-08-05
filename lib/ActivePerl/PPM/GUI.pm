@@ -33,19 +33,16 @@ Tkx::lappend('::auto_path', abs_path(dirname(__FILE__)) . "/tcl");
 
 my $windowingsystem = Tkx::tk('windowingsystem');
 my $AQUA = ($windowingsystem eq "aqua");
+my $plat_acc_ctrl = ($AQUA ? "Command-" : "Ctrl+");
+my $plat_evt_ctrl = ($AQUA ? "Command-" : "Control-");
 
 if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
     Tkx::package_require('comm');
     print "DEBUG COMM PORT: " . Tkx::comm__comm('self') . "\n";
 
     Tkx::package_require('tkcon');
-    if ($AQUA) {
-	Tkx::bind(all => "<Command-F12>", 'catch {tkcon show}');
-	Tkx::bind(all => "<Command-F11>", 'catch {tkcon hide}');
-    } else {
-	Tkx::bind(all => "<F12>", 'catch {tkcon show}');
-	Tkx::bind(all => "<F11>", 'catch {tkcon hide}');
-    }
+    Tkx::bind(all => "<${plat_evt_ctrl}F12>", 'catch {tkcon show}');
+    Tkx::bind(all => "<${plat_evt_ctrl}F11>", 'catch {tkcon hide}');
     Tkx::catch("tkcon hide");
 }
 
@@ -205,7 +202,8 @@ if ($AQUA) {
     @smallfont = (-font => "ASfont-1");
     @smallfontbold = (-font => "ASfontBold-1");
 }
-my @text_opts = (-height => 7, -width => 40, -borderwidth => 0,
+my @text_opts = (-height => 7, -width => 40, -cursor => "",
+		 -borderwidth => 3, -relief => "flat",
 		 -font => "ASfont", -state => "disabled",
 		 -wrap => "word", -highlightthickness => 0);
 my $pw_nb = $pw->new_ttk__notebook(-padding => 0);
@@ -254,7 +252,7 @@ my $toolbar = $mw->new_widget__toolbar();
 my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
 Tkx::grid($toolbar, -sticky => "ew", -padx => 2);
-Tkx::grid($pw, -sticky => "news", -padx => 4, -pady => 4);
+Tkx::grid($pw, -sticky => "news", -padx => 0, -pady => 0);
 Tkx::grid($statusbar, -sticky => "ew");
 
 Tkx::grid(rowconfigure => $mw, 1, -weight => 1);
@@ -279,28 +277,33 @@ my $filter_all = $toolbar->new_ttk__radiobutton(
     -command => [\&filter], -value => "all",
 );
 $toolbar->add($filter_all, -pad => [0, 2]);
-Tkx::tooltip($filter_all, "All packages");
+Tkx::tooltip($filter_all, "All packages [${plat_acc_ctrl}1]");
 my $filter_inst = $toolbar->new_ttk__radiobutton(
     -text => "Installed", -image => $IMG{'f_installed'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "installed",
 );
 $toolbar->add($filter_inst, -pad => [0, 2]);
-Tkx::tooltip($filter_inst, "Installed packages");
+Tkx::tooltip($filter_inst, "Installed packages [${plat_acc_ctrl}2]");
 my $filter_upgr = $toolbar->new_ttk__radiobutton(
     -text => "Upgradable", -image => $IMG{'f_upgradable'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "upgradable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
-Tkx::tooltip($filter_upgr, "Upgradable packages");
+Tkx::tooltip($filter_upgr, "Upgradable packages [${plat_acc_ctrl}3]");
 my $filter_mod = $toolbar->new_ttk__radiobutton(
     -text => "Modified", -image => $IMG{'f_modified'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "modified",
 );
 $toolbar->add($filter_mod, -pad => [0, 2]);
-Tkx::tooltip($filter_mod, "Packages to install/remove");
+Tkx::tooltip($filter_mod, "Packages to install/remove [${plat_acc_ctrl}4]");
+
+Tkx::bind(all => "<${plat_evt_ctrl}Key-1>" => sub { $filter_all->invoke(); });
+Tkx::bind(all => "<${plat_evt_ctrl}Key-2>" => sub { $filter_inst->invoke(); });
+Tkx::bind(all => "<${plat_evt_ctrl}Key-3>" => sub { $filter_upgr->invoke(); });
+Tkx::bind(all => "<${plat_evt_ctrl}Key-4>" => sub { $filter_mod->invoke(); });
 
 # Filter entry with filter.fields menu
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
@@ -309,7 +312,7 @@ my $filter = $toolbar->new_widget__menuentry(
     -menu => $filter_menu,
     -textvariable => \$FILTER{'filter'},
 );
-Tkx::tooltip($filter, "Filter packages");
+Tkx::tooltip($filter, "Filter packages [${plat_acc_ctrl}F]");
 $toolbar->add($filter, -weight => 2);
 $filter_menu->add('radiobutton', -label => "Name", -value => "name",
 		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
@@ -322,11 +325,7 @@ $filter_menu->add('radiobutton', -label => "Author", -value => "author",
 		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
-if ($AQUA) {
-    Tkx::bind(all => "<Command-f>" => sub { Tkx::focus($filter); });
-} else {
-    Tkx::bind(all => "<Control-f>" => sub { Tkx::focus($filter); });
-}
+Tkx::bind(all => "<${plat_evt_ctrl}f>" => sub { Tkx::focus($filter); });
 
 # Action buttons
 my $install_btn = $toolbar->new_ttk__checkbutton(-text => "Install",
@@ -349,7 +348,7 @@ my $go_btn = $toolbar->new_ttk__button(-text => "Go",
 				       -state => "disabled",
 				       -command => [\&run_actions]);
 $toolbar->add($go_btn, -pad => [4, 2, 0]);
-Tkx::tooltip($go_btn, "Run marked actions");
+Tkx::tooltip($go_btn, "Run marked actions [${plat_acc_ctrl}Enter]");
 
 # Add [+] and [-] key bindings for install/remove to pkglist
 Tkx::bind($pkglist, "<Key-plus>", sub { $install_btn->invoke(); });
@@ -360,7 +359,8 @@ my $sync_btn = $toolbar->new_ttk__button(-text => "Refresh",
 					 -image => $IMG{'refresh'},
 					 -style => "Toolbutton",
 					 -command => [\&full_refresh]);
-Tkx::tooltip($sync_btn, "Refresh all data");
+Tkx::bind("all", "<Key-F5>", sub { $sync_btn->invoke(); });
+Tkx::tooltip($sync_btn, "Refresh all data [F5]");
 $toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
 
 my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
@@ -370,7 +370,8 @@ my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 					   $prefs_dialog->display();
 					   Tkx::focus(-force => $prefs_dialog);
 				       });
-Tkx::tooltip($prefs_btn, "PPM Preferences");
+Tkx::bind("all", "<${plat_evt_ctrl}p>", sub { $prefs_btn->invoke(); });
+Tkx::tooltip($prefs_btn, "PPM Preferences [${plat_acc_ctrl}P]");
 $toolbar->add($prefs_btn);
 
 if ($AQUA) {
@@ -509,13 +510,42 @@ sub area_sync {
     }
 }
 
+my %GRAB;
+
+sub set_focus_grab {
+    my $grab = shift;
+    my $focus = shift || $grab;
+    $GRAB{$grab,$focus} = (Tkx::focus(),
+			   Tkx::grab(current => $status_box),
+			   Tkx::winfo_exists($grab) ?
+				   Tkx::grab(status => $grab) : "");
+    eval { Tkx::grab($grab); Tkx::focus($focus); };
+}
+
+sub restore_focus_grab {
+    my $grab = shift;
+    my $focus = shift || $grab;
+    Tkx::grab(release => $grab);
+    return unless defined($GRAB{$grab,$focus});
+    my ($oldGrab, $oldFocus, $oldStatus) = $GRAB{$grab,$focus};
+    Tkx::focus($oldFocus) if Tkx::winfo_exists($oldFocus);
+    if (Tkx::winfo_exists($oldGrab) && Tkx::winfo_ismapped($oldGrab)) {
+	Tkx::grab($oldStatus eq "global" ? "-global" : "-local", $oldGrab);
+    }
+    $GRAB{$grab,$focus} = ();
+}
+
 sub full_refresh {
     status_message("Synchronizing Database ... ", tag => "h2");
+    $mw->configure(-cursor => "watch");
     Tkx::update();
+    set_focus_grab($status_box);
     repo_sync();
     area_sync();
     refresh();
     status_message("DONE\n", tag => "h2");
+    $mw->configure(-cursor => "");
+    restore_focus_grab($status_box);
 }
 
 sub merge_area_items {
@@ -562,7 +592,7 @@ sub filter {
 		       && $FILTER{'type'} eq $FILTER{'lasttype'});
     my $fields = $FILTER{'fields'};
     $fields =~ s/ / or /g;
-    Tkx::tooltip($filter, "Filter packages by $fields");
+    Tkx::tooltip($filter, "Filter packages by $fields [${plat_acc_ctrl}F]");
     my $count = $pkglist->filter($FILTER{'filter'},
 				 fields => $FILTER{'fields'},
 				 type => $FILTER{'type'},
@@ -655,141 +685,144 @@ sub menus {
 
     # File menu
     $sm = $file_menu = $menu->new_menu(-name => "file");
-    $menu->add_cascade(-label => "File", -menu => $sm);
-    $sm->add_command(-label => "Refresh All Data",
+    $menu->add_cascade(-label => "File", -menu => $sm, -underline => 0);
+    $sm->add_command(-label => "Refresh All Data", -underline => 1,
+		     -accelerator => "F5",
 		     -command => sub { $sync_btn->invoke(); });
-    $sm->add_command(-label => "Verify Packages",
+    $sm->add_command(-label => "Verify Packages", -underline => 0,
 		     -command => [\&verify]);
-    $sm->add_command(-label => "Run Marked Actions", -state => "disabled",
+    $sm->add_command(-label => "Run Marked Actions", -underline => 0,
+		     -state => "disabled",
+		     -accelerator => "${plat_acc_ctrl}Enter",
 		     -command => sub { $go_btn->invoke(); });
     $mw->g_bind("<<RunActions>>" => sub { $go_btn->invoke(); });
-    if ($AQUA) {
-	$sm->entryconfigure("Run Marked Actions",
-			    -accelerator => "Command-Enter");
-	Tkx::event("add", "<<RunActions>>", "<Command-Key-Return>",
-		   "<Command-Key-KP_Enter>");
-	Tkx::bind(all => "<Command-q>" => [\&on_exit]);
-    } else {
-	$sm->entryconfigure("Run Marked Actions",
-			    -accelerator => "Ctrl+Enter");
-	Tkx::event("add", "<<RunActions>>", "<Control-Key-Return>",
-		   "<Control-Key-KP_Enter>");
+    Tkx::event("add", "<<RunActions>>", "<${plat_evt_ctrl}Key-Return>",
+	       "<${plat_evt_ctrl}Key-KP_Enter>");
+    Tkx::bind(all => "<${plat_evt_ctrl}q>" => [\&on_exit]);
+    if (!$AQUA) {
 	$sm->add_separator();
-	$sm->add_command(-label => "Exit", -command => [\&on_exit]);
-	$sm->entryconfigure("Exit", -accelerator => "Ctrl+q");
-	Tkx::bind(all => "<Control-q>" => [\&on_exit]);
+	$sm->add_command(-label => "Exit", -underline => 1,
+			 -accelerator => "${plat_acc_ctrl}Q",
+			 -command => [\&on_exit]);
     }
 
     # Edit menu
     $sm = $menu->new_menu(-name => "edit");
-    $menu->add_cascade(-label => "Edit", -menu => $sm);
-    $sm->add_command(-label => "Cut",
+    $menu->add_cascade(-label => "Edit", -menu => $sm, -underline => 0);
+    $sm->add_command(-label => "Cut", -underline => 2,
+		     -accelerator => "${plat_acc_ctrl}X",
 		     -command => sub {
 			 Tkx::event_generate(Tkx::focus(), "<<Cut>>");
 		     });
-    $sm->add_command(-label => "Copy",
+    $sm->add_command(-label => "Copy", -underline => 0,
+		     -accelerator => "${plat_acc_ctrl}C",
 		     -command => sub {
 			 Tkx::event_generate(Tkx::focus(), "<<Copy>>");
 		     });
-    $sm->add_command(-label => "Paste",
+    $sm->add_command(-label => "Paste", -underline => 0,
+		     -accelerator => "${plat_acc_ctrl}V",
 		     -command => sub {
 			 Tkx::event_generate(Tkx::focus(), "<<Paste>>");
 		     });
     if (!$AQUA) {
 	$sm->add_separator();
-	$sm->add_command(-label => "Preferences",
+	$sm->add_command(-label => "Preferences", -underline => 1,
+			 -accelerator => "${plat_acc_ctrl}P",
 			 -command => sub { $prefs_dialog->display(); });
     }
 
     # View menu
     $sm = $view_menu = $menu->new_menu(-name => "view");
-    $menu->add_cascade(-label => "View", -menu => $sm);
-    $sm->add_checkbutton(-label => "Toolbar",
+    $menu->add_cascade(-label => "View", -menu => $sm, -underline => 0);
+    $sm->add_checkbutton(-label => "Toolbar", -underline => 0,
 			 -variable => \$VIEW{'toolbar'},
 			 -command => [\&view, 'toolbar']);
-    $sm->add_checkbutton(-label => "Status Bar",
+    $sm->add_checkbutton(-label => "Status Bar", -underline => 0,
 			 -variable => \$VIEW{'statusbar'},
 			 -command => [\&view, 'statusbar']);
     $sm->add_separator();
-    $sm->add_radiobutton(-label => "All Packages",
-			 -variable => \$FILTER{'type'},
-			 -value => "all",
+    $sm->add_radiobutton(-label => "All Packages", -underline => 0,
+			 -variable => \$FILTER{'type'}, -value => "all",
+			 -accelerator => "${plat_acc_ctrl}1",
 			 -command => [\&filter]);
-    $sm->add_radiobutton(-label => "Installed Packages",
-			 -variable => \$FILTER{'type'},
-			 -value => "installed",
+    $sm->add_radiobutton(-label => "Installed Packages", -underline => 0,
+			 -variable => \$FILTER{'type'}, -value => "installed",
+			 -accelerator => "${plat_acc_ctrl}2",
 			 -command => [\&filter]);
-    $sm->add_radiobutton(-label => "Upgradable Packages",
-			 -variable => \$FILTER{'type'},
-			 -value => "upgradable",
+    $sm->add_radiobutton(-label => "Upgradable Packages", -underline => 0,
+			 -variable => \$FILTER{'type'}, -value => "upgradable",
+			 -accelerator => "${plat_acc_ctrl}3",
 			 -command => [\&filter]);
     # this text linked in update_actions for entryconfigure
-    $sm->add_radiobutton(-label => "Packages to Install/Remove",
-			 -variable => \$FILTER{'type'},
-			 -value => "modified",
+    $sm->add_radiobutton(-label => "Packages to Install/Remove", -underline => 0,
+			 -variable => \$FILTER{'type'}, -value => "modified",
+			 -accelerator => "${plat_acc_ctrl}4",
 			 -command => [\&filter]);
     $sm->add_separator();
     $ssm = $fields_menu = $sm->new_menu(-name => "cols");
-    $sm->add_cascade(-label => "View Columns", -menu => $ssm);
-    $ssm->add_checkbutton(-label => "Area",
+    $sm->add_cascade(-label => "View Columns", -menu => $ssm, -underline => 5);
+    $ssm->add_checkbutton(-label => "Area", -underline => 1,
 			  -variable => \$VIEW{'area'},
 			  -command => [\&view, 'area']);
-    $ssm->add_checkbutton(-label => "Installed",
+    $ssm->add_checkbutton(-label => "Installed", -underline => 0,
 			  -variable => \$VIEW{'installed'},
 			  -command => [\&view, 'installed']);
-    $ssm->add_checkbutton(-label => "Available",
+    $ssm->add_checkbutton(-label => "Available", -underline => 1,
 			  -variable => \$VIEW{'available'},
 			  -command => [\&view, 'available']);
-    $ssm->add_checkbutton(-label => "Abstract",
+    $ssm->add_checkbutton(-label => "Abstract", -underline => 1,
 			  -variable => \$VIEW{'abstract'},
 			  -command => [\&view, 'abstract']);
-    $ssm->add_checkbutton(-label => "Author",
+    $ssm->add_checkbutton(-label => "Author", -underline => 1,
 			  -variable => \$VIEW{'author'},
 			  -command => [\&view, 'author']);
     $ssm = $sort_menu = $sm->new_menu(-name => "sort");
-    $sm->add_cascade(-label => "Sort Column", -menu => $ssm);
+    $sm->add_cascade(-label => "Sort Column", -menu => $ssm, -underline => 1);
     my @sort_opts = (-variable => \$VIEW{'sortcolumn'},
 		     -command => [\&view, 'sort']);
     $ssm->add_radiobutton(-label => "Package Name", -value => 'name',
-			  @sort_opts);
+			  -underline => 0, @sort_opts);
     $ssm->add_radiobutton(-label => "Area", -value => 'area',
-			  @sort_opts);
+			  -underline => 1, @sort_opts);
     $ssm->add_radiobutton(-label => "Installed", -value => 'installed',
-			  @sort_opts);
+			  -underline => 0, @sort_opts);
     $ssm->add_radiobutton(-label => "Available", -value => 'available',
-			  @sort_opts);
+			  -underline => 1, @sort_opts);
     $ssm->add_radiobutton(-label => "Abstract", -value => 'abstract',
-			  @sort_opts);
+			  -underline => 1, @sort_opts);
     $ssm->add_radiobutton(-label => "Author", -value => 'author',
-			  @sort_opts);
+			  -underline => 1, @sort_opts);
     $ssm->add_separator();
     @sort_opts = (-variable => \$VIEW{'sortorder'},
 		  -command => [\&view, 'sort']);
     $ssm->add_radiobutton(-label => "Ascending", -value => '-increasing',
-			  @sort_opts);
+			  -underline => 0, @sort_opts);
     $ssm->add_radiobutton(-label => "Descending", -value => '-decreasing',
-			  @sort_opts);
+			  -underline => 0, @sort_opts);
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
-    $menu->add_cascade(-label => "Action", -menu => $sm);
+    $menu->add_cascade(-label => "Action", -menu => $sm, -underline => 0);
     $sm->add_command(-label => "No Selected Package", -state => "disabled");
 
     # Help menu - name it help for special behavior, but not on OS X, where
     # that causes us to not get cascades allowed.
     my $mname = ($AQUA ? "nothelp" : "help");
     $sm = $menu->new_menu(-name => $mname);
-    $menu->add_cascade(-label => "Help", -menu => $sm);
+    $menu->add_cascade(-label => "Help", -menu => $sm, -underline => 0);
     if (ActiveState::Browser::can_open("faq/using-ppm.html")) {
+	my $help_cmd = [\&ActiveState::Browser::open, "faq/using-ppm.html"];
 	$sm->add_command(
-	    -label => "Contents",
-	    -command => [\&ActiveState::Browser::open, "faq/using-ppm.html"],
+	    -label => "Contents", -underline => 0,
+	    -accelerator => "<F1>",
+	    -command => $help_cmd,
 	);
+	Tkx::bind("all", "<Key-F1>", $help_cmd);
     }
     if (ActiveState::Browser::can_open("http://www.activestate.com")) {
 	my $web = $sm->new_menu(-tearoff => 0);
 	$sm->add_cascade(
-	    -label => "Web Resources",
+	    -label => "Web Resources", -underline => 0,
 	    -menu => $web,
         );
 
@@ -816,7 +849,8 @@ sub menus {
 
     if (!$AQUA) {
 	$sm->add_separator;
-	$sm->add_command(-label => "About", -command => sub { about(); });
+	$sm->add_command(-label => "About", -underline => 0,
+			 -command => sub { about(); });
     }
 
     # Special menu on OS X
