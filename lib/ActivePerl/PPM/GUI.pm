@@ -102,6 +102,17 @@ if ($windowingsystem ne "x11") {
     Tkx::option_add("*TreeCtrl.useTheme", 1);
 }
 
+# Since our treectrl's don't scroll horizontal, make sure Home/End work
+# for the vertical direction as well
+Tkx::bind(TreeCtrl => "<Key-Home>",
+	  Tkx::bind(TreeCtrl => "<Control-Key-Home>"));
+Tkx::bind(TreeCtrl => "<Shift-Key-Home>",
+	  Tkx::bind(TreeCtrl => "<Control-Shift-Key-Home>"));
+Tkx::bind(TreeCtrl => "<Key-End>",
+	  Tkx::bind(TreeCtrl => "<Control-Key-End>"));
+Tkx::bind(TreeCtrl => "<Shift-Key-End>",
+	  Tkx::bind(TreeCtrl => "<Control-Shift-Key-End>"));
+
 # purely for reciprocity debugging, expose the ppm command in Tcl
 Tkx::interp(alias => "", "ppm", "", [\&ppm]);
 
