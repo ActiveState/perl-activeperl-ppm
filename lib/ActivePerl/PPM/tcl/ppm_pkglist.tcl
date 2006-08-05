@@ -39,6 +39,9 @@ snit::widgetadaptor pkglist {
 
     variable NAMES -array {}
     variable visible 0
+    variable afterid {}
+    variable afterdelay 1000
+    variable jump {}
 
     constructor {args} {
 	installhull using widget::scrolledwindow
@@ -64,6 +67,8 @@ snit::widgetadaptor pkglist {
 
 	# Use Ttk TraverseIn event to handle megawidget focus properly
 	bind $win <<TraverseIn>> [list focus -force $tree]
+
+	bind $tree <Key> [mymethod jumpto %A]
 
 	$self configurelist $args
     }
@@ -346,6 +351,25 @@ snit::widgetadaptor pkglist {
 	}
 	set col [$tree column cget $col -tag]
 	$self sort $col $order
+    }
+
+    method jumpto {s} {
+	if {$s eq ""} { return }
+	after cancel $afterid
+	append jump $s
+	# catch in case we get a bad 
+	if {![catch {array names NAMES -regexp (?i)^$jump} list]
+	    && [llength $list]} {
+	    set name [lindex [lsort -dictionary $list] 0]
+	    set item $NAMES($name)
+	    if {![$tree item cget $item -visible]} {
+		lappend item next visible
+	    }
+	    $tree activate $item
+	    $tree selection modify active all
+	    $tree see active
+	}
+	after $afterdelay [list set [myvar jump] {}]
     }
 
     method tree-details {} {
