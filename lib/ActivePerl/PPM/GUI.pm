@@ -946,6 +946,7 @@ sub select_item {
 	$ACTION{$item}{'install'} = 0;
 	$ACTION{$item}{'remove'} = 0;
 	$ACTION{$item}{'area'} = $area;
+	$ACTION{$item}{'pkg'} = $pkg;
 	$ACTION{$item}{'repo_pkg'} = $repo_pkg;
     }
     # The icon represents the current actionable state:
@@ -1018,6 +1019,28 @@ sub queue_action {
 	$NUM{$action}--;
 	status_message("$name unmarked for $action\n");
     }
+    if ($ACTION{$item}{'install'}) {
+	# Figure out what dependent modules are required
+	my $repo_pkg = $ACTION{$item}{'repo_pkg'};
+	my @pkgs = map $ACTION{$_}{'repo_pkg'},
+	    grep($ACTION{$_}{'install'}, keys %ACTION);
+	my @need = $ppm->packages_missing(have => \@pkgs,
+					  want_deps => [$repo_pkg]);
+	for my $pkg (@need) {
+	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+			   tag => "abstract");
+	}
+    }
+    if ($ACTION{$item}{'remove'}) {
+	# Find out if removing this breaks dependencies
+	my $name = $ACTION{$item}{'pkg'}->name;
+	my @deps = $ppm->packages_depending_on($ACTION{$item}{'pkg'},
+					       $ACTION{$item}{'area'});
+	for my $pkg (@deps) {
+	    status_message("$pkg->{name} depends on $name\n",
+			   tag => "abstract");
+	}
+    }
     update_actions();
 }
 
@@ -1075,25 +1098,20 @@ sub commit_actions {
 	    }
 	}
     }
-    for my $item (sort keys %ACTION) {
-	# Then install
-	if ($ACTION{$item}{'install'}) {
-	    my $name = $pkglist->data($item, "name");
-	    my $repo_pkg = $ACTION{$item}{'repo_pkg'};
-	    my $area_name = $INSTALL_AREA;
-	    my $txt = "Install $name to $area_name area\n";
-	    status_message($txt);
-	    eval { $ppm->install(
-		packages => [$repo_pkg],
-		area => $INSTALL_AREA,
-	    ); };
-	    if ($@) {
-		status_message("ERROR:\n" . clean_err($@) . "\n", tag => "abstract");
-	    } else {
-		status_message("\tInstalled $name\n");
-	    }
-	}
+
+    my @install_pkgs = map($ACTION{$_}{'repo_pkg'},
+			   grep($ACTION{$_}{'install'}, keys %ACTION));
+    status_message("Preparing install to $INSTALL_AREA area of:\n");
+    map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
+    eval {
+	$ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
+    };
+    if ($@) {
+	status_message("ERROR:\n" . clean_err($@) . "\n", tag => "abstract");
+    } else {
+	status_message("DONE\n");
     }
+
     # Don't remain in "upgradable" or "modified" filter state
     $FILTER{'type'} = "installed" unless $FILTER{'type'} eq "all";
     refresh();
