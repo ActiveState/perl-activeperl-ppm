@@ -526,10 +526,10 @@ my %GRAB;
 sub set_focus_grab {
     my $grab = shift;
     my $focus = shift || $grab;
-    $GRAB{$grab,$focus} = (Tkx::focus(),
-			   Tkx::grab(current => $status_box),
-			   Tkx::winfo_exists($grab) ?
-				   Tkx::grab(status => $grab) : "");
+    my $oldGrab = $GRAB{$grab}{$focus}{'grab'} = Tkx::grab(current => $grab);
+    $GRAB{$grab}{$focus}{'focus'} = Tkx::focus();
+    $GRAB{$grab}{$focus}{'status'} =
+	Tkx::winfo_exists($oldGrab) ? Tkx::grab(status => $oldGrab) : "";
     eval { Tkx::grab($grab); Tkx::focus($focus); };
 }
 
@@ -537,13 +537,17 @@ sub restore_focus_grab {
     my $grab = shift;
     my $focus = shift || $grab;
     Tkx::grab(release => $grab);
-    return unless defined($GRAB{$grab,$focus});
-    my ($oldGrab, $oldFocus, $oldStatus) = $GRAB{$grab,$focus};
-    Tkx::focus($oldFocus) if Tkx::winfo_exists($oldFocus);
+    return unless defined($GRAB{$grab}{$focus}{'grab'});
+    my $oldFocus = $GRAB{$grab}{$focus}{'focus'};
+    my $oldGrab = $GRAB{$grab}{$focus}{'grab'};
+    my $oldStatus = $GRAB{$grab}{$focus}{'status'};
+    if (Tkx::winfo_exists($oldFocus)) {
+	Tkx::focus($oldFocus);
+    }
     if (Tkx::winfo_exists($oldGrab) && Tkx::winfo_ismapped($oldGrab)) {
 	Tkx::grab($oldStatus eq "global" ? "-global" : "-local", $oldGrab);
     }
-    $GRAB{$grab,$focus} = ();
+    $GRAB{$grab}{$focus} = ();
 }
 
 sub full_refresh {
