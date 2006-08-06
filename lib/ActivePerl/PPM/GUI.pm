@@ -288,28 +288,28 @@ my $filter_all = $toolbar->new_ttk__radiobutton(
     -command => [\&filter], -value => "all",
 );
 $toolbar->add($filter_all, -pad => [0, 2]);
-Tkx::tooltip($filter_all, "All packages [${plat_acc_ctrl}1]");
+Tkx::tooltip($filter_all, "View all packages [${plat_acc_ctrl}1]");
 my $filter_inst = $toolbar->new_ttk__radiobutton(
     -text => "Installed", -image => $IMG{'f_installed'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "installed",
 );
 $toolbar->add($filter_inst, -pad => [0, 2]);
-Tkx::tooltip($filter_inst, "Installed packages [${plat_acc_ctrl}2]");
+Tkx::tooltip($filter_inst, "View installed packages [${plat_acc_ctrl}2]");
 my $filter_upgr = $toolbar->new_ttk__radiobutton(
     -text => "Upgradable", -image => $IMG{'f_upgradable'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "upgradable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
-Tkx::tooltip($filter_upgr, "Upgradable packages [${plat_acc_ctrl}3]");
+Tkx::tooltip($filter_upgr, "View upgradable packages [${plat_acc_ctrl}3]");
 my $filter_mod = $toolbar->new_ttk__radiobutton(
     -text => "Modified", -image => $IMG{'f_modified'},
     -style => "Toolbutton", -variable => \$FILTER{'type'},
     -command => [\&filter], -value => "modified",
 );
 $toolbar->add($filter_mod, -pad => [0, 2]);
-Tkx::tooltip($filter_mod, "Packages to install/remove [${plat_acc_ctrl}4]");
+Tkx::tooltip($filter_mod, "View packages to install/remove [${plat_acc_ctrl}4]");
 
 Tkx::bind(all => "<${plat_evt_ctrl}Key-1>" => sub { $filter_all->invoke(); });
 Tkx::bind(all => "<${plat_evt_ctrl}Key-2>" => sub { $filter_inst->invoke(); });
