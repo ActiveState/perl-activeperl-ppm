@@ -1124,11 +1124,14 @@ sub select_repo_item {
     my %data = Tkx::SplitList($repolist->data($item));
     # We need to figure out how we want details formatted
     if ($what eq "remove") {
+	my $msg = "Really remove $data{repo} repository?"
+	    . "\nDisabling a repository has the same effect"
+		. "\nwithout losing cached information.";
 	my $res = Tkx::tk___messageBox(
 	    -title => "Remove Repository?",
 	    -icon => "warning",
 	    -type => "yesno",
-	    -message => "Really remove $data{repo} repository?",
+	    -message => $msg,
 	    -parent => $prefs_dialog,
 	);
 	return unless $res eq "yes";
