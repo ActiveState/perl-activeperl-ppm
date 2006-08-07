@@ -533,7 +533,7 @@ sub _check_ppd {
     my $ua = web_ua();
     (my $base_url = $rel_url) =~ s,.*/,,;
     $base_url =~ s,\.ppd$,,;
-    local $ua->{progress_what} = "Downloading $repo->{name} $base_url";
+    local $ua->{progress_what} = "Downloading $repo->{name} $base_url PPD";
     my $ppd_res = $ua->get($abs_url, @h);
     #print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
     if ($row && $ppd_res->code == 304) {  # not modified
