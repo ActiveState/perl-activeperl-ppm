@@ -1130,7 +1130,7 @@ sub select_repo_item {
     if ($what eq "remove") {
 	my $msg = "Really remove $data{repo} repository?"
 	    . "\nDisabling a repository has the same effect"
-		. "\nwithout losing it's name or location.";
+		. "\nwithout losing its name or location.";
 	my $res = Tkx::tk___messageBox(
 	    -title => "Remove Repository?",
 	    -icon => "warning",
