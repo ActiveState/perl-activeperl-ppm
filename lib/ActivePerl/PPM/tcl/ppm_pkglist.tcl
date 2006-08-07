@@ -360,7 +360,7 @@ snit::widgetadaptor pkglist {
 	# catch in case we get a bad 
 	if {![catch {array names NAMES -regexp (?i)^$jump} list]
 	    && [llength $list]} {
-	    set name [lindex [lsort -dictionary $list] 0]
+	    set name [lindex [lsort $options(-sortorder) -dictionary $list] 0]
 	    set item $NAMES($name)
 	    if {![$tree item cget $item -visible]} {
 		lappend item next visible
