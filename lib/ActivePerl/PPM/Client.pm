@@ -1020,8 +1020,9 @@ sub install {
 	    $status->end;
 	}
 	else {
+	    my $err = $@;
 	    $status->end("failed");
-	    die $@;
+	    die $err || "Install failed for unknown reason";
 	}
 
 	# run install scripts
