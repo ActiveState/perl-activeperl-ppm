@@ -269,15 +269,9 @@ Tkx::grid($statusbar, -sticky => "ew");
 Tkx::grid(rowconfigure => $mw, 1, -weight => 1);
 Tkx::grid(columnconfigure => $mw, 0, -weight => 1);
 
-my $prefs_dialog = $mw->new_widget__dialog(
-    -title => 'PPM Preferences', -padding => 4,
-    -parent => $mw, -place => 'over',
-    -type => 'ok', -modal => 'none',
-    -synchronous => 0, -separator => 0,
-);
+my $prefs_dialog;
 my $repolist;
 my $arealist;
-build_prefs_dialog($prefs_dialog);
 
 ## Toolbar items
 
@@ -377,10 +371,7 @@ $toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
 my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
 					  -image => $IMG{'prefs'},
 					  -style => "Toolbutton",
-					  -command => sub {
-					   $prefs_dialog->display();
-					   Tkx::focus(-force => $prefs_dialog);
-				       });
+					  -command => [\&show_prefs_dialog]);
 Tkx::bind("all", "<${plat_evt_ctrl}p>", sub { $prefs_btn->invoke(); });
 Tkx::tooltip($prefs_btn, "PPM Preferences [${plat_acc_ctrl}P]");
 $toolbar->add($prefs_btn);
@@ -485,38 +476,48 @@ sub refresh {
 }
 
 sub repo_sync {
-    %REPOS = ();
-    $ppm->repo_sync;
-    $repolist->clear();
+    my $sync = shift || 1;
+    if ($sync) {
+	%REPOS = ();
+	$ppm->repo_sync;
+    }
+    $repolist->clear() if defined($repolist);
     for my $repo_id ($ppm->repos) {
 	my $repo = $REPOS{$repo_id} = $ppm->repo($repo_id);
-	$repolist->add($repo_id,
-		       repo => $repo->{name},
-		       url => $repo->{packlist_uri},
-		       num => $repo->{pkgs},
-		       checked => $repo->{packlist_last_access},
-		   );
-	$repolist->enable($repo_id, $repo->{enabled});
+	if (defined($repolist)) {
+	    $repolist->add($repo_id,
+			   repo => $repo->{name},
+			   url => $repo->{packlist_uri},
+			   num => $repo->{pkgs},
+			   checked => $repo->{packlist_last_access},
+		       );
+	    $repolist->enable($repo_id, $repo->{enabled});
+	}
     }
 }
 
 sub area_sync {
-    %AREAS = ();
-    $arealist->clear();
+    my $sync = shift || 1;
+    if ($sync) {
+	%AREAS = ();
+    }
+    $arealist->clear() if (defined($arealist));
     for my $area_name ($ppm->areas) {
 	my $area = $AREAS{$area_name} = $ppm->area($area_name);
-	$arealist->add($area->name,
-		       num => scalar $area->packages,
-		       prefix => $area->prefix,
-		       inc => $area->inc,
-		   );
-	$arealist->state($area->name, "readonly") if
-	    ($area->readonly || $area_name eq "perl");
+	if (defined($arealist)) {
+	    $arealist->add($area->name,
+			   num => scalar $area->packages,
+			   prefix => $area->prefix,
+			   inc => $area->inc,
+		       );
+	    $arealist->state($area->name, "readonly") if
+		($area->readonly || $area_name eq "perl");
+	}
     }
     if (!defined($AREAS{$INSTALL_AREA})) {
 	$INSTALL_AREA = $ppm->default_install_area || "";
     }
-    if ($INSTALL_AREA) {
+    if ($INSTALL_AREA && defined($arealist)) {
 	$arealist->state($INSTALL_AREA, "default");
     }
 }
@@ -743,7 +744,7 @@ sub menus {
 	$sm->add_separator();
 	$sm->add_command(-label => "Preferences", -underline => 1,
 			 -accelerator => "${plat_acc_ctrl}P",
-			 -command => sub { $prefs_dialog->display(); });
+			 -command => [\&show_prefs_dialog]);
     }
 
     # View menu
@@ -876,8 +877,7 @@ sub menus {
 			 -command => sub { about(); });
 	$sm->add_separator();
 	# OS X enables the Preferences item when you create this proc
-	Tkx::proc("tk::mac::ShowPreferences", "args",
-		  sub { $prefs_dialog->display(); });
+	Tkx::proc("tk::mac::ShowPreferences", "args", [\&show_prefs_dialog]);
 	Tkx::bind(all => "<Command-comma>", "tk::mac::ShowPreferences");
     }
 
@@ -1184,8 +1184,19 @@ sub select_area_item {
     }
 }
 
-sub build_prefs_dialog {
-    my $top = shift;
+sub show_prefs_dialog {
+    if (defined($prefs_dialog) && Tkx::winfo_exists($prefs_dialog)) {
+	$prefs_dialog->display();
+	Tkx::focus(-force => $prefs_dialog);
+	return;
+    }
+
+    my $top = $prefs_dialog = $mw->new_widget__dialog(
+	-title => 'PPM Preferences', -padding => 4,
+	-parent => $mw, -place => 'over',
+	-type => 'ok', -modal => 'none',
+	-synchronous => 0, -separator => 0,
+    );
 
     # Preferences tabs
     my $nb = $top->new_ttk__notebook();
@@ -1312,6 +1323,12 @@ sub build_prefs_dialog {
     Tkx::grid($addl, -sticky => 'news', -pady => [4, 0]);
     Tkx::grid(columnconfigure => $f, 0, -weight => 1);
     Tkx::grid(rowconfigure => $f, 0, -weight => 1);
+
+    repo_sync(0); # refresh without sync/clear
+    area_sync(0); # refresh without sync/clear
+
+    $prefs_dialog->display();
+    Tkx::focus(-force => $prefs_dialog);
 }
 
 sub on_load {
