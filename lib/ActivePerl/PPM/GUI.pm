@@ -952,6 +952,7 @@ sub select_item {
 	$ACTION{$item}{'area'} = $area;
 	$ACTION{$item}{'pkg'} = $pkg;
 	$ACTION{$item}{'repo_pkg'} = $repo_pkg;
+	$ACTION{$item}{'deps'} = [];
     }
     # The icon represents the current actionable state:
     #   default installed upgradable install remove upgrade
@@ -1030,6 +1031,7 @@ sub queue_action {
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
 	my @need = $ppm->packages_missing(have => \@pkgs,
 					  want_deps => [$repo_pkg]);
+	$ACTION{$item}{'deps'} = \@need;
 	for my $pkg (@need) {
 	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
 			   tag => "abstract");
@@ -1040,6 +1042,7 @@ sub queue_action {
 	my $name = $ACTION{$item}{'pkg'}->name;
 	my @deps = $ppm->packages_depending_on($ACTION{$item}{'pkg'},
 					       $ACTION{$item}{'area'});
+	$ACTION{$item}{'deps'} = \@deps;
 	for my $pkg (@deps) {
 	    status_message("$pkg->{name} depends on $name\n",
 			   tag => "abstract");
@@ -1076,6 +1079,36 @@ sub run_actions {
 	$msg .= "s" if $NUM{'remove'} > 1;
     }
     $msg .= "?";
+    my @items =
+	grep($ACTION{$_}{'install'} && @{$ACTION{$_}{'deps'}}, keys %ACTION);
+    if (@items) {
+	my $dep_cnt = 0;
+	for my $item (@items) {
+	    status_message("Prerequisite packages to be installed:\n");
+	    my $repo_pkg = $ACTION{$item}{'repo_pkg'};
+	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
+		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+			       tag => "abstract");
+		$dep_cnt++;
+	    }
+	}
+	$msg .= "\nPPM will install $dep_cnt additional prerequisite packages.";
+    }
+    @items =
+	grep($ACTION{$_}{'remove'} && @{$ACTION{$_}{'deps'}}, keys %ACTION);
+    if (@items) {
+	my $dep_cnt = 0;
+	for my $item (@items) {
+	    status_message("Packages that may become unusable:\n");
+	    my $name = $ACTION{$item}{'pkg'}->name;
+	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
+		status_message("$pkg->{name} depends on $name\n",
+			       tag => "abstract");
+		$dep_cnt++;
+	    }
+	}
+	$msg .= "\n$dep_cnt dependent packages may become unusable.";
+    }
     my $res = Tkx::tk___messageBox(
 	-title => "Commit Actions?", -type => "okcancel", -parent => $mw,
 	-icon => "question", -message => $msg,
@@ -1096,7 +1129,8 @@ sub commit_actions {
 	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
-		status_message("\nERROR:\n" . clean_err($@) . "\n", tag => "abstract");
+		status_message("\nERROR:\n" . clean_err($@) . "\n",
+			       tag => "abstract");
 	    } else {
 		status_message("DONE\n");
 	    }
@@ -1105,15 +1139,21 @@ sub commit_actions {
 
     my @install_pkgs = map($ACTION{$_}{'repo_pkg'},
 			   grep($ACTION{$_}{'install'}, keys %ACTION));
-    status_message("Preparing install to $INSTALL_AREA area of:\n");
-    map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
-    eval {
-	$ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
-    };
-    if ($@) {
-	status_message("ERROR:\n" . clean_err($@) . "\n", tag => "abstract");
-    } else {
-	status_message("DONE\n");
+    if (@install_pkgs) {
+	my @need = $ppm->packages_missing(have => \@install_pkgs,
+					  want_deps => \@install_pkgs);
+	push(@install_pkgs, @need);
+	status_message("Preparing install to $INSTALL_AREA area of:\n");
+	map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
+	eval {
+	    $ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
+	};
+	if ($@) {
+	    status_message("ERROR:\n" . clean_err($@) . "\n",
+			   tag => "abstract");
+	} else {
+	    status_message("DONE\n");
+	}
     }
 
     # Don't remain in "upgradable" or "modified" filter state
