@@ -692,6 +692,7 @@ sub _init_db {
 sub initialize {
     my $self = shift;
     local $self->{autoinit} = 1;
+    delete $self->{dbh_err};
     return !!$self->dbh;
 }
 
