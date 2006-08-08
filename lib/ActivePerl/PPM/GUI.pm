@@ -1242,6 +1242,23 @@ sub select_area_item {
     my $what = shift || "";
     my %data = Tkx::SplitList($arealist->data($item));
     if ($what eq "default") {
+	if (!$AREAS{$data{name}}->initialized) {
+	    my $res = Tkx::tk___messageBox(
+		-title => "Initialize Area $data{name}?",
+		-message => "Make PPM start tracking packages in $data{name}?",
+		-type => "okcancel", -icon => "question",
+	    );
+	    if ($res eq "ok") {
+		eval { $AREAS{$data{name}}->initialize(); };
+		if ($@) {
+		    status_message("Error initializing $data{name} area:"
+				       . clean_err($@) . "\n",
+				   tag => "abstract");
+		} elsif (!$AREAS{$data{name}}->readonly) {
+		    $arealist->state($data{name}, "!readonly");
+		}
+	    }
+	}
 	if ($data{name} eq "perl" || $AREAS{$data{name}}->readonly) {
 	    Tkx::bell();
 	    return;
