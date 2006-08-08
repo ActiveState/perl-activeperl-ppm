@@ -968,7 +968,7 @@ sub select_item {
 	    # perl area items should not be removed
 	    $menu->add_command(-label => $txt, -state => "disabled");
 	} else {
-	    if ($pkg->have_script("uninstall")) {
+	    if ($pkg->has_script("uninstall")) {
 		$cmd = sub {
 		    my $msg = "$pkg->{name} has an uninstall script and must be installed from the command line with:
     ppm remove $pkg->{name}";
@@ -1000,7 +1000,7 @@ sub select_item {
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->add_command(-label => $txt, -state => "disabled");
 	} else {
-	    if ($pkg->have_script("install")) {
+	    if ($pkg->has_script("install")) {
 		$cmd = sub {
 		    my $msg = "$pkg->{name} has an install script and must be installed from the command line with:
     ppm install $pkg->{name}";
