@@ -30,18 +30,28 @@ sub ActivePerl::PPM::Package::new_ppd {
 	}
     }
 
-    # Move relevant attributes for the matching implementation up
-    for my $impl (@{$pkg->{implementation} || []}) {
-	my $impl_arch = $impl->{architecture} || "noarch";
-	if ($arch eq $impl_arch || $impl_arch eq "noarch") {
-	    for my $k (keys %$impl) {
-		if (ref($impl->{$k}) eq "HASH") {
-		    for my $k2 (keys %{$impl->{$k}}) {
-			$pkg->{$k}{$k2} = $impl->{$k}{$k2};
+    if (exists $pkg->{codebase}) {
+	my $pkg_arch = $pkg->{architecture} || "noarch";
+	unless ($arch eq $pkg_arch || $pkg_arch eq "noarch") {
+	    delete $pkg->{codebase};
+	    delete $pkg->{script};
+	}
+    }
+
+    if (!exists $pkg->{codebase}) {
+	# Move relevant attributes for the matching implementation up
+	for my $impl (@{$pkg->{implementation} || []}) {
+	    my $impl_arch = $impl->{architecture} || "noarch";
+	    if ($arch eq $impl_arch || $impl_arch eq "noarch") {
+		for my $k (keys %$impl) {
+		    if (ref($impl->{$k}) eq "HASH") {
+			for my $k2 (keys %{$impl->{$k}}) {
+			    $pkg->{$k}{$k2} = $impl->{$k}{$k2};
+			}
 		    }
-		}
-		else {
-		    $pkg->{$k} = $impl->{$k};
+		    else {
+			$pkg->{$k} = $impl->{$k};
+		    }
 		}
 	    }
 	}

@@ -1,7 +1,7 @@
 #!perl -w
 
 use Test qw(plan ok);
-plan tests => 24;
+plan tests => 30;
 
 use ActivePerl::PPM::PPD;
 
@@ -65,3 +65,35 @@ ok(ActivePerl::PPM::Package->new_ppd("<HARDPKG/>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG/>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG NAME='Foo'/>"), undef);
 ok(ActivePerl::PPM::Package->new_ppd("<SOFTPKG NAME='Foo' VERSION='0.1'/>"));  # works
+
+# Another exampe
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', "foo-bar");
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <ARCHITECTURE NAME="bar"/>
+    <CODEBASE HREF="xxx.tar.gz"/>
+  </SOFTPKG>
+EOT
+ok($ppd->{name}, "Foo");
+ok(!exists $ppd->{codebase});
+
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', "foo-bar");
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <ARCHITECTURE NAME="foo-bar"/>
+    <CODEBASE HREF="xxx.tar.gz"/>
+  </SOFTPKG>
+EOT
+ok($ppd->{name}, "Foo");
+ok($ppd->{codebase}, "xxx.tar.gz");
+
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', "foo-bar");
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <ARCHITECTURE NAME="bar"/>
+    <CODEBASE HREF="xxx.tar.gz"/>
+    <IMPLEMENTATION>
+       <ARCHITECTURE NAME="foo-bar"/>
+       <CODEBASE HREF="yyy.tar.gz"/>
+    </IMPLEMENTATION>
+  </SOFTPKG>
+EOT
+ok($ppd->{name}, "Foo");
+ok($ppd->{codebase}, "yyy.tar.gz");

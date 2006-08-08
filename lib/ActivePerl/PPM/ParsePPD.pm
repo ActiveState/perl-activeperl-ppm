@@ -71,11 +71,17 @@ sub new {
 		my %attr = @_;
 		$p->xpcroak("Required SOFTPKG attribute NAME and VERSION missing")
 		    unless exists $attr{NAME} && exists $attr{VERSION};
+
 		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION}, release_date => $attr{DATE} );
+		$p->{softpkg}{base} = $p->{base} if $p->{base};
+
 		$p->{ctx} = $p->{softpkg};
 	    }
 	    elsif ($tag =~ /^REPOSITORY(SUMMARY)?$/) {
 		$p->xpcroak("$tag must be root") if $p->depth;
+		my %attr = @_;
+		$p->{base} = $attr{BASE};
+		$p->{arch} = $attr{ARCHITECTURE};
 	    }
 	    elsif ($IGNORE_TAG{$tag}) {
 		# ignore
@@ -87,6 +93,7 @@ sub new {
 	End => sub {
 	    my($p, $tag) = @_;
 	    if ($tag eq "IMPLEMENTATION") {
+		$p->{ctx}{architecture} ||= $p->{arch} || "noarch";
 		$p->{ctx} = $p->{softpkg};
 	    }
 	    elsif ($TEXT_TAG{$tag} && @{$p->{txt}}) {
@@ -98,7 +105,11 @@ sub new {
 		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
 	    }
 	    elsif ($tag eq "SOFTPKG") {
-		$handler->($p->{softpkg});
+		my $pkg = $p->{softpkg};
+		if (exists $pkg->{codebase}) {
+		    $pkg->{architecture} ||= $p->{arch} || "noarch";
+		}
+		$handler->($pkg);
 		return;
 	    }
 	},
