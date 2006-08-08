@@ -265,6 +265,11 @@ sub dbi_store {
 # Script support
 #
 
+sub have_script {
+    my($self, $kind) = @_;
+    return !!$self->{script}{$kind};
+}
+
 sub run_script {
     my($self, $kind, $area, $tmpdir, $pkg_info) = @_;
 
@@ -524,6 +529,11 @@ the packages passed in.
 
 This returns SQL C<CREATE TABLE> statements used to initialize the
 database that the C<new_dbi> and C<dbi_store> methods depend on.
+
+=item $pkg->have_script( $kind )
+
+Return TRUE if the package has the given $kind of script attached.
+The $kind argument should be either "install" or "uninstall".
 
 =item $pkg->run_script( $kind, $area, $tmpdir, \%pkg_info )
 
