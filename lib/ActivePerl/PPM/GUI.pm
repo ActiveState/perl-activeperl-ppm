@@ -514,7 +514,7 @@ sub area_sync {
 		($area->readonly || $area_name eq "perl");
 	}
     }
-    if (!defined($AREAS{$INSTALL_AREA})) {
+    if (!defined($AREAS{$INSTALL_AREA}) || $AREAS{$INSTALL_AREA}->readonly) {
 	$INSTALL_AREA = $ppm->default_install_area || "";
     }
     if ($INSTALL_AREA && defined($arealist)) {
