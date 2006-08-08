@@ -959,7 +959,7 @@ sub select_item {
     $remove_btn->configure(-state => "disabled", -variable => \$dummy);
     $install_btn->configure(-state => "disabled", -variable => \$dummy);
     $menu->delete(0, 'end');
-    my $txt;
+    my ($txt, $cmd);
     if ($data{'installed'}) {
 	# installed items are removable
 	$txt = "Remove $name $data{'installed'}";
@@ -968,7 +968,22 @@ sub select_item {
 	    # perl area items should not be removed
 	    $menu->add_command(-label => $txt, -state => "disabled");
 	} else {
-	    my $cmd = sub { queue_action($item, $name, "remove"); };
+	    if ($pkg->have_script("uninstall")) {
+		$cmd = sub {
+		    my $msg = "$pkg->{name} has an uninstall script and must be
+installed from the command line with:
+    ppm install $pkg->{name}";
+		    Tkx::tk___messageBox(
+			-title => "Package with install script",
+			-icon => "info",
+			-type => "ok",
+			-message => $msg,
+		    );
+		    $ACTION{$item}{'remove'} = 0;
+		};
+	    } else {
+		$cmd = sub { queue_action($item, $name, "remove"); };
+	    }
 	    $remove_btn->configure(-state => "normal", -command => $cmd,
 				   -variable => \$ACTION{$item}{'remove'});
 	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
@@ -986,7 +1001,22 @@ sub select_item {
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->add_command(-label => $txt, -state => "disabled");
 	} else {
-	    my $cmd = sub { queue_action($item, $name, "install"); };
+	    if ($pkg->have_script("install")) {
+		$cmd = sub {
+		    my $msg = "$pkg->{name} has an install script and must be
+installed from the command line with:
+    ppm install $pkg->{name}";
+		    Tkx::tk___messageBox(
+			-title => "Package with install script",
+			-icon => "info",
+			-type => "ok",
+			-message => $msg,
+		    );
+		    $ACTION{$item}{'install'} = 0;
+		};
+	    } else {
+		$cmd = sub { queue_action($item, $name, "install"); };
+	    }
 	    $install_btn->configure(-state => "normal", -command => $cmd,
 				    -variable => \$ACTION{$item}{'install'});
 	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
