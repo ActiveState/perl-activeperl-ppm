@@ -281,7 +281,7 @@ sub activestate_repo {
     my $arch = $Config{archname};
     1 while $arch =~ s/-(thread|multi|2level)//;
     my $v = ActivePerl::perl_version();
-    $v =~ s,^(\d+\.\d+)\.\d+\.,$1\,,;
+    $v =~ s,^(\d+\.\d+)\.\d+\.,$1/,;
     my $repo_uri = "http://ppm4.activestate.com/$arch/$v/";
     if ($^O =~ /^(MSWin32|linux|darwin|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
 	return $repo_uri unless wantarray;
