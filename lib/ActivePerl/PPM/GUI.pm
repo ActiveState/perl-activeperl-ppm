@@ -970,9 +970,8 @@ sub select_item {
 	} else {
 	    if ($pkg->have_script("uninstall")) {
 		$cmd = sub {
-		    my $msg = "$pkg->{name} has an uninstall script and must be
-installed from the command line with:
-    ppm install $pkg->{name}";
+		    my $msg = "$pkg->{name} has an uninstall script and must be installed from the command line with:
+    ppm remove $pkg->{name}";
 		    Tkx::tk___messageBox(
 			-title => "Package with install script",
 			-icon => "info",
@@ -1003,8 +1002,7 @@ installed from the command line with:
 	} else {
 	    if ($pkg->have_script("install")) {
 		$cmd = sub {
-		    my $msg = "$pkg->{name} has an install script and must be
-installed from the command line with:
+		    my $msg = "$pkg->{name} has an install script and must be installed from the command line with:
     ppm install $pkg->{name}";
 		    Tkx::tk___messageBox(
 			-title => "Package with install script",
