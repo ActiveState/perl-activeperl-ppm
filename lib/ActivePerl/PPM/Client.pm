@@ -1282,7 +1282,7 @@ attributes do not exclude each other.
 The returned list will be empty if all the requested features are
 already installed.
 
-The method will croak if noting provide the requested features, if
+The method will croak if nothing provides the requested features, if
 dependencies can't be resolved or if the packages selected have
 conflicting dependencies.
 
