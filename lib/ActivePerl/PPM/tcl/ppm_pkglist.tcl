@@ -369,7 +369,7 @@ snit::widgetadaptor pkglist {
 	    $tree selection modify active all
 	    $tree see active
 	}
-	after $afterdelay [list set [myvar jump] {}]
+	set afterid [after $afterdelay [list set [myvar jump] {}]]
     }
 
     method tree-details {} {
