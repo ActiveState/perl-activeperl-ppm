@@ -1544,6 +1544,7 @@ BEGIN {
     sub begin {
 	my $self = shift;
 	my $what = shift;
+	ActivePerl::PPM::GUI::status_message("\n") if $prefixed;
 	ActivePerl::PPM::GUI::status_message("$what ... ");
 	$prefixed = 1;
 	$self->SUPER::begin($what, @_);
@@ -1561,12 +1562,8 @@ BEGIN {
 	my $self = shift;
 	my $outcome = shift || "DONE";
 	my $what = $self->SUPER::end;
-	if ($prefixed) {
-	    $outcome .= "\n";
-	    $prefixed = 0;
-	} else {
-	    $outcome = "$what $outcome\n";
-	}
-	ActivePerl::PPM::GUI::status_message($outcome);
+	$outcome = "$what $outcome" unless $prefixed;
+	ActivePerl::PPM::GUI::status_message("$outcome\n");
+	$prefixed = 0;
     }
 }
