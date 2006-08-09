@@ -314,7 +314,7 @@ sub do_list {
     unless (@fields) {
 	# fields to show by default
 	push(@fields, "version", "files", "size");
-	push(@fields, $area_name ? "release_date" : "area");
+	push(@fields, "area") unless $area_name;
     }
     unshift(@fields, "name") unless grep $_ eq "name", @fields;
 
