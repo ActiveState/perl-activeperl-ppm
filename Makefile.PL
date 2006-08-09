@@ -55,7 +55,7 @@ sub installbin {
     my $inherited = shift->SUPER::installbin(@_);
 
     if (main::DARWIN) {
-        my $fixin = q[$(PERLRUN) -Mblib -MActivePerl::PPM -pi -e's/<perl-bin>/$$Config{bin}/g; s/<ppm-ver>/$$ActivePerl::PPM::VERSION/g;' $(INST_SCRIPT)/PPM.app/Contents/Info.plist];
+        my $fixin = q[$(PERLRUN) -Mblib -MConfig -MActivePerl::PPM -pi -e's/<perl-bin>/$$Config{bin}/g; s/<ppm-ver>/$$ActivePerl::PPM::VERSION/g;' $(INST_SCRIPT)/PPM.app/Contents/Info.plist];
 
         $inherited =~ s[\$\(FIXIN\)(.*PPM\.app)][$fixin$1/Contents/MacOS/PPM]g;
         $inherited =~ s/\$\(RM_F\)/\$(RM_RF)/g;
