@@ -66,6 +66,12 @@ Tkx::style__as__init();
 
 if ($AQUA) {
     Tkx::set("::tk::mac::useThemedToplevel" => 1);
+    # The console can pop up unexpectedly from the tkkit
+    Tkx::catch("console hide");
+    eval {
+	Tkx::package_require('tclCarbonProcesses');
+	Tkx::carbon__setProcessName('PPM');
+    };
 }
 
 if ($windowingsystem eq "win32") {
