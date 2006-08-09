@@ -103,11 +103,19 @@ The PPM grahpical interface can't be used unless the DISPLAY environment
 variable is set up.  Either set it to the name of the X server to connect
 to or use $PROGNAME as a command line tool.
 
-Run '$PROGNAME help' to learn more about to to use this program as a command
-line tool.
+Run '$PROGNAME help' to learn how to use this program as a command line tool.
 EOT
 	    exit 1;
-	};
+	}
+	if ($err =~ /^Can't locate (Tkx|Tcl)\.pm\b/) {
+	    ppm_log("ERR", "$PROGNAME $CMD: $err");
+	    $err = clean_err($err);
+	    print STDERR <<EOT;
+The PPM graphical interface is not available for this Perl installation.
+Run '$PROGNAME help' to learn how to use this program as a command line tool.
+EOT
+	    exit 1;
+	}
 	die $err;
     }
 }
