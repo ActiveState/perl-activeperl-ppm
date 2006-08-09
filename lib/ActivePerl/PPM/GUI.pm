@@ -1057,11 +1057,17 @@ sub queue_action {
 	my $repo_pkg = $ACTION{$item}{'repo_pkg'};
 	my @pkgs = map $ACTION{$_}{'repo_pkg'},
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
-	my @need = $ppm->packages_missing(have => \@pkgs,
-					  want_deps => [$repo_pkg]);
-	$ACTION{$item}{'deps'} = \@need;
-	for my $pkg (@need) {
-	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+	eval {
+	    my @need = $ppm->packages_missing(have => \@pkgs,
+					      want_deps => [$repo_pkg]);
+	    $ACTION{$item}{'deps'} = \@need;
+	    for my $pkg (@need) {
+		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+			       tag => "abstract");
+	    }
+	};
+	if ($@) {
+	    status_message("\nERROR: " . clean_err($@) . "\n",
 			   tag => "abstract");
 	}
     }
@@ -1157,7 +1163,7 @@ sub commit_actions {
 	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
-		status_message("\nERROR:\n" . clean_err($@) . "\n",
+		status_message("\nERROR: " . clean_err($@) . "\n",
 			       tag => "abstract");
 	    } else {
 		status_message("DONE\n");
@@ -1168,16 +1174,22 @@ sub commit_actions {
     my @install_pkgs = map($ACTION{$_}{'repo_pkg'},
 			   grep($ACTION{$_}{'install'}, keys %ACTION));
     if (@install_pkgs) {
-	my @need = $ppm->packages_missing(have => \@install_pkgs,
-					  want_deps => \@install_pkgs);
-	push(@install_pkgs, @need);
+	eval {
+	    my @need = $ppm->packages_missing(have => \@install_pkgs,
+					      want_deps => \@install_pkgs);
+	    push(@install_pkgs, @need);
+	};
+	if ($@) {
+	    status_message("ERROR: " . clean_err($@) . "\n",
+			   tag => "abstract");
+	}
 	status_message("Preparing install to $INSTALL_AREA area of:\n");
 	map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
 	eval {
 	    $ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
 	};
 	if ($@) {
-	    status_message("ERROR:\n" . clean_err($@) . "\n",
+	    status_message("ERROR: " . clean_err($@) . "\n",
 			   tag => "abstract");
 	} else {
 	    status_message("DONE\n");
@@ -1251,7 +1263,7 @@ sub select_area_item {
 	    if ($res eq "ok") {
 		eval { $AREAS{$data{name}}->initialize(); };
 		if ($@) {
-		    status_message("Error initializing $data{name} area:"
+		    status_message("Error initializing $data{name} area:\n"
 				       . clean_err($@) . "\n",
 				   tag => "abstract");
 		} elsif (!$AREAS{$data{name}}->readonly) {
