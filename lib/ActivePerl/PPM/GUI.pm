@@ -832,8 +832,8 @@ sub menus {
     my $mname = ($AQUA ? "nothelp" : "help");
     $sm = $menu->new_menu(-name => $mname);
     $menu->add_cascade(-label => "Help", -menu => $sm, -underline => 0);
-    if (ActiveState::Browser::can_open("faq/using-ppm.html")) {
-	my $help_cmd = [\&ActiveState::Browser::open, "faq/using-ppm.html"];
+    if (ActiveState::Browser::can_open("faq/ActivePerl-faq2.html")) {
+	my $help_cmd = [\&ActiveState::Browser::open, "faq/ActivePerl-faq2.html"];
 	$sm->add_command(
 	    -label => "Contents", -underline => 0,
 	    -accelerator => "<F1>",
