@@ -11,6 +11,7 @@ BEGIN {
 use strict;
 use Tkx ();
 use ActiveState::Browser ();
+use ActivePerl::PPM::Logger qw(ppm_log);
 use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
 
 # get our cwd for Tcl files
@@ -1073,8 +1074,7 @@ sub queue_action {
 	    }
 	};
 	if ($@) {
-	    status_message("\nERROR: " . clean_err($@) . "\n",
-			   tag => "abstract");
+	    status_error();
 	}
     }
     if ($ACTION{$item}{'remove'}) {
@@ -1169,8 +1169,7 @@ sub commit_actions {
 	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
-		status_message("\nERROR: " . clean_err($@) . "\n",
-			       tag => "abstract");
+		status_error();
 	    } else {
 		status_message("DONE\n");
 	    }
@@ -1186,8 +1185,7 @@ sub commit_actions {
 	    push(@install_pkgs, @need);
 	};
 	if ($@) {
-	    status_message("ERROR: " . clean_err($@) . "\n",
-			   tag => "abstract");
+	    status_error();
 	}
 	status_message("Preparing install to $INSTALL_AREA area of:\n");
 	map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
@@ -1195,8 +1193,7 @@ sub commit_actions {
 	    $ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
 	};
 	if ($@) {
-	    status_message("ERROR: " . clean_err($@) . "\n",
-			   tag => "abstract");
+	    status_error();
 	} else {
 	    status_message("DONE\n");
 	}
@@ -1246,7 +1243,7 @@ sub select_repo_item {
 	my $newurl = shift;
 	eval { $ppm->repo_set_packlist_uri($data{id}, $newurl); };
 	if ($@) {
-	    status_message("\nERROR modifying repository URI:\n" . clean_err($@) . "\n", tag => "abstract");
+	    status_error("modifying repository URI");
 	} else {
 	    full_refresh();
 	}
@@ -1269,9 +1266,7 @@ sub select_area_item {
 	    if ($res eq "ok") {
 		eval { $AREAS{$data{name}}->initialize(); };
 		if ($@) {
-		    status_message("Error initializing $data{name} area:\n"
-				       . clean_err($@) . "\n",
-				   tag => "abstract");
+		    status_error("initializing $data{name} area");
 		} elsif (!$AREAS{$data{name}}->readonly) {
 		    $arealist->state($data{name}, "!readonly");
 		}
@@ -1392,6 +1387,7 @@ sub show_prefs_dialog {
 	}
 	eval { $ppm->repo_add(name => $name_var, packlist_uri => $uri_var); };
 	if ($@) {
+	    ppm_log("ERR", "Adding repository: $@");
 	    Tkx::tk___messageBox(-title => "Error Adding Repository",
 				 -message => "Error adding repository:\n" . clean_err($@),
 				 -type => "ok", -icon => "error");
@@ -1494,6 +1490,26 @@ sub about {
 			 -message => "PPM version $ActivePerl::PPM::VERSION
 ActivePerl version $perl_version
 \xA9 2006 ActiveState Software Inc.");
+}
+
+sub status_error {
+    my $context = shift;
+    my $err;
+    if (@_) {
+	$err = shift;
+	ppm_log("ERR", $context ? "$context: $err" : $err);
+    }
+    elsif ($@) {
+        $err = $@;
+	ppm_log("ERR", $context ? "$context: $err" : $err);
+	$err = clean_err($err);
+    }
+    if ($context) {
+	status_message("\nERROR $context:\n\t$err\n", tag => "abstract");
+    }
+    else {
+	status_message("\nERROR: $err\n", tag => "abstract");
+    }
 }
 
 sub status_message {
