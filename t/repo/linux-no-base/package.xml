@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<REPOSITORYSUMMARY>
+  <SOFTPKG DATE="2006-07-07 17:48:10Z" NAME="AcePerl" VERSION="1.89">
+    <ABSTRACT>Object-Oriented Access to ACEDB Databases</ABSTRACT>
+    <AUTHOR>Lincoln D. Stein (lstein@cshl.org)</AUTHOR>
+    <IMPLEMENTATION>
+      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+      <CODEBASE HREF="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8/AcePerl-1.89.tar.gz">
+      </CODEBASE>
+    </IMPLEMENTATION>
+    <PROVIDE NAME="AcePerl::" VERSION="1.89" />
+    <REQUIRE NAME="WeakRef::" VERSION="0.01" />
+    <REQUIRE NAME="Cache::Cache" />
+  </SOFTPKG>
+  <SOFTPKG DATE="2006-07-07 17:48:11Z" NAME="Date-Calc" VERSION="5.3">
+    <ABSTRACT>Gregorian calendar date calculations</ABSTRACT>
+    <AUTHOR>Steffen Beyer (sb@engelschall.com)</AUTHOR>
+    <IMPLEMENTATION>
+      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+      <CODEBASE HREF="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8/Date-Calc-5.3.tar.gz">
+      </CODEBASE>
+    </IMPLEMENTATION>
+    <PROVIDE NAME="Date::Calc" VERSION="5.3" />
+    <REQUIRE NAME="Bit::Vector" />
+  </SOFTPKG>
+  <SOFTPKG DATE="2006-07-07 17:48:10Z" NAME="Date-Chinese" VERSION="1.03">
+    <ABSTRACT>Calculate dates in the Chinese calendar</ABSTRACT>
+    <AUTHOR>Rich Bowen (rbowen@rcbowen.com)</AUTHOR>
+    <IMPLEMENTATION>
+      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+      <CODEBASE HREF="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8/Date-Chinese.tar.gz">
+      </CODEBASE>
+    </IMPLEMENTATION>
+    <PROVIDE NAME="Date::Chinese" VERSION="1.03" />
+    <REQUIRE NAME="Test::Simple" />
+  </SOFTPKG>
+  <SOFTPKG DATE="2006-07-07 17:48:09Z" NAME="Date-Christmas" VERSION="1.02">
+    <ABSTRACT>Calculates the day of the week Christmas falls upon given the year.</ABSTRACT>
+    <AUTHOR>Elaine M. Ashton (hfb@cpan.org)</AUTHOR>
+    <IMPLEMENTATION>
+      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+      <CODEBASE HREF="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8/Date-Christmas.tar.gz" />
+    </IMPLEMENTATION>
+    <PROVIDE NAME="Date::Christmas" VERSION="1.02" />
+  </SOFTPKG>
+</REPOSITORYSUMMARY>
