@@ -39,7 +39,7 @@ else {
     ok($repo->{id}, 1);
     ok($repo->{name}, "ActiveState Package Repository");
     ok($repo->{prio}, 1);
-    ok($repo->{packlist_uri}, qr,^http://ppm.ActiveState.com/,i);
+    ok($repo->{packlist_uri}, qr,^http://ppm4.ActiveState.com/,i);
     ok($repo->{packlist_last_status_code}, undef);
     $client->repo_enable(1, 0);
     ok($client->repo(1)->{enabled}, 0);
