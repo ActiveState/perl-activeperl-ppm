@@ -1484,7 +1484,7 @@ sub about {
     require ActivePerl::PPM;
     require ActivePerl;
     my $perl_version = ActivePerl::perl_version;
-    
+
     Tkx::tk___messageBox(-title => "About Perl Package Manager",
 			 -icon => "info", -type => "ok",
 			 -message => "PPM version $ActivePerl::PPM::VERSION
