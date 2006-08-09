@@ -53,11 +53,10 @@ sub ppm_status {
 	    $status = ActivePerl::PPM::Status->new;
 	}
     }
-    if (@_) {
-	my $method = shift;
-	$status->$method(@_);
-    }
-    return $status;
+    return $status unless @_;
+
+    my $method = shift;
+    return $status->$method(@_);
 }
 
 #
