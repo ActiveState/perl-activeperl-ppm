@@ -524,7 +524,7 @@ sub _copy_file {
 sub _save_file_info {
     my($state, $path) = @_;
     my $rpath = $state->{self}->_relative_path($path);
-    my $info = _file_info($path);
+    my $info = _file_info($path) || die "Whoa '$path' missing: $!";
 
     delete $state->{old_files}{$rpath};
     eval {
@@ -735,7 +735,7 @@ sub sync_db {
 	my $id = $dbh->selectrow_array("SELECT id FROM package WHERE name = ?", undef, $pkg);
 	if (defined $id) {
 	    my $md5 = $dbh->selectrow_array("SELECT md5 FROM file WHERE package_id = ? AND path LIKE '%/.packlist'", undef, $id);
-	    if ($md5 && $md5 eq _file_info($pkglists->{$pkg})->{md5}) {
+	    if ($md5 && $md5 eq _file_md5($pkglists->{$pkg})) {
 		# packlist unchanged, so there is a good change package is too
 		# but let's also check the main module file if present
 		my $changed = 0;
@@ -746,7 +746,7 @@ sub sync_db {
 		my($mainmod_path, $mainmod_md5) = $dbh->selectrow_array("SELECT path,md5 FROM file WHERE package_id = ? AND (path LIKE ? or path LIKE ?)", undef, $id, "%/$mainmod_fname", "%:$mainmod_fname");
 		if ($mainmod_path) {
 		    $mainmod_path = $self->_expand_path($mainmod_path);
-		    $changed++ if $mainmod_md5 ne _file_info($mainmod_path)->{md5};
+		    $changed++ if $mainmod_md5 ne _file_md5($mainmod_path);
 		}
 		unless ($changed) {
 		    $unchanged++;
@@ -768,7 +768,11 @@ sub sync_db {
 	for my $f ($pkglists->{$pkg}, sort keys %$pkglist) {
 	    my $path = $self->_relative_path($f);
 	    my $info = _file_info($f);
-	    unless (eval { $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) })
+	    unless ($info) {
+		ppm_log("ERR", "Package $pkg: File $f missing\n");
+		next;
+	    }
+;	    unless (eval { $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) })
 	    {
 		my $epath = $self->_expand_path($path);
 		my $owner = $dbh->selectrow_array("SELECT package.name FROM package, file WHERE package.id = file.package_id AND file.path = ?", undef, $path);
@@ -856,6 +860,14 @@ sub _file_info {
     $info{md5} = Digest::MD5->new->addfile($fh)->hexdigest;
 
     return \%info;
+}
+
+sub _file_md5 {
+    my $file = shift;
+    if (my $info = _file_info($file)) {
+	return $info->{md5};
+    }
+    return "";
 }
 
 1;
