@@ -543,7 +543,12 @@ sub _check_ppd {
 	delete $delete_package->{$row->{id}} if $delete_package;
     }
     elsif ($ppd_res->is_success) {
-	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content(default_charset => "none"), arch => $arch);
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd(
+	    $ppd_res->decoded_content(default_charset => "none"),
+            arch => $arch,
+            base => $ppd_res->base,
+            rel_base => $abs_url,
+        );
 	if ($ppd->{codebase}) {
 	    $ppd->{id} = $row->{id} if $row;
 	    $ppd->{repo_id} = $repo->{id};
@@ -551,14 +556,6 @@ sub _check_ppd {
 	    $ppd->{ppd_etag} = $ppd_res->header("ETag");
 	    $ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
 	    $ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
-
-	    # make URL attributes relative to $abs_url
-	    my $ppd_base = $ppd_res->base;
-	    for my $attr (qw(codebase)) {
-		next unless exists $ppd->{$attr};
-		my $url = URI->new_abs($ppd->{$attr}, $ppd_base)->rel($abs_url);
-		$ppd->{$attr} = $url->as_string;
-	    }
 
 	    $ppd->dbi_store($dbh);
 	    delete $delete_package->{$row->{id}} if $delete_package && $row;

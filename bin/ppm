@@ -929,13 +929,15 @@ sub _install_uri {
     }
     require ActivePerl::PPM::PPD;
     my $cref = $res->decoded_content(ref => 1, default_charset => "none");
-    my $pkg = ActivePerl::PPM::Package->new_ppd($$cref, arch => $ppm->arch);
+    my $pkg = ActivePerl::PPM::Package->new_ppd($$cref,
+        arch => $ppm->arch,
+	base => $res->base,
+        rel_base => $uri,
+    );
     unless ($pkg) {
 	die "No PPD found _at $uri";
     }
     if (my $codebase = $pkg->{codebase}) {
-	# make it absolute
-	$pkg->{codebase} = URI->new_abs($codebase, $res->base)->rel($uri)->as_string;
 	$pkg->{ppd_uri} = $uri;
 	$pkg->{ppd_etag} = $res->header("ETag");
 	$pkg->{ppd_lastmod} = $res->header("Last-Modified");
