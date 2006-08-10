@@ -845,6 +845,13 @@ sub menus {
 	);
 	Tkx::bind("all", "<Key-F1>", $help_cmd);
     }
+    if (ActiveState::Browser::can_open("index.html")) {
+	my $help_cmd = [\&ActiveState::Browser::open, "index.html"];
+	$sm->add_command(
+	    -label => "ActivePerl User Guide", -underline => 0,
+	    -command => $help_cmd,
+	);
+    }
     if (ActiveState::Browser::can_open("http://www.activestate.com")) {
 	my $web = $sm->new_menu(-tearoff => 0);
 	$sm->add_cascade(
