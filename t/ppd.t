@@ -1,7 +1,7 @@
 #!perl -w
 
 use Test qw(plan ok);
-plan tests => 30;
+plan tests => 38;
 
 use ActivePerl::PPM::PPD;
 
@@ -97,3 +97,37 @@ $ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', arch => "foo-bar");
 EOT
 ok($ppd->{name}, "Foo");
 ok($ppd->{codebase}, "yyy.tar.gz");
+
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', base => "http://example.com/foo/bar");
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <CODEBASE HREF="xxx.tar.gz"/>
+    <INSTALL HREF="../xxx.sh"/>
+    <UNINSTALL HREF="http://foo/x.sh"/>
+  </SOFTPKG>
+EOT
+ok($ppd->{codebase}, "http://example.com/foo/xxx.tar.gz");
+ok($ppd->{script}{install}{uri}, "http://example.com/xxx.sh");
+ok($ppd->{script}{uninstall}{uri}, "http://foo/x.sh");
+
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT', base => "http://example.com/foo/bar", rel_base => "http://example.com");
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <CODEBASE HREF="xxx.tar.gz"/>
+    <INSTALL HREF="../xxx.sh"/>
+    <UNINSTALL HREF="http://foo/x.sh"/>
+  </SOFTPKG>
+EOT
+ok($ppd->{codebase}, "foo/xxx.tar.gz");
+ok($ppd->{script}{install}{uri}, "xxx.sh");
+ok($ppd->{script}{uninstall}{uri}, "http://foo/x.sh");
+
+$ppd = ActivePerl::PPM::Package->new_ppd(<<'EOT');
+<REPOSITORY BASE="foo/bar/">
+  <SOFTPKG NAME="Foo" VERSION="a">
+    <CODEBASE HREF="xxx.tar.gz"/>
+    <INSTALL HREF="../xxx.sh"/>
+  </SOFTPKG>
+</REPOSITORY>
+EOT
+ok($ppd->{codebase}, "foo/bar/xxx.tar.gz");
+ok($ppd->{script}{install}{uri}, "foo/xxx.sh");
+

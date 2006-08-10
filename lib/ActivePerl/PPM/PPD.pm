@@ -4,10 +4,13 @@ use strict;
 use ActivePerl::PPM::ParsePPD ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::Logger qw(ppm_log);
+use URI ();
 
 sub ActivePerl::PPM::Package::new_ppd {
     my($class, $pkg, %opt) = @_;
     my $arch = delete $opt{arch} || "noarch";
+    my $base = delete $opt{base};
+    my $rel_base = delete $opt{rel_base};
 
     unless (ref $pkg) {
 	my $data = $pkg;
@@ -57,6 +60,33 @@ sub ActivePerl::PPM::Package::new_ppd {
 	}
     }
     delete $pkg->{implementation};  # not used any more
+
+    # rebase URIs
+    $base = "dummy:/" unless $base;
+    if ($pkg->{base}) {
+	$base = URI->new_abs($pkg->{base}, $base);
+	$pkg->{base} = $base->as_string;
+	$pkg->{base} =~ s,^dummy:/,,;
+    }
+    if ($base ne "dummy:/" || $rel_base) {
+	my @uri_ref;
+	if (exists $pkg->{codebase}) {
+	    push(@uri_ref, \$pkg->{codebase});
+	}
+	if (exists $pkg->{script}) {
+	    for my $kind (keys %{$pkg->{script}}) {
+		next unless exists $pkg->{script}{$kind}{uri};
+		push(@uri_ref, \$pkg->{script}{$kind}{uri});
+	    }
+	}
+	for my $uri_ref (@uri_ref) {
+	    my $uri = URI->new_abs($$uri_ref, $base);
+	    $uri = $uri->rel($rel_base) if $rel_base;
+	    $uri = $uri->as_string;
+	    $uri =~ s,^dummy:/,,;
+	    $$uri_ref = $uri;
+	}
+    }
 
     # convert legacy OSD version number
     for my $version ($pkg->{version}) {
@@ -113,6 +143,18 @@ The $archname should be specified to select attributes for a specific
 architecture where the PPD describes multiple implementations.  The
 value C<noarch> is the default and will only select
 implementation sections without any ARCHITECTURE restriction.
+
+=item base => $base_uri
+
+All URIs in the PPD will be made absolute with $base_uri as base.
+
+=item rel_base => $base_uri
+
+All URIs in the PPD will be made relative if they can be resolved from
+$base_uri.  Only safe to use together with C<base> which is applied
+first.  If both C<base> and C<rel_base> are the same, they cancel
+eachother out and the effect will be the same as if none of them where
+specified.
 
 =back
 
