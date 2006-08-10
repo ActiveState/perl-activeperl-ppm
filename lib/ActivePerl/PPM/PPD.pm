@@ -6,8 +6,8 @@ use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::Logger qw(ppm_log);
 
 sub ActivePerl::PPM::Package::new_ppd {
-    my($class, $pkg, $arch) = @_;
-    $arch ||= "noarch";
+    my($class, $pkg, %opt) = @_;
+    my $arch = delete $opt{arch} || "noarch";
 
     unless (ref $pkg) {
 	my $data = $pkg;
@@ -95,18 +95,26 @@ The following methods are added:
 
 =over
 
-=item $ppd = ActivePerl::PPM::Package->new_ppd( $ppd_document, $archname )
+=item $ppd = ActivePerl::PPM::Package->new_ppd( $ppd_document, %opt )
 
-=item $ppd = ActivePerl::PPM::Package->new_ppd( $parsed_ppd_hashref, $archname )
+=item $ppd = ActivePerl::PPM::Package->new_ppd( $parsed_ppd_hashref, %opt )
 
-The constructor take a literal document as
-argument and will return and object representing the PPD.  The method
-return C<undef> if $ppd_document does not contain the expected XML.
+The constructor take a literal document as argument and will return
+and object representing the PPD.  The method return C<undef> if
+$ppd_document does not contain the expected XML.
+
+The following options are supported:
+
+=over
+
+=item arch => $archname
 
 The $archname should be specified to select attributes for a specific
 architecture where the PPD describes multiple implementations.  The
 value C<noarch> is the default and will only select
 implementation sections without any ARCHITECTURE restriction.
+
+=back
 
 =back
 

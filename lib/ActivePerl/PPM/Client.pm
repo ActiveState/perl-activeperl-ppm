@@ -488,7 +488,7 @@ sub repo_sync {
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
 			my $pkg = shift;
-			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, $self->{arch});
+			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, arch => $self->{arch});
 			$pkg->{repo_id} = $repo->{id};
 			$pkg->dbi_store($dbh) if $pkg->{codebase};
 			$status->tick;
@@ -543,7 +543,7 @@ sub _check_ppd {
 	delete $delete_package->{$row->{id}} if $delete_package;
     }
     elsif ($ppd_res->is_success) {
-	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content(default_charset => "none"), $arch);
+	my $ppd = ActivePerl::PPM::RepoPackage->new_ppd($ppd_res->decoded_content(default_charset => "none"), arch => $arch);
 	if ($ppd->{codebase}) {
 	    $ppd->{id} = $row->{id} if $row;
 	    $ppd->{repo_id} = $repo->{id};
