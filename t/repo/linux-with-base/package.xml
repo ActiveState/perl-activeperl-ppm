@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<REPOSITORYSUMMARY ARCHITECTURE="i686-linux-thread-multi-5.8" BASE="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8">
+<REPOSITORYSUMMARY ARCHITECTURE="i686-linux-thread-multi-5.8" BASE="http://ppm4.activestate.com/i686-linux/5.8/818/i686-linux-thread-multi-5.8/">
   <SOFTPKG DATE="2006-07-07 17:48:10Z" NAME="AcePerl" VERSION="1.89">
     <ABSTRACT>Object-Oriented Access to ACEDB Databases</ABSTRACT>
     <AUTHOR>Lincoln D. Stein (lstein@cshl.org)</AUTHOR>
