@@ -1506,7 +1506,7 @@ default varies.
 
 =item C<ACTIVEPERL_PPM_HOME>
 
-If set, use this directory instead of F<~/.ActivePerl/> to store
+If set, use this directory instead of F<~/.ActivePerl/$VERSION/> to store
 configuration information for PPM.
 
 =item C<ACTIVEPERL_PPM_LOG_CONS>
