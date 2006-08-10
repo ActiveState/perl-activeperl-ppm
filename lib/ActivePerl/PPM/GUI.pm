@@ -973,7 +973,7 @@ sub select_item {
 	if ($data{'area'} && (($data{'area'} eq "perl")
 				  || $AREAS{$data{'area'}}->readonly)) {
 	    # perl area items should not be removed
-	    $menu->add_command(-label => $txt, -state => "disabled");
+	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '-');
 	} else {
 	    if ($pkg->has_script("uninstall")) {
 		$cmd = sub {
@@ -993,7 +993,8 @@ sub select_item {
 	    $remove_btn->configure(-state => "normal", -command => $cmd,
 				   -variable => \$ACTION{$item}{'remove'});
 	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
-				   -variable => \$ACTION{$item}{'remove'});
+				   -variable => \$ACTION{$item}{'remove'},
+				   -accelerator => '-');
 	}
     }
     if ($data{'available'}) {
@@ -1005,7 +1006,7 @@ sub select_item {
 	}
 	if (!$INSTALL_AREA
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
-	    $menu->add_command(-label => $txt, -state => "disabled");
+	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '+');
 	} else {
 	    if ($pkg->has_script("install")) {
 		$cmd = sub {
@@ -1025,7 +1026,8 @@ sub select_item {
 	    $install_btn->configure(-state => "normal", -command => $cmd,
 				    -variable => \$ACTION{$item}{'install'});
 	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
-				   -variable => \$ACTION{$item}{'install'});
+				   -variable => \$ACTION{$item}{'install'},
+				   -accelerator => '+');
 	}
     }
     if (!$data{'available'} && !$data{'installed'}) {
