@@ -848,7 +848,7 @@ sub menus {
     if (ActiveState::Browser::can_open("index.html")) {
 	my $help_cmd = [\&ActiveState::Browser::open, "index.html"];
 	$sm->add_command(
-	    -label => "ActivePerl User Guide", -underline => 0,
+	    -label => "ActivePerl User Guide", -underline => 11,
 	    -command => $help_cmd,
 	);
     }
