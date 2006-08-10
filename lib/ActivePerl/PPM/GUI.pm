@@ -64,6 +64,9 @@ Tkx::package_require('BWidget');
 Tkx::Widget__theme(1);
 
 Tkx::style__as__init();
+# This enables font-size control via <Control-MouseWheel> for
+# pkglist and text widgets
+Tkx::style__as__enable("control-mousewheel");
 
 if ($AQUA) {
     Tkx::set("::tk::mac::useThemedToplevel" => 1);
@@ -214,7 +217,7 @@ Tkx::bind($pkglist, "<<SortColumn>>",
 	  sub { $VIEW{'sortcolumn'} = $pkglist->cget('-sortcolumn'); });
 
 # Details / Status areas
-my @smallfont = ();
+my @smallfont = (-font => "ASfont");
 my @smallfontbold = (-font => "ASfontBold");
 if ($AQUA) {
     @smallfont = (-font => "ASfont-1");
