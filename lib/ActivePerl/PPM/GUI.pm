@@ -1177,7 +1177,7 @@ sub commit_actions {
 	    my $name = $pkglist->data($item, "name");
 	    my $area = $ACTION{$item}{'area'};
 	    my $area_name = $area->name;
-	    my $txt = "Remove $name from $area_name area ... ";
+	    my $txt = "Removing $name from $area_name area ... ";
 	    status_message($txt);
 	    eval { $area->uninstall($name); };
 	    if ($@) {
