@@ -1,2 +1,2 @@
 #!/bin/sh
-exec <perl-bin>/ppm gui
+exec <perl-bin>/ppm gui --from-app

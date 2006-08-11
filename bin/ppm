@@ -89,6 +89,14 @@ sub usage {
 }
 
 sub do_gui {
+    if ($^O eq "darwin") {
+	unless (@ARGV && $ARGV[0] eq "--from-app") {
+	    require Config;
+	    system("/usr/bin/open", "$Config::Config{binexp}/PPM.app");
+	    die "Failed to open PPM.app" if $? != 0;
+	    exit;
+	}
+    }
     eval { require ActivePerl::PPM::GUI; };
     if ($@) {
 	my $err = $@;
