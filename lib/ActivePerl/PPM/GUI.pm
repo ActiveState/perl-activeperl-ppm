@@ -574,10 +574,10 @@ sub full_refresh {
     $mw->configure(-cursor => "");
     restore_focus_grab($status_box);
     if ($first_time && $INSTALL_AREA eq "") {
-	my $msg = "All activated install areas are readonly.  You will not be able to install or remove packages.";
+	my $msg = "All activated install areas are read only.  You cannot currently install or remove packages.";
 	# do we have any uninitialized areas
 	if (grep !$_->initialized, values %AREAS) {
-	    $msg .= " However, there are uninitialized areas that you might try to enable in the preferences dialog";
+	    $msg .= "  Try enabling the uninitialized Areas in the Preferences dialog";
 	}
 	Tkx::tk___messageBox(
 	   -title => "No writable installarea",
