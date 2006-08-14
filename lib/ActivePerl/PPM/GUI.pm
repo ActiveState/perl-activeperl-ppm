@@ -574,7 +574,7 @@ sub full_refresh {
     $mw->configure(-cursor => "");
     restore_focus_grab($status_box);
     if ($first_time && $INSTALL_AREA eq "") {
-	my $msg = "All activated install areas are read only.  You cannot currently install or remove packages.";
+	my $msg = "All activated install areas are read-only.  You cannot currently install or remove packages.";
 	# do we have any uninitialized areas
 	if (grep !$_->initialized, values %AREAS) {
 	    $msg .= "  Try enabling the uninitialized Areas in the Preferences dialog";
@@ -1286,7 +1286,7 @@ sub select_area_item {
 	if (!$AREAS{$data{name}}->initialized) {
 	    my $res = Tkx::tk___messageBox(
 		-title => "Initialize Area $data{name}?",
-		-message => "Make PPM start tracking packages in $data{name}?",
+		-message => "Should PPM start tracking packages in $data{name}?",
 		-type => "okcancel", -icon => "question",
 	    );
 	    if ($res eq "ok") {
@@ -1403,7 +1403,7 @@ sub show_prefs_dialog {
 	# This requires duplication of code from do_repo
 	if ($uri_var =~ m,\?urn:/,) {
 	    Tkx::tk___messageBox(-title => "Error Adding Repository",
-				 -message => "PPM3 SOAP repositories are not supported",
+				 -message => "PPM3 SOAP repositories are not supported.",
 				 -type => "ok", -icon => "error");
 	    return;
 	}
