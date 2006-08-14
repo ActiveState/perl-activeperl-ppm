@@ -373,7 +373,7 @@ Tkx::bind($pkglist, "<Key-minus>", sub { $remove_btn->invoke(); });
 my $sync_btn = $toolbar->new_ttk__button(-text => "Refresh",
 					 -image => $IMG{'refresh'},
 					 -style => "Toolbutton",
-					 -command => [\&full_refresh]);
+					 -command => \&full_refresh);
 Tkx::bind("all", "<Key-F5>", sub { $sync_btn->invoke(); });
 Tkx::tooltip($sync_btn, "Refresh all data [F5]");
 $toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
@@ -461,7 +461,7 @@ Tkx::update('idletasks');
 Tkx::after(idle => sub {
 	       $mw->g_wm_deiconify();
 	       Tkx::focus(-force => $filter);
-	       full_refresh();
+	       full_refresh(1);
 });
 
 Tkx::MainLoop();
@@ -562,6 +562,7 @@ sub restore_focus_grab {
 }
 
 sub full_refresh {
+    my $first_time = shift;
     status_message("Synchronizing Database ... ", tag => "h2");
     $mw->configure(-cursor => "watch");
     Tkx::update();
@@ -572,6 +573,19 @@ sub full_refresh {
     status_message("DONE\n", tag => "h2");
     $mw->configure(-cursor => "");
     restore_focus_grab($status_box);
+    if ($first_time && $INSTALL_AREA eq "") {
+	my $msg = "All activated install areas are readonly.  You will not be able to install or remove packages.";
+	# do we have any uninitialized areas
+	if (grep !$_->initialized, values %AREAS) {
+	    $msg .= " However, there are uninitialized areas that you might try to enable in the preferences dialog";
+	}
+	Tkx::tk___messageBox(
+	   -title => "No writable installarea",
+           -icon => "info",
+           -type => "ok",
+           -message => $msg,
+	);
+    }
 }
 
 sub merge_area_items {
