@@ -247,6 +247,8 @@ EOT
 	$dbh->do($create) || die "Can't create database table";
     }
 
+    $dbh->do("CREATE TABLE search ( id integer )");
+
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
     if (my @repo = activestate_repo()) {
@@ -595,29 +597,29 @@ sub search {
 
     my $dbh = $self->dbh;
 
-    $dbh->do("DROP TABLE IF EXISTS search");
+    $dbh->do("DELETE FROM search");
     local $dbh->{AutoCommit} = 0;
 
  SEARCH: {
 	if ($pattern =~ /::/) {
 	    my $op = ($pattern =~ /\*/) ? "GLOB" : "=";
-	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE id IN (SELECT package_id FROM feature WHERE lower(name) $op ? AND role = 'p') ORDER BY name", undef, lc($pattern));
+	    $dbh->do("INSERT INTO search SELECT id FROM package WHERE id IN (SELECT package_id FROM feature WHERE lower(name) $op ? AND role = 'p') ORDER BY name", undef, lc($pattern));
 	    last SEARCH;
 	}
 
 	if ($pattern eq '*') {
-	    $dbh->do("CREATE TABLE search AS SELECT id FROM package ORDER BY name");
+	    $dbh->do("INSERT INTO search SELECT id FROM package ORDER BY name");
 	    last SEARCH;
 	}
 
 	unless ($pattern =~ /\*/) {
-	    $dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE name = ?", undef, $pattern);
+	    $dbh->do("INSERT INTO search SELECT id FROM package WHERE name = ?", undef, $pattern);
 	    last SEARCH if $dbh->selectrow_array("SELECT count(*) FROM search");
 	    # try again with a wider net
 	    $dbh->rollback;
 	    $pattern = "*$pattern*";
 	}
-	$dbh->do("CREATE TABLE search AS SELECT id FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern));
+	$dbh->do("INSERT INTO search SELECT id FROM package WHERE lower(name) GLOB ? ORDER BY name", undef, lc($pattern));
     }
     $dbh->commit;
 
