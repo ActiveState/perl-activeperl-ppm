@@ -556,7 +556,11 @@ sub restore_focus_grab {
 	Tkx::focus($oldFocus);
     }
     if (Tkx::winfo_exists($oldGrab) && Tkx::winfo_ismapped($oldGrab)) {
-	Tkx::grab($oldStatus eq "global" ? "-global" : "-local", $oldGrab);
+	if ($oldStatus eq "global") {
+	    Tkx::grab("-global", $oldGrab);
+	} else {
+	    Tkx::grab($oldGrab);
+	}
     }
     $GRAB{$grab}{$focus} = ();
 }
