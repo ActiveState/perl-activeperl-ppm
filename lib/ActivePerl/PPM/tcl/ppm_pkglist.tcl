@@ -230,6 +230,8 @@ snit::widgetadaptor pkglist {
 		-message "Invalid search pattern: $words\n$err" -type ok
 	    return -1
 	}
+	set id [$tree selection get]
+	$tree selection clear
 	if {$words eq "" || $words eq "*"} {
 	    # make everything visible (based on state)
 	    foreach {item} [$tree item children root] {
@@ -290,13 +292,13 @@ snit::widgetadaptor pkglist {
 		incr count $vis
 	    }
 	}
-	set id [$tree selection get]
 	if {$id eq "" || ![$tree item cget $id -visible]} {
 	    # no visible items may exist
-	    catch {
-		$tree activate "first visible"
-		$tree selection modify active all
-	    }
+	    set id "first visible"
+	}
+	catch {
+	    $tree activate $id
+	    $tree selection modify active all
 	}
 	$tree see active
 	set visible $count
