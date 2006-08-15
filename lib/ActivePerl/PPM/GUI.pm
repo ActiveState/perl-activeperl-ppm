@@ -210,7 +210,7 @@ Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 	      }
 }, Tkx::Ev("%x", "%y", "%X", "%Y")]);
 # Aqua swaps buttons 2 and 3 for historical reasons
-Tkx::event('add', "<<PackageMenu>>", ($AQUA ? "<Button-2>" ? "<Button-3>"),
+Tkx::event('add', "<<PackageMenu>>", ($AQUA ? "<Button-2>" : "<Button-3>"),
 	   "<Control-Button-1>");
 # Catch changes in sort behavior by widget for menus
 Tkx::bind($pkglist, "<<SortOrder>>",
