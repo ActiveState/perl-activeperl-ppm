@@ -365,7 +365,9 @@ snit::widgetadaptor pkglist {
 	    if {![$tree item cget $item -visible]} {
 		lappend item next visible
 	    }
-	    $tree activate $item
+	    if {[catch {$tree activate $item}]} {
+		catch {$tree activate "last visible"}
+	    }
 	    $tree selection modify active all
 	    $tree see active
 	}
