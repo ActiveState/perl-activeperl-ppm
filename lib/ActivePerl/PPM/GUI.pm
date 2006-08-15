@@ -486,7 +486,7 @@ sub refresh {
 }
 
 sub repo_sync {
-    my $sync = shift || 1;
+    my $sync = shift;
     if ($sync) {
 	%REPOS = ();
 	$ppm->repo_sync;
@@ -507,7 +507,7 @@ sub repo_sync {
 }
 
 sub area_sync {
-    my $sync = shift || 1;
+    my $sync = shift;
     if ($sync) {
 	%AREAS = ();
     }
@@ -567,8 +567,8 @@ sub full_refresh {
     $mw->configure(-cursor => "watch");
     Tkx::update();
     set_focus_grab($status_box);
-    repo_sync();
-    area_sync();
+    repo_sync(1);
+    area_sync(1);
     refresh();
     status_message("DONE\n", tag => "h2");
     $mw->configure(-cursor => "");
