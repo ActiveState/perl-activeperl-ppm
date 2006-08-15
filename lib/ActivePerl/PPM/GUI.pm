@@ -137,7 +137,7 @@ if ($AQUA) {
 # These variables are tied to UI elements
 my %FILTER;
 $FILTER{'id'} = "";
-$FILTER{'delay'} = 500; # filter delay on key in millisecs
+$FILTER{'delay'} = 1000; # filter delay on key in millisecs
 $FILTER{'filter'} = "";
 $FILTER{'lastfilter'} = "";
 $FILTER{'fields'} = "name abstract";
