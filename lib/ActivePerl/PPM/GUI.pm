@@ -1101,13 +1101,21 @@ sub queue_action {
 	my @pkgs = map $ACTION{$_}{'repo_pkg'},
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
 	eval {
-	    my @need = $ppm->packages_missing(have => \@pkgs,
-					      want_deps => [$repo_pkg]);
-	    $ACTION{$item}{'deps'} = \@need;
-	    for my $pkg (@need) {
+	    my @tmp = $ppm->packages_missing(have => \@pkgs,
+					     want_deps => [$repo_pkg]);
+	    my @need;
+	    for my $pkg (@tmp) {
 		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
 			       tag => "abstract");
+		if ($pkg->has_script("install")) {
+		    status_message("... but $pkg->{name} has an install script and must be installed from the command line\n",
+				   tag => "abstract");
+		}
+	        else {
+		    push(@need, $pkg);
+		}
 	    }
+	    $ACTION{$item}{'deps'} = \@need;
 	};
 	if ($@) {
 	    status_error();
@@ -1218,7 +1226,7 @@ sub commit_actions {
 	eval {
 	    my @need = $ppm->packages_missing(have => \@install_pkgs,
 					      want_deps => \@install_pkgs);
-	    push(@install_pkgs, @need);
+	    push(@install_pkgs, grep !$_->has_script("install"), @need);
 	};
 	if ($@) {
 	    status_error();
