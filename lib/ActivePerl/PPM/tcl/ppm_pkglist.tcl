@@ -142,8 +142,9 @@ snit::widgetadaptor pkglist {
 	set state ""
 	set available [$tree item text $item available]
 	# installed means having an area, not necessarily an installed version
-	set installed [$tree item text $item area]
-	lappend state [expr {$installed eq "" ? "!installed" : "installed"}]
+	set installed [$tree item text $item installed]
+	set area      [$tree item text $item area]
+	lappend state [expr {$area eq "" ? "!installed" : "installed"}]
 	lappend state [expr {$available eq "" ? "!available" : "available"}]
 	lappend state [expr {(($installed eq "")
 			      || ($available eq "")
