@@ -939,8 +939,12 @@ sub select_item {
     my ($pkg, $repo_pkg);
     $pkg = $repo_pkg = $ppm->package($name, $data{'available'} || undef);
     if ($areaid) {
-	$pkg = $area->package($name);
+	if (my $p = $area->package($name)) {
+	    $pkg = $p;
+	}
     }
+    return unless $pkg;
+
     my $pad = "\t";
     $details->configure(-state => "normal");
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
