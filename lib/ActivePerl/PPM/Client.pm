@@ -74,7 +74,7 @@ sub new {
 
 	push(@area, $name);
 	my $autoinit = 0;
-	$autoinit = 1 if $^O eq "darwin" && $lib eq "$ENV{HOME}/Library/ActivePerl";
+	$autoinit = 1 if $^O eq "darwin" && $dir eq "$ENV{HOME}/Library/ActivePerl";
 	$area{$name} = ActivePerl::PPM::InstallArea->new(
             name => $name,
             prefix => $dir,
