@@ -41,7 +41,6 @@ $dbh->{AutoCommit} = 0;
 for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
     my $name = $mod->{mm_fullext};
     $name =~ s,/,-,g;
-    warn "Warning: Will use $name for $mod->{title}" if $name ne $mod->{title};
     my $v = $mod->{base_version};
     $v .= "-r$mod->{revision}" if $mod->{revision};
 
@@ -52,6 +51,10 @@ for my $mod (sort {$a->{title} cmp $b->{title}} values %$modules) {
         author => $mod->{author},
         abstract => $mod->{abstract},
     );
+    if ($name ne $mod->{title}) {
+	warn "Warning: Will use $name for $mod->{title}";
+	$pkg->{provide}{$mod->{title}} = 0;
+    }
     if (my $dep = $mod->{dependency}) {
 	for my $d (keys %$dep) {
 	    $pkg->{require}{$d} = 0;
