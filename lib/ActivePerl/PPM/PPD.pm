@@ -162,8 +162,8 @@ specified.
 
 =head1 PPD XML FORMAT
 
-The PPM PPD is an XML based format that normally use the F<.ppd>
-extension.  The format is based on the now defunct OSD specification
+The PPM PPD is an XML based format used to describe PPM packages.
+The format is based on the now defunct OSD specification
 (L<http://www.w3.org/TR/NOTE-OSD>).  This shows an example of a
 minimal PPD document:
 
@@ -183,12 +183,12 @@ The following elements are used:
 
 =over
 
-=item ABSTRACT
+=item <ABSTRACT>...</ABSTRACT>
 
 Content is a short text describing the purpose of this
 package. No attributes.  Parent must be a SOFTPKG element.
 
-=item ARCHITECTURE
+=item <ARCHITECTURE NAME="..."/>
 
 Required attribute is NAME which should match
 C<$Config{archname}-$major_vers> for the perl this package was
@@ -196,25 +196,38 @@ compiled for.  If this element is missing then it's the same as
 specifying <ARCHITECTURE NAME="noarch"/>. No content.  Parent must be
 either SOFTPKG or IMPLEMENTATION.
 
-=item AUTHOR
+Packages or implementations marked with "noarch" are assumed to
+installable on any architecture.
+
+=item <AUTHOR>...</AUTHOR>
 
 Content is a text naming the author (with email address) of this
 package. No attributes.  Parent must be a SOFTPKG element.
 
-=item CODEBASE
+=item <CODEBASE HREF="..."/>
 
 Required attribute is HREF providing a URI where the binary package
 (the tared up C<blib> tree) of the package can be obtained.  The URI
 can be relative and is then resolved based on the URI of the PPD
-document itself.  No content.  Parent must be SOFTPKG or
+document.  No content.  Parent must be SOFTPKG or
 IMPLEMENTATION.
 
-=item DEPENDENCY
+=item <DEPENDENCY NAME="..." VERSION="..."/>
 
 Deprecated.  Required attribute is NAME.  Optional attribute is
-VERSION.  No content.
+VERSION.  No content.  Element might be repeated any number of
+times. Parent must be an IMPLEMENTATION element.
 
-=item IMPLEMENTATION
+This element express a dependency on another package with the given
+name and with the given version number or better.  The other package
+must be installed for this package to work.
+
+This element is still recommended for PPDs that are to be consumed by
+both PPM4 and PPM3 clients, as the PPM3 clients will ignore any
+REQUIRE elements provided.  PPM4 clients regard DEPENDENCY the same as
+REQUIRE, but will simply ignore the VERSION provided.
+
+=item <IMPLEMENTATION>...</IMPLEMENTATION>
 
 No attributes.  Optional container for ARCHITECTURE, DEPENDENCY,
 INSTALL, PROVIDE, REQUIRE, UNINSTALL elements.  Parent must be
@@ -222,21 +235,24 @@ SOFTPKG.  There can be multiple instances of IMPLEMENTATION but they
 should each contain an ARCHITECTURE element that differ from each
 other.
 
-=item INSTALL
+=item <INSTALL EXEC="..." HREF="..."/>
+
+=item <INSTALL EXEC="...">...</INSTALL>
 
 Optional attributes EXEC and HREF.  Textual content might be provided.
-Used to denote script to run after the blib files of the package has
-been installed, a so called post-install script.  The script to run
-can either be provided as content or externally via HREF.  If both are
-provided then only HREF is used.
+Provide script or commands to run after the blib files of the package
+has been installed, a so called post-install script.  The script to
+run can either be provided as content or externally via HREF.  If both
+are provided then only HREF is used. Parent must be either SOFTPKG or
+IMPLEMENTATION.
 
 If EXEC is provided it give the name of the interpreter to run the
-script.  For historical reason if the script was not obtained via HREF
+script.  For historical reason if the script is not obtained via HREF
 then any occurences of double semicolon ";;" is replaced by newline
 before it is saved in a temporary file and passed as first argument to
-EXEC.  The special value "PPM_PERL" ensures that the script runs with
-the same perl interpreter that runs PPM.  The special value "SELF"
-make the script run self contained.
+the EXEC interpreter.  The special value "PPM_PERL" ensures that the
+script runs with the same perl interpreter that runs PPM.  The special
+value "SELF" make the script run as a self contained executable.
 
 If EXEC is not provided then the commands of the script are passed to
 the system command interpreter (via system(3)) one by one.  If the
@@ -289,35 +305,51 @@ What version of PPM is running.
 
 =back
 
-=item PROVIDE
+=item <PROVIDE NAME="..." VERSION="..."/>
 
-Required attribute is NAME.  Optional attribute is VERSION.  No content.
+Required attribute is NAME.  Optional attribute is VERSION.  No
+content.  Element might be repeated any number of times.  Parent must
+be either SOFTPKG or IMPLEMENTATION.
 
 The NAME represent a feature that this package provide if installed.
 Any label goes.  The VERSION is a floating point number.
 
-=item REPOSITORY
+Packages containing perl modules should have one PROVIDE element for
+each module installed by the package.  Module names that do not
+naturally contain double colon "::" should have "::" appended to them.
+
+=item <REPOSITORY>...</REPOSITORY>
 
 Element must be root if present.  Container for a set of SOFTPKG
-elements.  Optional attributes are ARCHITECTURE and BASE.  If
-ARCHITECTECTURE is present it provide default for all contained
-SOFTPKG elements that do not have an explicit ARCHITECTECTURE
-element.  If BASE is provided it provide the base URI that relative
-URIs of CODEBASE, INSTALL and UNINSTALL are resolved from.
+elements.  Optional attributes are ARCHITECTURE and BASE.
+
+ARCHITECTECTURE provide default for all contained SOFTPKG elements
+that do not have an explicit ARCHITECTECTURE element.
+
+BASE override the base URI that relative URIs of CODEBASE, INSTALL and
+UNINSTALL are resolved from.  If BASE itself is relative it is first
+resolved based on the URI of the PPD document.
 
 The file name F<package.xml> is commonly used for documents
 containing a REPOSITORY root.
 
-=item REPOSITORYSUMMARY
+=item <REPOSITORYSUMMARY>...</REPOSITORYSUMMARY>
 
 Treated the same as REPOSITORY.  Supported for backwards compatibility
 with old style F<package.lst> files.
 
-=item REQUIRE
+=item <REQUIRE NAME="..." VERSION="..."/>
 
-Required attribute is NAME.  Optional attribute is VERSION.  No content.
+Required attribute is NAME.  Optional attribute is VERSION.  No
+content.  Element might be repeated any number of times.  Parent must
+be either SOFTPKG or IMPLEMENTATION.
 
-=item SOFTPKG
+This element express a dependency on some other package that PROVIDE
+the feature given by NAME and with the given version number or better.
+A package that provide the given feature must be installed for this
+package to work.
+
+=item <SOFTPKG NAME="..." VERSION="..." DATE="...">...</SOFTPKG>
 
 Represent a package available for PPM to install.  Container for all
 the other elements defined here (except REPOSITORY and
@@ -339,10 +371,21 @@ Parent must be REPOSITORY or REPOSITORYSUMMARY, or the SOFTPKG can be
 the document root.  The order of content elements are of no
 significance.
 
-=item UNINSTALL
+Documents where SOFTPKG is root are normally stored in files with the
+F<.ppd> extension.
 
-Used for scripts that run just before the package is uninstalled.  The
-attributes and content are the same as for INSTALL.
+=item <UNINSTALL EXEC="..." HREF="..."/>
+
+=item <UNINSTALL EXEC="...">...</UNINSTALL>
+
+Used for scripts that run just before the blib files of the package is
+uninstalled.  The attributes and content are treated the same as for
+INSTALL and the same set of environment variables are availabe to the
+script.
+
+The uninstall script runs with a brand new clean temporary directory
+as working directory.  The directory and its content is removed after
+the script finishes.
 
 =back
 
