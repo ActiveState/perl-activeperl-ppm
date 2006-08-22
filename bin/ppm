@@ -1065,7 +1065,14 @@ sub do_remove {
 	    $removed_count++;
 	}
     }
-    die "No packages uninstalled" unless $removed_count;
+    if ($removed_count) {
+	if (eval { require ActivePerl::DocTools; }) {
+	    ActivePerl::DocTools::WriteTOC();
+	}
+    }
+    else {
+	die "No packages uninstalled";
+    }
 }
 
 BEGIN {

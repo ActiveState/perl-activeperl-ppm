@@ -1203,6 +1203,7 @@ sub run_actions {
 }
 
 sub commit_actions {
+    my $removed;
     for my $item (sort keys %ACTION) {
 	# First remove any area pacakges
 	if ($ACTION{$item}{'remove'}) {
@@ -1216,6 +1217,7 @@ sub commit_actions {
 		status_error();
 	    } else {
 		status_message("DONE\n");
+		$removed++;
 	    }
 	}
     }
@@ -1241,6 +1243,9 @@ sub commit_actions {
 	} else {
 	    status_message("DONE\n");
 	}
+    }
+    elsif ($removed && eval { require ActivePerl::DocTools; }) {
+	ActivePerl::DocTools::WriteTOC();
     }
 
     # Don't remain in "upgradable" or "modified" filter state

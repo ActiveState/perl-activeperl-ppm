@@ -1033,6 +1033,10 @@ sub install {
 	    my $pname = $pkg->name_version;
 	    $pkg->run_script("install", $area, "$tmpdir/$pname", $install_summary->{pkg}{$pkg->{name}});
 	}
+
+	if (eval { require ActivePerl::DocTools; }) {
+	    ActivePerl::DocTools::WriteTOC();
+	}
     };
     my $err = $@;
     require File::Path;
