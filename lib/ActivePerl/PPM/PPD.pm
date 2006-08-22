@@ -305,7 +305,7 @@ SOFTPKG elements that do not have an explicit ARCHITECTECTURE
 element.  If BASE is provided it provide the base URI that relative
 URIs of CODEBASE, INSTALL and UNINSTALL are resolved from.
 
-The file name F<packages.xml> is commonly used for documents
+The file name F<package.xml> is commonly used for documents
 containing a REPOSITORY root.
 
 =item REPOSITORYSUMMARY
@@ -329,8 +329,7 @@ The NAME and VERSION value can be any label.  Older versions of this
 specification had a more strict definition of VERSION as a sequence of
 exactly 4 numbers in the range 0 to 65535 separated by comma.  If such
 values are encountered then they are converted to "standard" format by
-replacing the commans with dots and trimming off trailing ".0"
-segments.
+replacing the commas with dots and trimming off ".0.0" or ".0".
 
 The DATE attribute should use ISO 8601 formatted date (or datetime)
 stamps.  That is "YYYY-MM-DD" or "YYYY-MM-DDThh:mm:ssZ" format.  See
