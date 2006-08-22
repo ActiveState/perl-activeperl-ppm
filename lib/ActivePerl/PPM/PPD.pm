@@ -174,10 +174,90 @@ minimal PPD document:
     </ABSTRACT>
     <PROVIDE NAME="Acme::Buffy" VERSION="1.3"/>
     <IMPLEMENTATION>
-      <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Buffy.tar.gz" />
-      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8" />
+      <CODEBASE HREF="i686-linux-thread-multi-5.8/Acme-Buffy.tar.gz"/>
+      <ARCHITECTURE NAME="i686-linux-thread-multi-5.8"/>
     </IMPLEMENTATION>
   </SOFTPKG>
+
+The following elements are used:
+
+=over
+
+=item ABSTRACT
+
+Content is a short text describing the purpose of this
+package. No attributes.  Parent must be a SOFTPKG element.
+
+=item ARCHITECTURE
+
+Required attribute is NAME which should match
+C<$Config{archname}-$major_vers> for the perl this package was
+compiled for.  If this element is missing then it's the same as
+specifying <ARCHITECTURE NAME="noarch"/>. No content.  Parent must be
+either SOFTPKG or IMPLEMENTATION.
+
+=item AUTHOR
+
+Content is a text naming the author (with email address) of this
+package. No attributes.  Parent must be a SOFTPKG element.
+
+=item CODEBASE
+
+Required attribute is HREF providing a URI where the binary package
+(the tared up C<blib> tree) of the package can be obtained.  The URI
+can be relative and is then resolved based on the URI of the PPD
+document itself.  No content.  Parent must be SOFTPKG or
+IMPLEMENTATION.
+
+=item DEPENDENCY
+
+Deprecated.  Required attribute is NAME.  Optional attribute is
+VERSION.  No content.
+
+=item IMPLEMENTATION
+
+No attributes.  Optional container for ARCHITECTURE, DEPENDENCY,
+INSTALL, PROVIDE, REQUIRE, UNINSTALL elements.  Parent must be
+SOFTPKG.  There can be multiple instances of IMPLEMENTATION but they
+should all contain ARCHITECTURE elemens that differ.
+
+=item INSTALL
+
+Optional attributes EXEC and HREF.  Textual content might be provided.
+Used to denote script to run after the files of the package has been
+installed, a so called post-install script.  The script to run can
+either be provided as content or by reference.  If both are provided
+then only HREF is used.
+
+=item PROVIDE
+
+Required attribute is NAME.  Optional attribute is VERSION.  No content.
+
+=item REPOSITORY
+
+Element must be root if present.  Container for a set of SOFTPKG
+elements.  Optional attributes are ARCHITECTURE and BASE.
+
+=item REPOSITORYSUMMARY
+
+Treated the same as REPOSITORY.  Supported for backwards compatibility
+with F<package.lst> files.
+
+=item REQUIRE
+
+Required attribute is NAME.  Optional attribute is VERSION.  No content.
+
+=item SOFTPKG
+
+Required attributes are NAME and VERSION.  Optional attribute is DATE.
+Paremnt must be REPOSITORY or REPOSITORYSUMMARY.  Can also be the root
+by itself.  The order of content elements are of no significance.
+
+=item UNINSTALL
+
+Same as INSTALL.
+
+=back
 
 =head2 Changes since PPM3
 
