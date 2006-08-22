@@ -219,29 +219,99 @@ VERSION.  No content.
 No attributes.  Optional container for ARCHITECTURE, DEPENDENCY,
 INSTALL, PROVIDE, REQUIRE, UNINSTALL elements.  Parent must be
 SOFTPKG.  There can be multiple instances of IMPLEMENTATION but they
-should all contain ARCHITECTURE elemens that differ.
+should each contain an ARCHITECTURE element that differ from each
+other.
 
 =item INSTALL
 
 Optional attributes EXEC and HREF.  Textual content might be provided.
-Used to denote script to run after the files of the package has been
-installed, a so called post-install script.  The script to run can
-either be provided as content or by reference.  If both are provided
-then only HREF is used.
+Used to denote script to run after the blib files of the package has
+been installed, a so called post-install script.  The script to run
+can either be provided as content or externally via HREF.  If both are
+provided then only HREF is used.
+
+If EXEC is provided it give the name of the interpreter to run the
+script.  For historical reason if the script was not obtained via HREF
+then any occurences of double semicolon ";;" is replaced by newline
+before it is saved in a temporary file and passed as first argument to
+EXEC.  The special value "PPM_PERL" ensures that the script runs with
+the same perl interpreter that runs PPM.  The special value "SELF"
+make the script run self contained.
+
+If EXEC is not provided then the commands of the script are passed to
+the system command interpreter (via system(3)) one by one.  If the
+script was obtained via HREF then each line is considered a command.
+If the script was obtained from the content, then double semicolon
+";;" is used to separate commands.
+
+When the script/command runs it will have the unpacked package tarball
+(obtained by downloading the CODEREF) as their working directory, and
+the following environment variable will be set:
+
+=over
+
+=item PPM_ACTION
+
+One of "install", "upgrade" or "uninstall".
+
+=item PPM_INSTARCHLIB
+
+The archlib directory of the current install area.
+
+=item PPM_INSTLIB
+
+The lib directory of the current install area.
+
+=item PPM_INSTPACKLIST
+
+The name of the installed F<.packlist> file of the package.
+
+=item PPM_INSTROOT
+
+The prefix directory of the current install area.
+
+=item PPM_NEW_VERSION
+
+The version label of the package just installed.
+
+=item PPM_PERL
+
+The path to the perl that runs PPM.
+
+=item PPM_PREV_VERSION
+
+The version label that the package had before the upgrade started.
+This variable is only present when PPM_ACTION is "upgrade".
+
+=item PPM_VERSION
+
+What version of PPM is running.
+
+=back
 
 =item PROVIDE
 
 Required attribute is NAME.  Optional attribute is VERSION.  No content.
 
+The NAME represent a feature that this package provide if installed.
+Any label goes.  The VERSION is a floating point number.
+
 =item REPOSITORY
 
 Element must be root if present.  Container for a set of SOFTPKG
-elements.  Optional attributes are ARCHITECTURE and BASE.
+elements.  Optional attributes are ARCHITECTURE and BASE.  If
+ARCHITECTECTURE is present it provide default for all contained
+SOFTPKG elements that do not have an explicit ARCHITECTECTURE
+element.  If BASE is provided it provide the base URI that relative
+URIs of CODEBASE, INSTALL and UNINSTALL are resolved from.
+
+The file name F<packages.xml> is commonly used for documents
+containing a REPOSITORY root.
 
 =item REPOSITORYSUMMARY
 
 Treated the same as REPOSITORY.  Supported for backwards compatibility
-with F<package.lst> files.
+with old style F<package.lst> files.
 
 =item REQUIRE
 
@@ -249,13 +319,31 @@ Required attribute is NAME.  Optional attribute is VERSION.  No content.
 
 =item SOFTPKG
 
+Represent a package available for PPM to install.  Container for all
+the other elements defined here (except REPOSITORY and
+REPOSITORYSUMMARY).
+
 Required attributes are NAME and VERSION.  Optional attribute is DATE.
-Paremnt must be REPOSITORY or REPOSITORYSUMMARY.  Can also be the root
-by itself.  The order of content elements are of no significance.
+
+The NAME and VERSION value can be any label.  Older versions of this
+specification had a more strict definition of VERSION as a sequence of
+exactly 4 numbers in the range 0 to 65535 separated by comma.  If such
+values are encountered then they are converted to "standard" format by
+replacing the commans with dots and trimming off trailing ".0"
+segments.
+
+The DATE attribute should use ISO 8601 formatted date (or datetime)
+stamps.  That is "YYYY-MM-DD" or "YYYY-MM-DDThh:mm:ssZ" format.  See
+L<http://en.wikipedia.org/wiki/ISO_8601> for more information.
+
+Parent must be REPOSITORY or REPOSITORYSUMMARY, or the SOFTPKG can be
+the document root.  The order of content elements are of no
+significance.
 
 =item UNINSTALL
 
-Same as INSTALL.
+Used for scripts that run just before the package is uninstalled.  The
+attributes and content are the same as for INSTALL.
 
 =back
 
