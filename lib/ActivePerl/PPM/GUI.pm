@@ -205,8 +205,11 @@ Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
 		  $fields_menu->g_tk___popup($X, $Y);
 	      } else {
 		  $pkglist->selection('clear');
-		  $pkglist->selection('add', "nearest $x $y");
-		  $action_menu->g_tk___popup($X, $Y);
+		  eval {
+		      # This will error silently if the list is empty
+		      $pkglist->selection('add', "nearest $x $y");
+		      $action_menu->g_tk___popup($X, $Y);
+		  };
 	      }
 }, Tkx::Ev("%x", "%y", "%X", "%Y")]);
 # Aqua swaps buttons 2 and 3 for historical reasons
