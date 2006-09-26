@@ -1,5 +1,5 @@
 name: ActivePerl-PPM
-version: 4.0
+version: 4.1
 abstract: The Perl Package Manager
 author: ActiveState <support@activestate.com>
 requires:
