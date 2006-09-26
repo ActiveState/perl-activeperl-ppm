@@ -873,7 +873,7 @@ sub package_set_abs_ppd_uri {
     my %repo_cache;
     for my $pkg (@pkgs) {
 	if (defined(my $repo_id = $pkg->{repo_id})) {
-	    my($uri, $etag, $lastmod) = @{$repo_cache{repo_id} ||= [$self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $repo_id)]};
+	    my($uri, $etag, $lastmod) = @{$repo_cache{$repo_id} ||= [$self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $repo_id)]};
 	    if ($pkg->{ppd_uri}) {
 		$pkg->{ppd_uri} = URI->new_abs($pkg->{ppd_uri}, $uri)->as_string;
 	    }
