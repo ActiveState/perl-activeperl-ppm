@@ -1218,6 +1218,7 @@ sub commit_actions {
 	    eval { $area->uninstall($name); };
 	    if ($@) {
 		status_error();
+		return;
 	    } else {
 		status_message("DONE\n");
 		$removed++;
@@ -1243,6 +1244,7 @@ sub commit_actions {
 	};
 	if ($@) {
 	    status_error();
+	    return;
 	} else {
 	    status_message("DONE\n");
 	}
