@@ -9,7 +9,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>PPM <ppm-ver> Copyright 2006 ActiveState Software Inc.</string>
 	<key>CFBundleIconFile</key>
-	<string>appIcon.icns</string>
+	<string>gecko.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.activestate.PPM</string>
 	<key>CFBundleInfoDictionaryVersion</key>
