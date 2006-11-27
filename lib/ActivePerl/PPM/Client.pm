@@ -945,56 +945,47 @@ sub install {
 	    my $pname = $pkg->name_version;
 	    $status->begin("Unpacking $pname");
 	    my $codebase_file = $pkg->{codebase_file};
+
+	    require ActiveState::ModInfo;
+	    my $extract_file = sub {
+		my($fname, $extractor) = @_;
+		return if $fname =~ m,/\.exists$,;       # don't think these are needed
+		return if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
+		return if is_abs_path($fname);
+
+		my $to = "$tmpdir/$pname/$fname";
+		$extractor->($to) || die "Can't extract to $to";
+		if ($fname =~ /\.pm$/) {
+		    my $mod = $fname;
+		    if ($mod =~ s,^blib/(?:lib|arch)/,,) {
+			$mod = ActiveState::ModInfo::fname2mod($mod);
+			$mod .= "::" unless $mod =~ /::/;
+			$pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($to) || 0;
+		    }
+		}
+	    };
+
 	    if ($pkg->{codebase_type} eq "tgz") {
 		require Archive::Tar;
-		require ActiveState::ModInfo;
-		ppm_log("DEBUG", "Unpacking $codebase_file");
 		my $tar = Archive::Tar->new($codebase_file, 1)
 		    || die "Can't extract files from $codebase_file";
 		for my $file ($tar->get_files) {
 		    next unless $file->is_file;  # don't extract links and other crap
 		    my $fname = $file->full_path;
-		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
-		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
-		    next if is_abs_path($fname);
-		    my $extract = "$tmpdir/$pname/$fname";
-		    $tar->extract_file($fname, $extract)
-			|| die "Can't extract to $extract";
-		    if ($fname =~ /\.pm$/) {
-			my $mod = $fname;
-			if ($mod =~ s,^blib/(?:lib|arch)/,,) {
-			    $mod = ActiveState::ModInfo::fname2mod($mod);
-			    $mod .= "::" unless $mod =~ /::/;
-			    $pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($extract) || 0;
-			}
-
-		    }
+		    $extract_file->($fname,
+		        sub {$tar->extract_file($fname, $_[0])},
+                    );
 		}
 	    }
 	    elsif ($pkg->{codebase_type} eq "zip") {
 		require Archive::Zip;
-		require ActiveState::ModInfo;
-		ppm_log("DEBUG", "Unpacking $codebase_file");
 		my $zip = Archive::Zip->new($codebase_file)
 		    || die "Can't extract files from $codebase_file";
 		for my $file ($zip->members) {
 		    next if $file->isDirectory;
-		    my $fname = $file->fileName;
-		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
-		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
-		    next if is_abs_path($fname);
-		    my $extract = "$tmpdir/$pname/$fname";
-		    ($file->extractToFileNamed($extract) == Archive::Zip::AZ_OK())
-			|| die "Can't extract to $extract";
-		    if ($fname =~ /\.pm$/) {
-			my $mod = $fname;
-			if ($mod =~ s,^blib/(?:lib|arch)/,,) {
-			    $mod = ActiveState::ModInfo::fname2mod($mod);
-			    $mod .= "::" unless $mod =~ /::/;
-			    $pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($extract) || 0;
-			}
-
-		    }
+		    $extract_file->($file->fileName,
+		        sub {$file->extractToFileNamed($_[0]) == Archive::Zip::AZ_OK()},
+		    );
 		}
 	    }
 	    else {
