@@ -1220,7 +1220,7 @@ search> command.
 
 If the package or module requested is already installed, PPM installs
 nothing.  The B<--force> option can be used to make PPM install a
-package even if its already present.
+package even if it's already present.
 
 By default, new packages are installed in the C<site> area, but if the
 C<site> area is read only, and there are user-defined areas set up, the
