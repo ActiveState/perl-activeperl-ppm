@@ -975,6 +975,7 @@ sub install {
 	    }
 	    elsif ($pkg->{codebase_type} eq "zip") {
 		require Archive::Zip;
+		require ActiveState::ModInfo;
 		ppm_log("DEBUG", "Unpacking $codebase_file");
 		my $zip = Archive::Zip->new($codebase_file)
 		    || die "Can't extract files from $codebase_file";
