@@ -23,7 +23,8 @@ sub new {
         do {
 	    if ($^O eq "MSWin32") {
 		require Win32;
-		my $appdata = Win32::GetFolderPath(Win32::CSIDL_APPDATA()) ||
+		my $appdata = Win32::GetFolderPath(Win32::CSIDL_LOCAL_APPDATA()) ||
+                    Win32::GetFolderPath(Win32::CSIDL_APPDATA()) ||
 		    $ENV{APPDATA} || $ENV{HOME};
 		die "No valid setting for APPDATA\n" unless $appdata;
 		"$appdata/ActiveState/ActivePerl/$ActivePerl::VERSION";
