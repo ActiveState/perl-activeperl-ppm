@@ -970,8 +970,6 @@ sub install {
 
 		    }
 		}
-		my $blib = "$tmpdir/$pname/blib";
-		$pkg->{blib} = $blib if -d $blib;
 	    }
 	    elsif ($pkg->{codebase_type} eq "zip") {
 		require Archive::Zip;
@@ -998,12 +996,13 @@ sub install {
 
 		    }
 		}
-		my $blib = "$tmpdir/$pname/blib";
-		$pkg->{blib} = $blib if -d $blib;
 	    }
 	    else {
 		die "Don't know how to unpack $pkg->{codebase_type} files";
 	    }
+
+	    my $blib = "$tmpdir/$pname/blib";
+	    $pkg->{blib} = $blib if -d $blib;
 	    $status->end;
 	}
 
