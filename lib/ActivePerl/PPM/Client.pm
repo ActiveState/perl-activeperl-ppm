@@ -419,9 +419,9 @@ sub repo_sync {
 		}
 	    }
 	    else {
-		# first time, try to find package.lst
+		# first time, try to find the package.xml or package.lst file
 		my $uri = $repo->{packlist_uri};
-		unless ($uri =~ m,/package.lst$,) {
+		unless ($uri =~ m,/package\.(xml|lst)$,) {
 		    $uri = URI->new($uri);
 		    my @try;
 		    my $uri_slash = $uri;
