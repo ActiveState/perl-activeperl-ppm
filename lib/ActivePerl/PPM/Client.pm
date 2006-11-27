@@ -483,6 +483,14 @@ sub repo_sync {
 		    ppm_log("WARN", "No ppds found in $repo->{packlist_uri}") unless @check_ppd;
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
+
+		    if (@check_ppd > 100 && !$opt{force}) {
+			my $num_ppd = @check_ppd;
+			ppm_log("WARN", "The repo $repo->{packlist_uri} links to $num_ppd PPD files. Will not download these many without force.");
+			@check_ppd = ();
+			%delete_package = ();
+		    }
+
 		}
 		elsif ($$cref =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 		    my $status = ppm_status();
