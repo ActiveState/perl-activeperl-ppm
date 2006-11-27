@@ -858,8 +858,9 @@ sub do_install {
 	}
 	else {
 	    # seach for feature in repos
+            $ppm->repo_sync;
 	    $feature = $ppm->feature_fixup_case($feature);
-	    _install_repo($area, want => [$feature], @args);
+	    _install($area, $ppm->packages_missing(want => [$feature], @args));
 	}
     };
     if ($@) {
@@ -880,8 +881,9 @@ sub do_upgrade {
 	usage() if @ARGV > 1;
     }
     if (@ARGV && $ARGV[0] =~ /::/) {
+	$ppm->repo_sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install_repo(undef, want => [[$mod, undef]]);
+	return _install(undef, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
@@ -959,12 +961,6 @@ sub _install_uri {
     # package features.
 
     _install($area, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
-}
-
-sub _install_repo {
-    my $area = shift;
-    $ppm->repo_sync;
-    _install($area, $ppm->packages_missing(@_));
 }
 
 sub _install {
