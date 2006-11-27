@@ -910,7 +910,10 @@ sub install {
 	    die "No codebase for $name" unless $codebase;
 	    $codebase = URI->new_abs($codebase, $pkg->{ppd_uri});
 
-	    if ($codebase =~ /\.(tgz|tar\.gz)$/) {
+	    if ($codebase =~ /\.(tgz|zip)$/) {
+		$pkg->{codebase_type} = $1;
+	    }
+	    elsif ($codebase =~ /\.tar\.gz$/) {
 		$pkg->{codebase_type} = "tgz";
 	    }
 	    die "Don't know how to unpack $codebase" unless $pkg->{codebase_type};
@@ -956,6 +959,33 @@ sub install {
 		    next if is_abs_path($fname);
 		    my $extract = "$tmpdir/$pname/$fname";
 		    $tar->extract_file($fname, $extract)
+			|| die "Can't extract to $extract";
+		    if ($fname =~ /\.pm$/) {
+			my $mod = $fname;
+			if ($mod =~ s,^blib/(?:lib|arch)/,,) {
+			    $mod = ActiveState::ModInfo::fname2mod($mod);
+			    $mod .= "::" unless $mod =~ /::/;
+			    $pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($extract) || 0;
+			}
+
+		    }
+		}
+		my $blib = "$tmpdir/$pname/blib";
+		$pkg->{blib} = $blib if -d $blib;
+	    }
+	    elsif ($pkg->{codebase_type} eq "zip") {
+		require Archive::Zip;
+		ppm_log("DEBUG", "Unpacking $codebase_file");
+		my $zip = Archive::Zip->new($codebase_file)
+		    || die "Can't extract files from $codebase_file";
+		for my $file ($zip->members) {
+		    next if $file->isDirectory;
+		    my $fname = $file->fileName;
+		    next if $fname =~ m,/\.exists$,;       # don't think these are needed
+		    next if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
+		    next if is_abs_path($fname);
+		    my $extract = "$tmpdir/$pname/$fname";
+		    ($file->extractToFileNamed($extract) == Archive::Zip::AZ_OK())
 			|| die "Can't extract to $extract";
 		    if ($fname =~ /\.pm$/) {
 			my $mod = $fname;
