@@ -1455,7 +1455,7 @@ The following lists files and directories that PPM uses and creates:
 =item F<$HOME/.ActivePerl/$VERSION/>
 
 Directory where PPM keeps its state.  On Windows this directory is
-F<$APPDATA/ActiveState/ActivePerl/$VERSION>.  The $VERSION is a string
+F<$LOCAL_APPDATA/ActiveState/ActivePerl/$VERSION>.  The $VERSION is a string
 like "818".
 
 =item F<$HOME/.ActivePerl/$VERSION/ppm-$ARCH.db>
@@ -1517,7 +1517,7 @@ default varies.
 
 If set, use this directory to store state and configuration
 information for PPM.  This defaults to
-F<$APPDATA/ActiveState/ActivePerl/$VERSION> on Windows and
+F<$LOCAL_APPDATA/ActiveState/ActivePerl/$VERSION> on Windows and
 F<$HOME/.ActivePerl/$VERSION/> on Unix systems.
 
 =item C<ACTIVEPERL_PPM_LOG_CONS>
