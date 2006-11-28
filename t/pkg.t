@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 26;
+plan tests => 28;
 
 use ActivePerl::PPM::Package ();
 
@@ -57,9 +57,15 @@ ok(ActivePerl::PPM::Package::best($p1, $p2)->name_version, "Foo-beta2");
 ok(ActivePerl::PPM::Package::best($p2, $p1)->name_version, "Foo-beta2");
 
 $p3 = $p2->clone;
-$p3->{version} = "beta3";
+$p3->{version} = "beta1";
 
+ok($p2->compare($p3), 1);
+
+$p3->{version} = "beta2";
 ok($p2->compare($p3), 0);
+
+$p3->{version} = "beta3";
+ok($p2->compare($p3), -1);
 
 $p3->{provide}{"Foo::Baz"} = 1;
 ok($p2->compare($p3), -1);

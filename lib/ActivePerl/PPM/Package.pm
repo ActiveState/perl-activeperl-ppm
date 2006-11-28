@@ -108,6 +108,9 @@ sub compare {
 	$c = (keys %{$a->{provide}} <=> keys %{$b->{provide}});
     }
 
+    # last resort is heuristic comparison of version labels
+    $c ||= _vcmp($a->{version}, $b->{version});
+
     return $c;
 }
 
