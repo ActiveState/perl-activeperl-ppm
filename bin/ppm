@@ -671,7 +671,7 @@ sub do_repo {
 	$ppm->repo_set_name($repo->{id}, join(" ", @ARGV));
     }
     elsif ($cmd eq "location") {
-	$USAGE = "repo location <num> <uri>";
+	$USAGE = "repo location <num> <url>";
 	warn "[@ARGV]";
 	usage() if @ARGV != 2;
 	my($id, $uri) = @ARGV;
@@ -1118,7 +1118,7 @@ Manage and search repositories:
     ppm repo describe <num>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
     ppm repo rename <num> <name>
-    ppm repo location <num> <uri>
+    ppm repo location <num> <url>
     ppm repo suggest
     ppm search <pattern>
     ppm describe <num>
@@ -1357,7 +1357,7 @@ B<ppm repo off>.
 
 Change name by which the given repo is known.
 
-=item B<ppm repo location> I<num> I<uri>
+=item B<ppm repo location> I<num> I<url>
 
 Change the location of the given repo.  This will make PPM
 forget all cached data from the old repository and try to refetch it
