@@ -978,7 +978,7 @@ sub select_item {
 	$details->insert('end', "\n");
     }
     if ($areaid) {
-	$details->insert('end', "\nFiles:\n", 'h2');
+	$details->insert('end', "\nInstalled files:\n", 'h2');
 	for my $file ($area->package_files($pkg->{id})) {
 	    $details->insert('end', "\t$file\n");
 	}
