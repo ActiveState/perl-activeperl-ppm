@@ -1002,6 +1002,11 @@ sub install {
 		die "Don't know how to unpack $pkg->{codebase_type} files";
 	    }
 
+	    # If the same package is attempted installed multiple times,
+	    # these might still be left after last attempt.
+	    delete $pkg->{blib};
+	    delete $pkg->{files};
+
 	    my $blib = "$tmpdir/$pname/blib";
 	    $pkg->{blib} = $blib if -d $blib;
 	    $status->end;
