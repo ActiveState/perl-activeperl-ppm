@@ -694,7 +694,7 @@ sub feature_have {
 sub feature_fixup_case {
     my($self, $name) = @_;
     my $dbh = $self->dbh;
-    my $names = $dbh->selectcol_arrayref("SELECT name FROM feature WHERE role = 'p' AND lower(name) = lower(?)", undef, $name);
+    my $names = $dbh->selectcol_arrayref("SELECT DISTINCT name FROM feature WHERE role = 'p' AND lower(name) = lower(?)", undef, $name);
     if (@$names && !grep $_ eq $name, @$names) {
 	die "Feature name $name is ambiguous; please select one of " . join(", ", @$names)
 	    if @$names > 1;
