@@ -79,6 +79,12 @@ sub requires {
     return %{$self->{require} || {}};
 }
 
+sub features_declared {
+    my $self = shift;
+    my $p = $self->{provide};
+    return keys(%$p) > 1 || $p->{$self->{name}};
+}
+
 #
 # comparators
 #
@@ -88,24 +94,26 @@ sub compare {
 
     my $c = undef;
 
-    # compare the shared features to see if we have a winner
-    for my $mod (keys %{$a->{provide}}) {
-        next unless exists $b->{provide}{$mod};
-        my $c2 = $a->{provide}{$mod} <=> $b->{provide}{$mod};
-        $c = 0 unless defined $c;
-        next if $c2 == 0;
-        if ($c) {
-            return undef unless $c == $c2;  # conflict
-        }
-        else {
-            $c = $c2;
-        }
-    }
+    if ($a->features_declared && $b->features_declared) {
+	# compare the shared features to see if we have a winner
+	for my $mod (keys %{$a->{provide}}) {
+	    next unless exists $b->{provide}{$mod};
+	    my $c2 = $a->{provide}{$mod} <=> $b->{provide}{$mod};
+	    $c = 0 unless defined $c;
+	    next if $c2 == 0;
+	    if ($c) {
+		return undef unless $c == $c2;  # conflict
+	    }
+	    else {
+		$c = $c2;
+	    }
+	}
 
-    if (defined($c) && $c == 0) {
-	# if the shared features compared the same, break the tie
-	# by selecting the package with more features.
-	$c = (keys %{$a->{provide}} <=> keys %{$b->{provide}});
+	if (defined($c) && $c == 0) {
+	    # if the shared features compared the same, break the tie
+	    # by selecting the package with more features.
+	    $c = (keys %{$a->{provide}} <=> keys %{$b->{provide}});
+	}
     }
 
     # last resort is heuristic comparison of version labels
@@ -599,6 +607,12 @@ the packages passed in.
 
 This returns SQL C<CREATE TABLE> statements used to initialize the
 database that the C<new_dbi> and C<dbi_store> methods depend on.
+
+=item $bool = $pkg->features_declared
+
+Returns TRUE if this package declare what features it provide.  PPM4
+style packages should declare what modules and other features they
+provide, but packages from older repositories might not.
 
 =item $pkg->has_script( $kind )
 

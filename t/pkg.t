@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 28;
+plan tests => 31;
 
 use ActivePerl::PPM::Package ();
 
@@ -19,6 +19,7 @@ ok($p2->name, "Bar");
 ok($p1->name_version, "Foo");
 ok($p2->name_version, "Bar-1.2");
 ok($p3->name_version, "Bar-1.3");
+ok(!$p3->features_declared);
 
 ok($p1->compare($p2), undef);
 ok(eval { $p1->better_than($p2)}, undef);
@@ -46,6 +47,7 @@ $p2 = ActivePerl::PPM::Package->new(
 );
 
 ok($p1->name_version, "Foo-beta1");
+ok($p1->features_declared);
 ok($p1->compare($p1), 0);
 ok($p1->compare($p2), -1);
 ok($p2->compare($p1), 1);
@@ -77,3 +79,6 @@ ok($p3->better_than($p2));
 ok(ActivePerl::PPM::Package::best($p1, $p2, $p3)->name_version, "Foo-beta3");
 ok(ActivePerl::PPM::Package::best($p2, $p1, $p3)->name_version, "Foo-beta3");
 ok(ActivePerl::PPM::Package::best($p3, $p2, $p1)->name_version, "Foo-beta3");
+
+$p3 = ActivePerl::PPM::Package->new(name => "Foo", version => 2);
+ok($p3->better_than($p2));
