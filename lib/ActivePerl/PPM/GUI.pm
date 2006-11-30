@@ -130,7 +130,8 @@ Tkx::interp_alias("", "ppm", "", [\&ppm]);
 if ($AQUA) {
     Tkx::interp_alias("", "::ttk::scrollbar", "", "::scrollbar");
     Tkx::option('add', "*Scrollbar.borderWidth", 0);
-} else {
+}
+else {
     Tkx::interp_alias("", "::scrollbar", "", "::ttk::scrollbar");
 }
 
@@ -182,10 +183,13 @@ my $file_menu;
 # Create the menu structure
 menus();
 
-Tkx::bind($mw, "<Destroy>", [sub {
-			     my $w = shift;
-			     on_exit() if $w eq $mw->_mpath;
-			 }, Tkx::Ev('%W')]);
+Tkx::bind($mw, "<Destroy>", [
+    sub {
+	my $w = shift;
+	on_exit() if $w eq $mw->_mpath;
+    },
+    Tkx::Ev('%W')
+]);
 $mw->g_wm_protocol('WM_DELETE_WINDOW', [\&on_exit]);
 
 Tkx::option_add("*takeFocus", "0");
@@ -193,25 +197,32 @@ Tkx::option_add("*TEntry.takeFocus", "1");
 
 # Main interface
 my $pw = $mw->new_ttk__paned(-orient => "vertical");
-my $pkglist = $pw->new_pkglist(-width => 550, -height => 350,
-			       -selectcommand => [\&select_item],
-			       -borderwidth => 1, -relief => 'sunken',
-			       -itembackground => ["#F7F7FF", ""],
-			       -takefocus => 1);
+my $pkglist = $pw->new_pkglist(
+    -width => 550, -height => 350,
+    -selectcommand => [\&select_item],
+    -borderwidth => 1,
+    -relief => 'sunken',
+    -itembackground => ["#F7F7FF", ""],
+    -takefocus => 1,
+);
 
-Tkx::bind($pkglist, "<<PackageMenu>>", [sub {
-	      my ($x, $y, $X, $Y) = @_;
-	      if ($pkglist->identify($x, $y) =~ "header") {
-		  $fields_menu->g_tk___popup($X, $Y);
-	      } else {
-		  $pkglist->selection('clear');
-		  eval {
-		      # This will error silently if the list is empty
-		      $pkglist->selection('add', "nearest $x $y");
-		      $action_menu->g_tk___popup($X, $Y);
-		  };
-	      }
-}, Tkx::Ev("%x", "%y", "%X", "%Y")]);
+Tkx::bind($pkglist, "<<PackageMenu>>", [
+    sub {
+	my ($x, $y, $X, $Y) = @_;
+	if ($pkglist->identify($x, $y) =~ "header") {
+	    $fields_menu->g_tk___popup($X, $Y);
+	}
+	else {
+	    $pkglist->selection('clear');
+	    eval {
+		# This will error silently if the list is empty
+		$pkglist->selection('add', "nearest $x $y");
+		$action_menu->g_tk___popup($X, $Y);
+	    };
+	}
+    },
+    Tkx::Ev("%x", "%y", "%X", "%Y"),
+]);
 # Aqua swaps buttons 2 and 3 for historical reasons
 Tkx::event('add', "<<PackageMenu>>", ($AQUA ? "<Button-2>" : "<Button-3>"),
 	   "<Control-Button-1>");
@@ -228,10 +239,16 @@ if ($AQUA) {
     @smallfont = (-font => "ASfont-1");
     @smallfontbold = (-font => "ASfontBold-1");
 }
-my @text_opts = (-height => 7, -width => 40, -cursor => "",
-		 -borderwidth => 3, -relief => "flat",
-		 -font => "ASfont", -state => "disabled",
-		 -wrap => "word", -highlightthickness => 0);
+my @text_opts = (
+    -height => 7, -width => 40,
+    -cursor => "",
+    -borderwidth => 3,
+    -highlightthickness => 0,
+    -relief => "flat",
+    -font => "ASfont",
+    -state => "disabled",
+    -wrap => "word",
+);
 my $pw_nb = $pw->new_ttk__notebook(-padding => 0);
 
 my $status_sw = $pw_nb->new_widget__scrolledwindow();
@@ -239,23 +256,28 @@ my $status_box = $status_sw->new_text(@text_opts);
 $status_sw->setwidget($status_box);
 
 my $details_sw = $pw_nb->new_widget__scrolledwindow();
-my $details = $details_sw->new_text(@text_opts,
-				    -tabs => ["10", "left", "90", "left"]);
+my $details = $details_sw->new_text(
+    @text_opts,
+    -tabs => ["10", "left", "90", "left"],
+);
 $details_sw->setwidget($details);
 
 for my $tw ($details, $status_box) {
     # Allow each text widget the same tag set
-    $tw->tag('configure', 'h1', -font => 'ASfontBold2');
-    $tw->tag('configure', 'h2', -font => 'ASfontBold1');
-    $tw->tag('configure', 'abstract', -font => 'ASfontBold',
-	     -lmargin1 => 10, -lmargin2 => 10, -rmargin => 10);
+    $tw->tag_configure('h1', -font => 'ASfontBold2');
+    $tw->tag_configure('h2', -font => 'ASfontBold1');
+    $tw->tag_configure('abstract',
+        -font => 'ASfontBold',
+	-lmargin1 => 10, -lmargin2 => 10,
+        -rmargin => 10,
+    );
     $tw->tag_configure('link', -underline => 1, -foreground => 'blue');
     $tw->tag_bind('link', "<Enter>", sub {
-		      $tw->configure(-cursor => "hand2");
-		  });
+        $tw->configure(-cursor => "hand2");
+    });
     $tw->tag_bind('link', "<Leave>", sub {
-		      $tw->configure(-cursor => "");
-		  });
+	$tw->configure(-cursor => "");
+    });
 }
 
 $pw_nb->add($status_sw, -text => "Status");
@@ -274,7 +296,6 @@ Tkx::bind($mw, "<Key-space>", [$scroll_cmd, 1]);
 Tkx::bind($mw, "<Shift-Key-space>", [$scroll_cmd, -1]);
 
 my $toolbar = $mw->new_widget__toolbar();
-
 my $statusbar = $mw->new_widget__statusbar(-ipad => [1, 2]);
 
 Tkx::grid($toolbar, -sticky => "ew", -padx => 2);
@@ -292,30 +313,42 @@ my $arealist;
 
 # Filter state buttons
 my $filter_all = $toolbar->new_ttk__radiobutton(
-    -text => "All", -image => $IMG{'f_all'},
-    -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "all",
+    -text => "All",
+    -image => $IMG{'f_all'},
+    -style => "Toolbutton",
+    -variable => \$FILTER{'type'},
+    -command => [\&filter],
+    -value => "all",
 );
 $toolbar->add($filter_all, -pad => [0, 2]);
 Tkx::tooltip($filter_all, "View all packages [${plat_acc_ctrl}1]");
 my $filter_inst = $toolbar->new_ttk__radiobutton(
-    -text => "Installed", -image => $IMG{'f_installed'},
-    -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "installed",
+    -text => "Installed",
+    -image => $IMG{'f_installed'},
+    -style => "Toolbutton",
+    -variable => \$FILTER{'type'},
+    -command => [\&filter],
+    -value => "installed",
 );
 $toolbar->add($filter_inst, -pad => [0, 2]);
 Tkx::tooltip($filter_inst, "View installed packages [${plat_acc_ctrl}2]");
 my $filter_upgr = $toolbar->new_ttk__radiobutton(
-    -text => "Upgradable", -image => $IMG{'f_upgradable'},
-    -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "upgradable",
+    -text => "Upgradable",
+    -image => $IMG{'f_upgradable'},
+    -style => "Toolbutton",
+    -variable => \$FILTER{'type'},
+    -command => [\&filter],
+    -value => "upgradable",
 );
 $toolbar->add($filter_upgr, -pad => [0, 2]);
 Tkx::tooltip($filter_upgr, "View upgradable packages [${plat_acc_ctrl}3]");
 my $filter_mod = $toolbar->new_ttk__radiobutton(
-    -text => "Modified", -image => $IMG{'f_modified'},
-    -style => "Toolbutton", -variable => \$FILTER{'type'},
-    -command => [\&filter], -value => "modified",
+    -text => "Modified",
+    -image => $IMG{'f_modified'},
+    -style => "Toolbutton",
+    -variable => \$FILTER{'type'},
+    -command => [\&filter],
+    -value => "modified",
 );
 $toolbar->add($filter_mod, -pad => [0, 2]);
 Tkx::tooltip($filter_mod, "View packages to install/remove [${plat_acc_ctrl}4]");
@@ -328,45 +361,67 @@ Tkx::bind(all => "<${plat_evt_ctrl}Key-4>" => sub { $filter_mod->invoke(); });
 # Filter entry with filter.fields menu
 my $filter_menu = $toolbar->new_menu(-name => "filter_menu");
 my $filter = $toolbar->new_widget__menuentry(
-    -width => 1, -takefocus => 1,
+    -width => 1,
+    -takefocus => 1,
     -menu => $filter_menu,
     -textvariable => \$FILTER{'filter'},
 );
 Tkx::tooltip($filter, "Filter packages [${plat_acc_ctrl}F]");
 $toolbar->add($filter, -weight => 2);
-$filter_menu->add('radiobutton', -label => "Name", -value => "name",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Abstract", -value => "abstract",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Name or Abstract",
-		  -value => "name abstract",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
-$filter_menu->add('radiobutton', -label => "Author", -value => "author",
-		  -variable => \$FILTER{'fields'}, -command => [\&filter]);
+$filter_menu->add('radiobutton',
+    -label => "Name",
+    -value => "name",
+    -variable => \$FILTER{'fields'},
+    -command => [\&filter],
+);
+$filter_menu->add('radiobutton',
+    -label => "Abstract",
+    -value => "abstract",
+    -variable => \$FILTER{'fields'},
+    -command => [\&filter],
+);
+$filter_menu->add('radiobutton',
+    -label => "Name or Abstract",
+    -value => "name abstract",
+    -variable => \$FILTER{'fields'},
+    -command => [\&filter],
+);
+$filter_menu->add('radiobutton',
+    -label => "Author",
+    -value => "author",
+    -variable => \$FILTER{'fields'},
+    -command => [\&filter],
+);
 $filter->g_bind('<Return>', [\&filter]);
 $filter->g_bind('<Key>', [\&filter_onkey]);
 Tkx::bind(all => "<${plat_evt_ctrl}f>" => sub { Tkx::focus($filter); });
 
 # Action buttons
-my $install_btn = $toolbar->new_ttk__checkbutton(-text => "Install",
-						 -variable => \$dummy,
-						 -image => $IMG{'install'},
-						 -style => "Toolbutton",
-						 -state => "disabled");
+my $install_btn = $toolbar->new_ttk__checkbutton(
+    -text => "Install",
+    -variable => \$dummy,
+    -image => $IMG{'install'},
+    -style => "Toolbutton",
+    -state => "disabled",
+);
 $toolbar->add($install_btn, -separator => 1, -pad => [4, 2, 0]);
 Tkx::tooltip($install_btn, "Mark for install [+]");
-my $remove_btn = $toolbar->new_ttk__checkbutton(-text => "Remove",
-						-variable => \$dummy,
-						-image => $IMG{'remove'},
-						-style => "Toolbutton",
-						-state => "disabled");
+my $remove_btn = $toolbar->new_ttk__checkbutton(
+    -text => "Remove",
+    -variable => \$dummy,
+    -image => $IMG{'remove'},
+    -style => "Toolbutton",
+    -state => "disabled",
+);
 $toolbar->add($remove_btn, -pad => [0, 2]);
 Tkx::tooltip($remove_btn, "Mark for remove [-]");
-my $go_btn = $toolbar->new_ttk__button(-text => "Go",
-				       -image => $IMG{'go'},
-				       -style => "Toolbutton",
-				       -state => "disabled",
-				       -command => [\&run_actions]);
+my $go_btn = $toolbar->new_ttk__button(
+    -text => "Go",
+    -image => $IMG{'go'},
+    -style => "Toolbutton",
+    -state => "disabled",
+    -command => [\&run_actions],
+);
 $toolbar->add($go_btn, -pad => [4, 2, 0]);
 Tkx::tooltip($go_btn, "Run marked actions [${plat_acc_ctrl}Enter]");
 
@@ -375,18 +430,22 @@ Tkx::bind($pkglist, "<Key-plus>", sub { $install_btn->invoke(); });
 Tkx::bind($pkglist, "<Key-minus>", sub { $remove_btn->invoke(); });
 
 # Sync/config buttons
-my $sync_btn = $toolbar->new_ttk__button(-text => "Refresh",
-					 -image => $IMG{'refresh'},
-					 -style => "Toolbutton",
-					 -command => \&full_refresh);
+my $sync_btn = $toolbar->new_ttk__button(
+    -text => "Refresh",
+    -image => $IMG{'refresh'},
+    -style => "Toolbutton",
+    -command => \&full_refresh,
+);
 Tkx::bind("all", "<Key-F5>", sub { $sync_btn->invoke(); });
 Tkx::tooltip($sync_btn, "Refresh all data [F5]");
 $toolbar->add($sync_btn, -separator => 1, -pad => [4, 2]);
 
-my $prefs_btn = $toolbar->new_ttk__button(-text => "Preferences",
-					  -image => $IMG{'prefs'},
-					  -style => "Toolbutton",
-					  -command => [\&show_prefs_dialog]);
+my $prefs_btn = $toolbar->new_ttk__button(
+    -text => "Preferences",
+    -image => $IMG{'prefs'},
+    -style => "Toolbutton",
+    -command => [\&show_prefs_dialog],
+);
 Tkx::bind("all", "<${plat_evt_ctrl}p>", sub { $prefs_btn->invoke(); });
 Tkx::tooltip($prefs_btn, "PPM Preferences [${plat_acc_ctrl}P]");
 $toolbar->add($prefs_btn);
@@ -395,11 +454,13 @@ if ($AQUA) {
     # Aqua isn't properly displaying the button disabled, so get the
     # effect through a greyed image
     for my $w ($filter_all, $filter_inst, $filter_upgr, $filter_mod,
-	       $install_btn, $remove_btn, $go_btn, $sync_btn, $prefs_btn) {
+	       $install_btn, $remove_btn, $go_btn, $sync_btn, $prefs_btn)
+    {
 	my $img = $w->cget("-image");
 	if ($img) {
 	    my $disimg = Tkx::ppm__img(
-		Tkx::SplitList(Tkx::ppm__imgname($img)), "gray");
+		Tkx::SplitList(Tkx::ppm__imgname($img)), "gray",
+            );
 	    $w->configure(-image => [$img, disabled => $disimg]);
 	}
     }
@@ -425,15 +486,13 @@ Tkx::tooltip($lbl, "Number of packages in filtered view");
 $lbl = $statusbar->new_ttk__label(-text => "listed", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages in filtered view");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'},
-				  @smallfont);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'installed'}, @smallfont);
 $statusbar->add($lbl, -separator => 1);
 Tkx::tooltip($lbl, "Number of packages installed");
 $lbl = $statusbar->new_ttk__label(-text => "installed,", @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages installed");
-$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'},
-				  @smallfont);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'install'}, @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for install");
 $lbl = $statusbar->new_ttk__label(-text => "to install,", @smallfont);
@@ -442,16 +501,13 @@ Tkx::tooltip($lbl, "Number of packages selected for install");
 $lbl = $statusbar->new_ttk__label(-textvariable => \$NUM{'remove'}, @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
-$lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w',
-				  @smallfont);
+$lbl = $statusbar->new_ttk__label(-text => "to remove", -anchor => 'w', @smallfont);
 $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
 
-$lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e',
-				  @smallfont);
+$lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e', @smallfont);
 $statusbar->add($lbl, -separator => 1, -weight => 1);
-$lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA,
-				  @smallfontbold);
+$lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA, @smallfontbold);
 $statusbar->add($lbl);
 
 # Run preferences loading handler after UI has been instantiated
@@ -464,9 +520,9 @@ map view($_), grep($_ ne "sortorder", keys %VIEW);
 Tkx::update('idletasks');
 
 Tkx::after(idle => sub {
-	       $mw->g_wm_deiconify();
-	       Tkx::focus(-force => $filter);
-	       full_refresh(1);
+    $mw->g_wm_deiconify();
+    Tkx::focus(-force => $filter);
+    full_refresh(1);
 });
 
 Tkx::MainLoop();
@@ -480,7 +536,6 @@ sub refresh {
     $NUM{'installed'} = $pkglist->numitems();
     my $repo = merge_repo_items();
     $NUM{'total'} = $pkglist->numitems();
-    #print "Total: $NUM{'total'}, Installed: $NUM{'installed'} of $area area items and $repo repo items\n";
     %ACTION = ();
     $NUM{'install'} = 0;
     $NUM{'remove'} = 0;
@@ -501,11 +556,11 @@ sub repo_sync {
 	my $repo = $REPOS{$repo_id} = $ppm->repo($repo_id);
 	if (defined($repolist)) {
 	    $repolist->add($repo_id,
-			   repo => $repo->{name},
-			   url => $repo->{packlist_uri},
-			   num => $repo->{pkgs},
-			   checked => $repo->{packlist_last_access},
-		       );
+	        repo => $repo->{name},
+		url => $repo->{packlist_uri},
+		num => $repo->{pkgs},
+		checked => $repo->{packlist_last_access},
+	    );
 	    $repolist->enable($repo_id, $repo->{enabled});
 	}
     }
@@ -521,12 +576,12 @@ sub area_sync {
 	my $area = $AREAS{$area_name} = $ppm->area($area_name);
 	if (defined($arealist)) {
 	    $arealist->add($area->name,
-			   num => scalar $area->packages,
-			   prefix => $area->prefix,
-			   inc => $area->inc,
-		       );
-	    $arealist->state($area->name, "readonly") if
-		($area->readonly || $area_name eq "perl");
+	        num => scalar $area->packages,
+		prefix => $area->prefix,
+		inc => $area->inc,
+	    );
+	    $arealist->state($area->name, "readonly")
+		if $area->readonly || $area_name eq "perl";
 	}
     }
     if (!defined($AREAS{$INSTALL_AREA}) || $AREAS{$INSTALL_AREA}->readonly) {
@@ -563,7 +618,8 @@ sub restore_focus_grab {
     if (Tkx::winfo_exists($oldGrab) && Tkx::winfo_ismapped($oldGrab)) {
 	if ($oldStatus eq "global") {
 	    Tkx::grab("-global", $oldGrab);
-	} else {
+	}
+	else {
 	    Tkx::grab($oldGrab);
 	}
     }
@@ -589,10 +645,10 @@ sub full_refresh {
 	    $msg .= "  Try enabling the uninitialized Areas in the Preferences dialog";
 	}
 	Tkx::tk___messageBox(
-	   -title => "No writable installarea",
-           -icon => "info",
-           -type => "ok",
-           -message => $msg,
+	    -title => "No writable installarea",
+            -icon => "info",
+            -type => "ok",
+            -message => $msg,
 	);
     }
 }
@@ -606,11 +662,11 @@ sub merge_area_items {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
 	    $pkglist->add($name,
-			  area => $area_name,
-			  installed => $version,
-			  abstract => $abstract,
-			  author => $author,
-		      );
+		area => $area_name,
+		installed => $version,
+		abstract => $abstract,
+		author => $author,
+	    );
 	    $count++;
 	}
     }
@@ -625,10 +681,10 @@ sub merge_repo_items {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
 	my ($name, $version, $release_date, $abstract, $author) = @$_;
 	$pkglist->add($name,
-		   available => $version,
-		   abstract => $abstract,
-		   author => $author,
-		   );
+	    available => $version,
+	    abstract => $abstract,
+	    author => $author,
+	);
     }
     return $count;
 }
@@ -636,22 +692,24 @@ sub merge_repo_items {
 sub filter {
     my $force = shift || 0;
     Tkx::after('cancel', $FILTER{'id'});
-    return if (!$force && $FILTER{'filter'} eq $FILTER{'lastfilter'}
-		   && $FILTER{'fields'} eq $FILTER{'lastfields'}
-		       && $FILTER{'type'} eq $FILTER{'lasttype'});
+    return if !$force &&
+              $FILTER{'filter'} eq $FILTER{'lastfilter'} &&
+              $FILTER{'fields'} eq $FILTER{'lastfields'} &&
+              $FILTER{'type'} eq $FILTER{'lasttype'};
     my $fields = $FILTER{'fields'};
     $fields =~ s/ / or /g;
     Tkx::tooltip($filter, "Filter packages by $fields [${plat_acc_ctrl}F]");
     my $count = $pkglist->filter($FILTER{'filter'},
-				 fields => $FILTER{'fields'},
-				 type => $FILTER{'type'},
-			     );
+        fields => $FILTER{'fields'},
+	type => $FILTER{'type'},
+    );
     if ($count == -1) {
 	# Something wrong with the filter
 	$filter->delete(0, "end");
 	$filter->insert(0, $FILTER{'lastfilter'});
 	# No need to refilter - should not have changed
-    } else {
+    }
+    else {
 	$FILTER{'lastfilter'} = $FILTER{'filter'};
 	$FILTER{'lastfields'} = $FILTER{'fields'};
 	$FILTER{'lasttype'} = $FILTER{'type'};
@@ -673,14 +731,17 @@ sub view {
     my $view = shift;
     if ($view =~ '^sort') {
 	$pkglist->sort($VIEW{'sortcolumn'}, $VIEW{'sortorder'});
-    } elsif ($view =~ 'bar$') {
+    }
+    elsif ($view =~ 'bar$') {
 	my $w = ($view eq 'statusbar' ? $statusbar : $toolbar);
 	if ($VIEW{$view}) {
 	    Tkx::grid($w);
-	} else {
+	}
+	else {
 	    Tkx::grid('remove', $w);
 	}
-    } else {
+    }
+    else {
 	$pkglist->view($view, $VIEW{$view});
     }
 }
@@ -735,119 +796,216 @@ sub menus {
     # File menu
     $sm = $file_menu = $menu->new_menu(-name => "file");
     $menu->add_cascade(-label => "File", -menu => $sm, -underline => 0);
-    $sm->add_command(-label => "Refresh All Data", -underline => 1,
-		     -accelerator => "F5",
-		     -command => sub { $sync_btn->invoke(); });
-    $sm->add_command(-label => "Verify Packages", -underline => 0,
-		     -command => [\&verify]);
-    $sm->add_command(-label => "Run Marked Actions", -underline => 0,
-		     -state => "disabled",
-		     -accelerator => "${plat_acc_ctrl}Enter",
-		     -command => sub { $go_btn->invoke(); });
+    $sm->add_command(
+        -label => "Refresh All Data",
+        -underline => 1,
+        -accelerator => "F5",
+	-command => sub { $sync_btn->invoke(); },
+    );
+    $sm->add_command(
+        -label => "Verify Packages",
+        -underline => 0,
+	-command => [\&verify],
+    );
+    $sm->add_command(
+        -label => "Run Marked Actions",
+        -underline => 0,
+	-state => "disabled",
+	-accelerator => "${plat_acc_ctrl}Enter",
+	-command => sub { $go_btn->invoke(); },
+    );
     $mw->g_bind("<<RunActions>>" => sub { $go_btn->invoke(); });
     Tkx::event("add", "<<RunActions>>", "<${plat_evt_ctrl}Key-Return>",
 	       "<${plat_evt_ctrl}Key-KP_Enter>");
     Tkx::bind(all => "<${plat_evt_ctrl}q>" => [\&on_exit]);
     if (!$AQUA) {
 	$sm->add_separator();
-	$sm->add_command(-label => "Exit", -underline => 1,
-			 -accelerator => "${plat_acc_ctrl}Q",
-			 -command => [\&on_exit]);
+	$sm->add_command(
+	    -label => "Exit",
+            -underline => 1,
+	    -accelerator => "${plat_acc_ctrl}Q",
+	    -command => [\&on_exit],
+        );
     }
 
     # Edit menu
     $sm = $menu->new_menu(-name => "edit");
     $menu->add_cascade(-label => "Edit", -menu => $sm, -underline => 0);
-    $sm->add_command(-label => "Cut", -underline => 2,
-		     -accelerator => "${plat_acc_ctrl}X",
-		     -command => sub {
-			 Tkx::event_generate(Tkx::focus(), "<<Cut>>");
-		     });
-    $sm->add_command(-label => "Copy", -underline => 0,
-		     -accelerator => "${plat_acc_ctrl}C",
-		     -command => sub {
-			 Tkx::event_generate(Tkx::focus(), "<<Copy>>");
-		     });
-    $sm->add_command(-label => "Paste", -underline => 0,
-		     -accelerator => "${plat_acc_ctrl}V",
-		     -command => sub {
-			 Tkx::event_generate(Tkx::focus(), "<<Paste>>");
-		     });
+    $sm->add_command(
+        -label => "Cut",
+        -underline => 2,
+	-accelerator => "${plat_acc_ctrl}X",
+	-command => sub {
+	    Tkx::event_generate(Tkx::focus(), "<<Cut>>");
+	},
+    );
+    $sm->add_command(
+        -label => "Copy",
+        -underline => 0,
+	-accelerator => "${plat_acc_ctrl}C",
+	-command => sub {
+	    Tkx::event_generate(Tkx::focus(), "<<Copy>>");
+	},
+    );
+    $sm->add_command(
+        -label => "Paste",
+        -underline => 0,
+	-accelerator => "${plat_acc_ctrl}V",
+	-command => sub {
+	    Tkx::event_generate(Tkx::focus(), "<<Paste>>");
+	},
+    );
     if (!$AQUA) {
 	$sm->add_separator();
-	$sm->add_command(-label => "Preferences", -underline => 1,
-			 -accelerator => "${plat_acc_ctrl}P",
-			 -command => [\&show_prefs_dialog]);
+	$sm->add_command(
+	    -label => "Preferences",
+            -underline => 1,
+	    -accelerator => "${plat_acc_ctrl}P",
+	    -command => [\&show_prefs_dialog],
+        );
     }
 
     # View menu
     $sm = $view_menu = $menu->new_menu(-name => "view");
     $menu->add_cascade(-label => "View", -menu => $sm, -underline => 0);
-    $sm->add_checkbutton(-label => "Toolbar", -underline => 0,
-			 -variable => \$VIEW{'toolbar'},
-			 -command => [\&view, 'toolbar']);
-    $sm->add_checkbutton(-label => "Status Bar", -underline => 0,
-			 -variable => \$VIEW{'statusbar'},
-			 -command => [\&view, 'statusbar']);
+    $sm->add_checkbutton(
+        -label => "Toolbar",
+        -underline => 0,
+	-variable => \$VIEW{'toolbar'},
+	-command => [\&view, 'toolbar'],
+    );
+    $sm->add_checkbutton(
+        -label => "Status Bar",
+        -underline => 0,
+	-variable => \$VIEW{'statusbar'},
+	-command => [\&view, 'statusbar'],
+    );
     $sm->add_separator();
-    $sm->add_radiobutton(-label => "All Packages", -underline => 0,
-			 -variable => \$FILTER{'type'}, -value => "all",
-			 -accelerator => "${plat_acc_ctrl}1",
-			 -command => [\&filter]);
-    $sm->add_radiobutton(-label => "Installed Packages", -underline => 0,
-			 -variable => \$FILTER{'type'}, -value => "installed",
-			 -accelerator => "${plat_acc_ctrl}2",
-			 -command => [\&filter]);
-    $sm->add_radiobutton(-label => "Upgradable Packages", -underline => 0,
-			 -variable => \$FILTER{'type'}, -value => "upgradable",
-			 -accelerator => "${plat_acc_ctrl}3",
-			 -command => [\&filter]);
+    $sm->add_radiobutton(
+        -label => "All Packages",
+        -underline => 0,
+	-variable => \$FILTER{'type'},
+        -value => "all",
+	-accelerator => "${plat_acc_ctrl}1",
+	-command => [\&filter],
+    );
+    $sm->add_radiobutton(
+        -label => "Installed Packages",
+        -underline => 0,
+	-variable => \$FILTER{'type'},
+        -value => "installed",
+	-accelerator => "${plat_acc_ctrl}2",
+	-command => [\&filter],
+    );
+    $sm->add_radiobutton(
+        -label => "Upgradable Packages",
+        -underline => 0,
+	-variable => \$FILTER{'type'},
+        -value => "upgradable",
+	-accelerator => "${plat_acc_ctrl}3",
+	-command => [\&filter],
+    );
     # this text linked in update_actions for entryconfigure
-    $sm->add_radiobutton(-label => "Packages to Install/Remove", -underline => 0,
-			 -variable => \$FILTER{'type'}, -value => "modified",
-			 -accelerator => "${plat_acc_ctrl}4",
-			 -command => [\&filter]);
+    $sm->add_radiobutton(
+        -label => "Packages to Install/Remove",
+        -underline => 0,
+	-variable => \$FILTER{'type'},
+        -value => "modified",
+	-accelerator => "${plat_acc_ctrl}4",
+	-command => [\&filter],
+    );
     $sm->add_separator();
     $ssm = $fields_menu = $sm->new_menu(-name => "cols");
     $sm->add_cascade(-label => "View Columns", -menu => $ssm, -underline => 5);
-    $ssm->add_checkbutton(-label => "Area", -underline => 1,
-			  -variable => \$VIEW{'area'},
-			  -command => [\&view, 'area']);
-    $ssm->add_checkbutton(-label => "Installed", -underline => 0,
-			  -variable => \$VIEW{'installed'},
-			  -command => [\&view, 'installed']);
-    $ssm->add_checkbutton(-label => "Available", -underline => 1,
-			  -variable => \$VIEW{'available'},
-			  -command => [\&view, 'available']);
-    $ssm->add_checkbutton(-label => "Abstract", -underline => 1,
-			  -variable => \$VIEW{'abstract'},
-			  -command => [\&view, 'abstract']);
-    $ssm->add_checkbutton(-label => "Author", -underline => 1,
-			  -variable => \$VIEW{'author'},
-			  -command => [\&view, 'author']);
+    $ssm->add_checkbutton(
+        -label => "Area",
+        -underline => 1,
+	-variable => \$VIEW{'area'},
+	-command => [\&view, 'area'],
+    );
+    $ssm->add_checkbutton(
+        -label => "Installed",
+        -underline => 0,
+	-variable => \$VIEW{'installed'},
+	-command => [\&view, 'installed'],
+    );
+    $ssm->add_checkbutton(
+        -label => "Available",
+        -underline => 1,
+	-variable => \$VIEW{'available'},
+	-command => [\&view, 'available'],
+    );
+    $ssm->add_checkbutton(
+        -label => "Abstract",
+        -underline => 1,
+	-variable => \$VIEW{'abstract'},
+	-command => [\&view, 'abstract'],
+    );
+    $ssm->add_checkbutton(
+        -label => "Author",
+        -underline => 1,
+	-variable => \$VIEW{'author'},
+	-command => [\&view, 'author'],
+    );
     $ssm = $sort_menu = $sm->new_menu(-name => "sort");
     $sm->add_cascade(-label => "Sort Column", -menu => $ssm, -underline => 1);
-    my @sort_opts = (-variable => \$VIEW{'sortcolumn'},
-		     -command => [\&view, 'sort']);
-    $ssm->add_radiobutton(-label => "Package Name", -value => 'name',
-			  -underline => 0, @sort_opts);
-    $ssm->add_radiobutton(-label => "Area", -value => 'area',
-			  -underline => 1, @sort_opts);
-    $ssm->add_radiobutton(-label => "Installed", -value => 'installed',
-			  -underline => 0, @sort_opts);
-    $ssm->add_radiobutton(-label => "Available", -value => 'available',
-			  -underline => 1, @sort_opts);
-    $ssm->add_radiobutton(-label => "Abstract", -value => 'abstract',
-			  -underline => 1, @sort_opts);
-    $ssm->add_radiobutton(-label => "Author", -value => 'author',
-			  -underline => 1, @sort_opts);
+    my @sort_opts = (
+        -variable => \$VIEW{'sortcolumn'},
+	-command => [\&view, 'sort'],
+    );
+    $ssm->add_radiobutton(
+        -label => "Package Name",
+	-underline => 0,
+        -value => 'name',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Area",
+	-underline => 1,
+        -value => 'area',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Installed",
+	-underline => 0,
+        -value => 'installed',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Available",
+	-underline => 1,
+        -value => 'available',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Abstract",
+	-underline => 1,
+        -value => 'abstract',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Author",
+	-underline => 1,
+        -value => 'author',
+        @sort_opts,
+    );
     $ssm->add_separator();
-    @sort_opts = (-variable => \$VIEW{'sortorder'},
-		  -command => [\&view, 'sort']);
-    $ssm->add_radiobutton(-label => "Ascending", -value => '-increasing',
-			  -underline => 0, @sort_opts);
-    $ssm->add_radiobutton(-label => "Descending", -value => '-decreasing',
-			  -underline => 0, @sort_opts);
+    @sort_opts = (
+        -variable => \$VIEW{'sortorder'},
+	-command => [\&view, 'sort'],
+    );
+    $ssm->add_radiobutton(
+        -label => "Ascending",
+	-underline => 0,
+        -value => '-increasing',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Descending",
+	-underline => 0,
+        -value => '-decreasing',
+        @sort_opts,
+    );
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
@@ -862,17 +1020,18 @@ sub menus {
     if (ActiveState::Browser::can_open("faq/ActivePerl-faq2.html")) {
 	my $help_cmd = [\&ActiveState::Browser::open, "faq/ActivePerl-faq2.html"];
 	$sm->add_command(
-	    -label => "Contents", -underline => 0,
+	    -label => "Contents",
+            -underline => 0,
 	    -accelerator => "<F1>",
 	    -command => $help_cmd,
 	);
 	Tkx::bind("all", "<Key-F1>", $help_cmd);
     }
     if (ActiveState::Browser::can_open("index.html")) {
-	my $help_cmd = [\&ActiveState::Browser::open, "index.html"];
 	$sm->add_command(
-	    -label => "ActivePerl User Guide", -underline => 11,
-	    -command => $help_cmd,
+	    -label => "ActivePerl User Guide",
+            -underline => 11,
+	    -command => [\&ActiveState::Browser::open, "index.html"],
 	);
     }
     if (ActiveState::Browser::can_open("http://www.activestate.com")) {
@@ -905,16 +1064,21 @@ sub menus {
 
     if (!$AQUA) {
 	$sm->add_separator;
-	$sm->add_command(-label => "About", -underline => 0,
-			 -command => sub { about(); });
+	$sm->add_command(
+	    -label => "About",
+            -underline => 0,
+	    -command => sub { about(); },
+        );
     }
 
     # Special menu on OS X
     if ($AQUA) {
 	$sm = $menu->new_menu(-name => 'apple'); # must be named "apple"
 	$menu->add_cascade(-label => "PPM", -menu => $sm);
-	$sm->add_command(-label => "About PPM",
-			 -command => sub { about(); });
+	$sm->add_command(
+	    -label => "About PPM",
+	    -command => sub { about(); },
+        );
 	$sm->add_separator();
 	# OS X enables the Preferences item when you create this proc
 	Tkx::proc("tk::mac::ShowPreferences", "args", [\&show_prefs_dialog]);
@@ -1011,7 +1175,8 @@ sub select_item {
 				  || $AREAS{$data{'area'}}->readonly)) {
 	    # perl area items should not be removed
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '-');
-	} else {
+	}
+	else {
 	    if ($pkg->has_script("uninstall")) {
 		$cmd = sub {
 		    my $msg = "$pkg->{name} has an uninstall script and must be installed from the command line with:
@@ -1024,27 +1189,36 @@ sub select_item {
 		    );
 		    $ACTION{$item}{'remove'} = 0;
 		};
-	    } else {
+	    }
+	    else {
 		$cmd = sub { queue_action($item, $name, "remove"); };
 	    }
-	    $remove_btn->configure(-state => "normal", -command => $cmd,
-				   -variable => \$ACTION{$item}{'remove'});
-	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
-				   -variable => \$ACTION{$item}{'remove'},
-				   -accelerator => '-');
+	    $remove_btn->configure(
+	        -state => "normal",
+                -command => $cmd,
+		-variable => \$ACTION{$item}{'remove'},
+            );
+	    $menu->add_checkbutton(
+                -label => $txt,
+                -command => $cmd,
+		-variable => \$ACTION{$item}{'remove'},
+		-accelerator => '-',
+            );
 	}
     }
     if ($data{'available'}) {
 	# available items are installable
 	if ($data{'available'} eq $data{'installed'}) {
 	    $txt = "Reinstall $name $data{'available'}";
-	} else {
+	}
+	else {
 	    $txt = "Install $name $data{'available'}";
 	}
 	if (!$INSTALL_AREA
 	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '+');
-	} else {
+	}
+	else {
 	    if ($pkg->has_script("install")) {
 		$cmd = sub {
 		    my $msg = "$pkg->{name} has an install script and must be installed from the command line with:
@@ -1057,14 +1231,21 @@ sub select_item {
 		    );
 		    $ACTION{$item}{'install'} = 0;
 		};
-	    } else {
+	    }
+	    else {
 		$cmd = sub { queue_action($item, $name, "install"); };
 	    }
-	    $install_btn->configure(-state => "normal", -command => $cmd,
-				    -variable => \$ACTION{$item}{'install'});
-	    $menu->add_checkbutton(-label => $txt, -command => $cmd,
-				   -variable => \$ACTION{$item}{'install'},
-				   -accelerator => '+');
+	    $install_btn->configure(
+	        -state => "normal",
+                -command => $cmd,
+		-variable => \$ACTION{$item}{'install'},
+            );
+	    $menu->add_checkbutton(
+                -label => $txt,
+                -command => $cmd,
+		-variable => \$ACTION{$item}{'install'},
+		-accelerator => '+',
+            );
 	}
     }
     if (!$data{'available'} && !$data{'installed'}) {
@@ -1074,8 +1255,10 @@ sub select_item {
     if ($data{'installed'}) {
 	# Add "Verify" action
 	$menu->add_separator();
-	$menu->add_command(-label => "Verify $name $data{'installed'}",
-			   -command => [\&verify, $name]);
+	$menu->add_command(
+            -label => "Verify $name $data{'installed'}",
+	    -command => [\&verify, $name],
+        );
     }
 }
 
@@ -1093,7 +1276,8 @@ sub queue_action {
 	$pkglist->state($item, $action);
 	$NUM{$action}++;
 	status_message("$name marked for $action\n");
-    } else {
+    }
+    else {
 	$pkglist->state($item, "!$action");
 	$NUM{$action}--;
 	status_message("$name unmarked for $action\n");
@@ -1104,15 +1288,19 @@ sub queue_action {
 	my @pkgs = map $ACTION{$_}{'repo_pkg'},
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
 	eval {
-	    my @tmp = $ppm->packages_missing(have => \@pkgs,
-					     want_deps => [$repo_pkg]);
+	    my @tmp = $ppm->packages_missing(
+                have => \@pkgs,
+		want_deps => [$repo_pkg],
+            );
 	    my @need;
 	    for my $pkg (@tmp) {
 		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
-			       tag => "abstract");
+		    tag => "abstract",
+                );
 		if ($pkg->has_script("install")) {
 		    status_message("... but $pkg->{name} has an install script and must be installed from the command line\n",
-				   tag => "abstract");
+			tag => "abstract",
+		    );
 		}
 	        else {
 		    push(@need, $pkg);
@@ -1132,7 +1320,8 @@ sub queue_action {
 	$ACTION{$item}{'deps'} = \@deps;
 	for my $pkg (@deps) {
 	    status_message("$pkg->{name} depends on $name\n",
-			   tag => "abstract");
+		tag => "abstract",
+            );
 	}
     }
     update_actions();
@@ -1144,13 +1333,16 @@ sub update_actions {
 	$file_menu->entryconfigure("Run Marked Actions", -state => "normal");
 	$filter_mod->configure(-state => "normal");
 	$view_menu->entryconfigure("Packages to Install/Remove",
-				   -state => "normal");
-    } else {
+	    -state => "normal",
+        );
+    }
+    else {
 	$go_btn->configure(-state => "disabled");
 	$file_menu->entryconfigure("Run Marked Actions", -state => "disabled");
 	$filter_mod->configure(-state => "disabled");
 	$view_menu->entryconfigure("Packages to Install/Remove",
-				   -state => "disabled");
+	    -state => "disabled",
+        );
     }
 }
 
@@ -1166,8 +1358,7 @@ sub run_actions {
 	$msg .= "s" if $NUM{'remove'} > 1;
     }
     $msg .= "?";
-    my @items =
-	grep($ACTION{$_}{'install'} && @{$ACTION{$_}{'deps'}}, keys %ACTION);
+    my @items =	grep($ACTION{$_}{'install'} && @{$ACTION{$_}{'deps'}}, keys %ACTION);
     if (@items) {
 	my $dep_cnt = 0;
 	for my $item (@items) {
@@ -1175,7 +1366,8 @@ sub run_actions {
 	    my $repo_pkg = $ACTION{$item}{'repo_pkg'};
 	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
 		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
-			       tag => "abstract");
+		    tag => "abstract",
+                );
 		$dep_cnt++;
 	    }
 	}
@@ -1190,7 +1382,8 @@ sub run_actions {
 	    my $name = $ACTION{$item}{'pkg'}->name;
 	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
 		status_message("$pkg->{name} depends on $name\n",
-			       tag => "abstract");
+	            tag => "abstract",
+                );
 		$dep_cnt++;
 	    }
 	}
@@ -1219,7 +1412,8 @@ sub commit_actions {
 	    if ($@) {
 		status_error();
 		return;
-	    } else {
+	    }
+	    else {
 		status_message("DONE\n");
 		$removed++;
 	    }
@@ -1238,14 +1432,18 @@ sub commit_actions {
 	    status_error();
 	}
 	status_message("Preparing install to $INSTALL_AREA area of:\n");
-	map(status_message("\t" . $_->{name} . "\n"), @install_pkgs);
+	status_message("\t" . $_->{name} . "\n") for @install_pkgs;
 	eval {
-	    $ppm->install(area => $INSTALL_AREA, packages => \@install_pkgs);
+	    $ppm->install(
+                area => $INSTALL_AREA,
+                packages => \@install_pkgs,
+            );
 	};
 	if ($@) {
 	    status_error();
 	    return;
-	} else {
+	}
+	else {
 	    status_message("DONE\n");
 	}
     }
@@ -1267,7 +1465,7 @@ sub select_repo_item {
     if ($what eq "remove") {
 	my $msg = "Really remove $data{repo} repository?"
 	    . "\nDisabling a repository has the same effect"
-		. "\nwithout losing its name or location.";
+	    . "\nwithout losing its name or location.";
 	my $res = Tkx::tk___messageBox(
 	    -title => "Remove Repository?",
 	    -icon => "warning",
@@ -1298,7 +1496,8 @@ sub select_repo_item {
 	eval { $ppm->repo_set_packlist_uri($data{id}, $newurl); };
 	if ($@) {
 	    status_error("modifying repository URI");
-	} else {
+	}
+	else {
 	    full_refresh();
 	}
 	return;
@@ -1315,13 +1514,15 @@ sub select_area_item {
 	    my $res = Tkx::tk___messageBox(
 		-title => "Initialize Area $data{name}?",
 		-message => "Should PPM start tracking packages in $data{name}?",
-		-type => "okcancel", -icon => "question",
+		-type => "okcancel",
+		-icon => "question",
 	    );
 	    if ($res eq "ok") {
 		eval { $AREAS{$data{name}}->initialize(); };
 		if ($@) {
 		    status_error("initializing $data{name} area");
-		} elsif (!$AREAS{$data{name}}->readonly) {
+		}
+		elsif (!$AREAS{$data{name}}->readonly) {
 		    $arealist->state($data{name}, "!readonly");
 		}
 	    }
@@ -1344,10 +1545,14 @@ sub show_prefs_dialog {
     }
 
     my $top = $prefs_dialog = $mw->new_widget__dialog(
-	-title => 'PPM Preferences', -padding => 4,
-	-parent => $mw, -place => 'over',
-	-type => 'ok', -modal => 'none',
-	-synchronous => 0, -separator => 0,
+	-title => 'PPM Preferences',
+	-padding => 4,
+	-parent => $mw,
+        -place => 'over',
+	-type => 'ok',
+        -modal => 'none',
+	-synchronous => 0,
+        -separator => 0,
     );
 
     # Preferences tabs
@@ -1363,10 +1568,14 @@ sub show_prefs_dialog {
     $nb->select($f);
 
     $sw = $f->new_widget__scrolledwindow();
-    $arealist = $sw->new_arealist(-width => 450, -height => 100,
-				  -selectcommand => [\&select_area_item],
-				  -borderwidth => 1, -relief => 'sunken',
-				  -itembackground => ["#F7F7FF", ""]);
+    $arealist = $sw->new_arealist(
+        -width => 450,
+        -height => 100,
+	-selectcommand => [\&select_area_item],
+	-borderwidth => 1,
+        -relief => 'sunken',
+	-itembackground => ["#F7F7FF", ""],
+    );
     $sw->setwidget($arealist);
     my $areal = $f->new_widget__panelframe(-text => "Add Area:");
     my $areaf = $areal->new_ttk__frame(-padding => [6, 2]);
@@ -1384,10 +1593,14 @@ sub show_prefs_dialog {
     $nb->add($f, -text => "Repositories", -underline => 0);
 
     $sw = $f->new_widget__scrolledwindow();
-    $repolist = $sw->new_repolist(-width => 450, -height => 100,
-				  -selectcommand => [\&select_repo_item],
-				  -borderwidth => 1, -relief => 'sunken',
-				  -itembackground => ["#F7F7FF", ""]);
+    $repolist = $sw->new_repolist(
+        -width => 450,
+        -height => 100,
+	-selectcommand => [\&select_repo_item],
+	-borderwidth => 1,
+        -relief => 'sunken',
+	-itembackground => ["#F7F7FF", ""],
+    );
     $sw->setwidget($repolist);
     my $addl = $f->new_widget__panelframe(-text => "Add Repository:");
     my $addf = $addl->new_ttk__frame(-padding => [6, 2]);
@@ -1402,21 +1615,27 @@ sub show_prefs_dialog {
 	return 1;
     };
     $rnamel = $addf->new_ttk__label(-text => "Name:", -anchor => 'w');
-    $rnamee = $addf->new_ttk__entry(-textvariable => \$name_var,
-				    -validate => "all",
-				    -validatecommand => [$val_cmd, Tkx::Ev('%P'), $rnamel]);
+    $rnamee = $addf->new_ttk__entry(
+        -textvariable => \$name_var,
+	-validate => "all",
+	-validatecommand => [$val_cmd, Tkx::Ev('%P'), $rnamel],
+    );
     $rlocnl = $addf->new_ttk__label(-text => "Location:", -anchor => 'w');
-    $rlocne = $addf->new_ttk__entry(-textvariable => \$uri_var,
-				    -validate => "all",
-				    -validatecommand => [$val_cmd, Tkx::Ev('%P'), $rlocnl]);
+    $rlocne = $addf->new_ttk__entry(
+        -textvariable => \$uri_var,
+	-validate => "all",
+	-validatecommand => [$val_cmd, Tkx::Ev('%P'), $rlocnl],
+    );
     $rnamel->state("invalid");
     $rlocnl->state("invalid");
     my $lastdir = cwd();
     my $dircmd = sub {
-	my $dir = Tkx::tk___chooseDirectory(-title => "Repository Directory",
-					    -initialdir => $lastdir,
-					    -parent => $top,
-					    -mustexist => 1);
+	my $dir = Tkx::tk___chooseDirectory(
+            -title => "Repository Directory",
+	    -initialdir => $lastdir,
+	    -parent => $top,
+	    -mustexist => 1,
+        );
 	if ($dir) {
 	    $uri_var = $lastdir = $dir;
 	    $rlocne->selection_clear();
@@ -1424,15 +1643,20 @@ sub show_prefs_dialog {
 	    $rlocne->g_focus();
 	}
     };
-    my $dir_btn = $addf->new_ttk__button(-image => [Tkx::ppm__img('dir')],
-					 -command => $dircmd);
+    my $dir_btn = $addf->new_ttk__button(
+        -image => [Tkx::ppm__img('dir')],
+	-command => $dircmd,
+    );
     my $add_sub = sub {
 	return unless $name_var && $uri_var;
 	# This requires duplication of code from do_repo
 	if ($uri_var =~ m,\?urn:/,) {
-	    Tkx::tk___messageBox(-title => "Error Adding Repository",
-				 -message => "PPM3 SOAP repositories are not supported.",
-				 -type => "ok", -icon => "error");
+	    Tkx::tk___messageBox(
+	        -title => "Error Adding Repository",
+		-message => "PPM3 SOAP repositories are not supported.",
+		-type => "ok",
+                -icon => "error",
+            );
 	    return;
 	}
 	if (-d $uri_var) {
@@ -1442,10 +1666,14 @@ sub show_prefs_dialog {
 	eval { $ppm->repo_add(name => $name_var, packlist_uri => $uri_var); };
 	if ($@) {
 	    ppm_log("ERR", "Adding repository: $@");
-	    Tkx::tk___messageBox(-title => "Error Adding Repository",
-				 -message => "Error adding repository:\n" . clean_err($@),
-				 -type => "ok", -icon => "error");
-	} else {
+	    Tkx::tk___messageBox(
+                -title => "Error Adding Repository",
+		-message => "Error adding repository:\n" . clean_err($@),
+		-type => "ok",
+                -icon => "error",
+            );
+	}
+	else {
 	    $name_var = "";
 	    $uri_var = "";
 	    $rnamel->state("invalid");
@@ -1453,22 +1681,28 @@ sub show_prefs_dialog {
 	    full_refresh();
 	}
     };
-    my $save_btn = $addf->new_ttk__button(-text => "Add",
-					  -command => $add_sub);
+    my $save_btn = $addf->new_ttk__button(
+        -text => "Add",
+	-command => $add_sub,
+    );
     my $ret_cmd = sub {
 	my $next = shift;
 	if ($name_var && $uri_var) {
 	    # Do add
 	    $save_btn->invoke();
-	} else {
+	}
+	else {
 	    Tkx::focus($next);
 	}
     };
     $rnamee->g_bind("<Return>", [$ret_cmd, $rlocne]);
     $rlocne->g_bind("<Return>", [$ret_cmd, $rnamee]);
     Tkx::grid($rnamel, $rnamee, "-", -sticky => 'ew', -padx => 1, -pady => 1);
-    Tkx::grid($rlocnl, $rlocne, $dir_btn, -sticky => 'ew',
-	      -padx => 1, -pady => 1);
+    Tkx::grid($rlocnl, $rlocne, $dir_btn,
+        -sticky => 'ew',
+	-padx => 1,
+        -pady => 1,
+    );
     Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
@@ -1539,11 +1773,14 @@ sub about {
     require ActivePerl;
     my $perl_version = ActivePerl::perl_version;
 
-    Tkx::tk___messageBox(-title => "About Perl Package Manager",
-			 -icon => "info", -type => "ok",
-			 -message => "PPM version $ActivePerl::PPM::VERSION
+    Tkx::tk___messageBox(
+        -title => "About Perl Package Manager",
+	-icon => "info",
+        -type => "ok",
+	-message => "PPM version $ActivePerl::PPM::VERSION
 ActivePerl version $perl_version
-\xA9 2006 ActiveState Software Inc.");
+\xA9 2006 ActiveState Software Inc.",
+    );
 }
 
 sub status_error {
