@@ -124,14 +124,14 @@ Tkx::bind(TreeCtrl => "<Shift-Key-End>",
 	  Tkx::bind(TreeCtrl => "<Control-Shift-Key-End>"));
 
 # purely for reciprocity debugging, expose the ppm command in Tcl
-Tkx::interp(alias => "", "ppm", "", [\&ppm]);
+Tkx::interp_alias("", "ppm", "", [\&ppm]);
 
 # Use Tk scroll on OS X, but Ttk scrollbar elsewhere by default
 if ($AQUA) {
-    Tkx::interp("alias", "", "::ttk::scrollbar", "", "::scrollbar");
+    Tkx::interp_alias("", "::ttk::scrollbar", "", "::scrollbar");
     Tkx::option('add', "*Scrollbar.borderWidth", 0);
 } else {
-    Tkx::interp("alias", "", "::scrollbar", "", "::ttk::scrollbar");
+    Tkx::interp_alias("", "::scrollbar", "", "::ttk::scrollbar");
 }
 
 # These variables are tied to UI elements
