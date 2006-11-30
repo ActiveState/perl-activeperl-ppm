@@ -298,7 +298,8 @@ sub activestate_repo {
 
 sub repos {
     my $self = shift;
-    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo ORDER BY id")};}
+    @{$self->dbh->selectcol_arrayref("SELECT id FROM repo ORDER BY id")};
+}
 
 sub repo {
     my($self, $id) = @_;
