@@ -751,6 +751,14 @@ sub do_search {
 	    @ARGV = (1);
 	    return do_describe();
 	}
+
+	my %repo_name;
+	for my $id ($ppm->repos) {
+	    my $o = $ppm->repo($id);
+	    next unless $o->{enabled};
+	    $repo_name{$id} = $o->{name} || $id;
+	}
+
 	if (@res < 10) {
 	    my $count = 0;
 	    for (@res) {
@@ -764,7 +772,8 @@ sub do_search {
 		    $date =~ s/[T ].*//;
 		    print "   Released: ", $date, "\n";
 		}
-		print "   Repo: $repo_id\n";
+		print "   Repo: ", ($repo_name{$repo_id} || $repo_id), "\n"
+		    if keys %repo_name > 1;
 	    }
 	}
 	else {
