@@ -657,10 +657,10 @@ sub merge_area_items {
     my $count = 0;
     for my $area_name (sort keys %AREAS) {
 	my $area = $AREAS{$area_name};
-	my @fields = ("name", "version", "release_date", "abstract", "author");
+	my @fields = ("name", "version", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	    my ($name, $version, $release_date, $abstract, $author) = @$pkg;
+	    my ($name, $version, $abstract, $author) = @$pkg;
 	    $pkglist->add($name,
 		area => $area_name,
 		installed => $version,
@@ -674,12 +674,12 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("name", "version", "release_date", "abstract", "author");
+    my @fields = ("name", "version", "abstract", "author");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($name, $version, $release_date, $abstract, $author) = @$_;
+	my ($name, $version, $abstract, $author) = @$_;
 	$pkglist->add($name,
 	    available => $version,
 	    abstract => $abstract,
