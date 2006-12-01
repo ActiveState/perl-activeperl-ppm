@@ -150,6 +150,7 @@ my %VIEW;
 $VIEW{'name'} = 1;
 $VIEW{'area'} = 1;
 $VIEW{'installed'} = 1;
+$VIEW{'repo'} = 0;
 $VIEW{'available'} = 1;
 $VIEW{'abstract'} = 1;
 $VIEW{'author'} = 0;
@@ -674,13 +675,14 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("name", "version", "abstract", "author");
+    my @fields = ("name", "version", "abstract", "author", "repo_id");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($name, $version, $abstract, $author) = @$_;
+	my ($name, $version, $abstract, $author, $repo_id) = @$_;
 	$pkglist->add($name,
+            repo => $REPOS{$repo_id}->{name} || $repo_id,
 	    available => $version,
 	    abstract => $abstract,
 	    author => $author,
@@ -930,6 +932,12 @@ sub menus {
 	-command => [\&view, 'installed'],
     );
     $ssm->add_checkbutton(
+        -label => "Repo",
+        -underline => 1,
+	-variable => \$VIEW{'repo'},
+	-command => [\&view, 'repo'],
+    );
+    $ssm->add_checkbutton(
         -label => "Available",
         -underline => 1,
 	-variable => \$VIEW{'available'},
@@ -969,6 +977,12 @@ sub menus {
         -label => "Installed",
 	-underline => 0,
         -value => 'installed',
+        @sort_opts,
+    );
+    $ssm->add_radiobutton(
+        -label => "Repo",
+	-underline => 1,
+        -value => 'repo',
         @sort_opts,
     );
     $ssm->add_radiobutton(
