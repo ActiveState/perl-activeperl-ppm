@@ -1193,10 +1193,10 @@ sub select_item {
 	else {
 	    if ($pkg->has_script("uninstall")) {
 		$cmd = sub {
-		    my $msg = "$pkg->{name} has an uninstall script and must be installed from the command line with:
+		    my $msg = "$pkg->{name} has an uninstall script and must be uninstalled from the command line with:
     ppm remove $pkg->{name}";
 		    Tkx::tk___messageBox(
-			-title => "Package with install script",
+			-title => "Package with uninstall script",
 			-icon => "info",
 			-type => "ok",
 			-message => $msg,
