@@ -629,7 +629,7 @@ sub full_refresh {
     $mw->configure(-cursor => "watch");
     Tkx::update();
     set_focus_grab($status_box);
-    if ($first_time && $ppm->config_get("gui.skip_intial_repo_sync")) {
+    if ($first_time && $ppm->config_get("gui.skip_initial_repo_sync")) {
 	status_message("\nExternal repositories not synced.  Press F5 for manual sync.\n");
 	repo_sync();
     }
