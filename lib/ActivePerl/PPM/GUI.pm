@@ -22,7 +22,6 @@ my $ppm = $::ppm;
 $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 
 # these will be filled in the sync()
-my %AREAS;
 my %REPOS;
 my $INSTALL_AREA;
 
@@ -568,13 +567,9 @@ sub repo_sync {
 }
 
 sub area_sync {
-    my $sync = shift;
-    if ($sync) {
-	%AREAS = ();
-    }
     $arealist->clear() if (defined($arealist));
     for my $area_name ($ppm->areas) {
-	my $area = $AREAS{$area_name} = $ppm->area($area_name);
+	my $area = $ppm->area($area_name);
 	if (defined($arealist)) {
 	    $arealist->add($area->name,
 	        num => scalar $area->packages,
@@ -585,7 +580,8 @@ sub area_sync {
 		if $area->readonly || $area_name eq "perl";
 	}
     }
-    if (!defined($AREAS{$INSTALL_AREA}) || $AREAS{$INSTALL_AREA}->readonly) {
+    my $i_area = $ppm->area($INSTALL_AREA);
+    if (!$i_area || $i_area->readonly) {
 	$INSTALL_AREA = $ppm->default_install_area || "";
     }
     if ($INSTALL_AREA && defined($arealist)) {
@@ -634,7 +630,7 @@ sub full_refresh {
     Tkx::update();
     set_focus_grab($status_box);
     repo_sync(1);
-    area_sync(1);
+    area_sync();
     refresh();
     status_message("DONE\n", tag => "h2");
     $mw->configure(-cursor => "");
@@ -642,7 +638,7 @@ sub full_refresh {
     if ($first_time && $INSTALL_AREA eq "") {
 	my $msg = "All activated install areas are read-only.  You cannot currently install or remove packages.";
 	# do we have any uninitialized areas
-	if (grep !$_->initialized, values %AREAS) {
+	if (grep !$_->initialized, map $ppm->area($_), $ppm->areas) {
 	    $msg .= "  Try enabling the uninitialized Areas in the Preferences dialog";
 	}
 	Tkx::tk___messageBox(
@@ -656,8 +652,8 @@ sub full_refresh {
 
 sub merge_area_items {
     my $count = 0;
-    for my $area_name (sort keys %AREAS) {
-	my $area = $AREAS{$area_name};
+    for my $area_name ($ppm->areas) {
+	my $area = $ppm->area($area_name);
 	my @fields = ("name", "version", "abstract", "author");
 	for my $pkg ($area->packages(@fields)) {
 	    for (@$pkg) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
@@ -1186,7 +1182,7 @@ sub select_item {
 	# installed items are removable
 	$txt = "Remove $name $data{'installed'}";
 	if ($data{'area'} && (($data{'area'} eq "perl")
-				  || $AREAS{$data{'area'}}->readonly)) {
+				  || $ppm->area($data{'area'})->readonly)) {
 	    # perl area items should not be removed
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '-');
 	}
@@ -1229,7 +1225,7 @@ sub select_item {
 	    $txt = "Install $name $data{'available'}";
 	}
 	if (!$INSTALL_AREA
-	    || $INSTALL_AREA eq "perl" || $AREAS{$INSTALL_AREA}->readonly) {
+	    || $INSTALL_AREA eq "perl" || $ppm->area($INSTALL_AREA)->readonly) {
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '+');
 	}
 	else {
@@ -1524,7 +1520,7 @@ sub select_area_item {
     my $what = shift || "";
     my %data = Tkx::SplitList($arealist->data($item));
     if ($what eq "default") {
-	if (!$AREAS{$data{name}}->initialized) {
+	if (!$ppm->area($data{name})->initialized) {
 	    my $res = Tkx::tk___messageBox(
 		-title => "Initialize Area $data{name}?",
 		-message => "Should PPM start tracking packages in $data{name}?",
@@ -1532,16 +1528,16 @@ sub select_area_item {
 		-icon => "question",
 	    );
 	    if ($res eq "ok") {
-		eval { $AREAS{$data{name}}->initialize(); };
+		eval { $ppm->area($data{name})->initialize(); };
 		if ($@) {
 		    status_error("initializing $data{name} area");
 		}
-		elsif (!$AREAS{$data{name}}->readonly) {
+		elsif (!$ppm->area($data{name})->readonly) {
 		    $arealist->state($data{name}, "!readonly");
 		}
 	    }
 	}
-	if ($data{name} eq "perl" || $AREAS{$data{name}}->readonly) {
+	if ($data{name} eq "perl" || $ppm->area($data{name})->readonly) {
 	    Tkx::bell();
 	    return;
 	}
@@ -1726,7 +1722,7 @@ sub show_prefs_dialog {
     Tkx::grid(rowconfigure => $f, 0, -weight => 1);
 
     repo_sync(0); # refresh without sync/clear
-    area_sync(0); # refresh without sync/clear
+    area_sync();
 
     $prefs_dialog->display();
     Tkx::focus(-force => $prefs_dialog);
