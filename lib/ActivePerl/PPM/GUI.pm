@@ -671,13 +671,14 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("name", "version", "abstract", "author", "repo_id");
+    my @fields = ("id", "name", "version", "abstract", "author", "repo_id");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($name, $version, $abstract, $author, $repo_id) = @$_;
+	my ($id, $name, $version, $abstract, $author, $repo_id) = @$_;
 	$pkglist->add($name,
+            repo_pkg_id => $id,
             repo => $REPOS{$repo_id}->{name} || $repo_id,
 	    available => $version,
 	    abstract => $abstract,
@@ -1114,7 +1115,7 @@ sub select_item {
     my $areaid = $data{'area'};
     my $area = $ppm->area($areaid) if $areaid;
     my ($pkg, $repo_pkg);
-    $pkg = $repo_pkg = $ppm->package($name, $data{'available'} || undef);
+    $pkg = $repo_pkg = $ppm->package($data{'repo_pkg_id'});
     if ($areaid) {
 	if (my $p = $area->package($name)) {
 	    $pkg = $p;

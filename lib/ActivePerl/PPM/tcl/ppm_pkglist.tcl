@@ -101,14 +101,14 @@ snit::widgetadaptor pkglist {
     method add {name args} {
 	set opts(name) $name
 	array set opts {
-	    area "" installed "" repo "" available "" abstract "" author ""
+	    area "" installed "" repo_pkg_id "" repo "" available "" abstract "" author ""
 	}
 	array set opts $args
 	set new 0
 	if {[info exists NAMES($name)]} {
 	    set item $NAMES($name)
 	    array set cur [$self data $item]
-	    foreach key {area installed repo available} {
+	    foreach key {area installed repo_pkg_id available} {
 		if {$opts($key) ne "" && $cur($key) ne ""
 		    && $cur($key) ne $opts($key)} {
 		    set new 1
@@ -132,6 +132,7 @@ snit::widgetadaptor pkglist {
 		name styName \
 		area styText \
 		installed styText \
+		repo_pkg_id styText \
                 repo styText \
 		available styText \
 		abstract styText \
@@ -390,6 +391,7 @@ snit::widgetadaptor pkglist {
 	    -image [::ppm::img installed]
 	$tree column create -width  40 -text "Area" -tag area
 	$tree column create -width  60 -text "Installed" -tag installed
+	$tree column create -width  40 -text "Id" -tag repo_pkg_id -visible 0
         $tree column create -width  40 -text "Repo" -tag repo
 	$tree column create -width  60 -text "Available" -tag available
 	$tree column create -text "Abstract" -tag abstract -expand 1 -squeeze 1
