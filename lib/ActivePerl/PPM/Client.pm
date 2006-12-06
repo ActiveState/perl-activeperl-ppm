@@ -516,6 +516,9 @@ sub repo_sync {
 		    ppm_log("ERR", "Unrecognized repo type " . $res->content_type);
 		}
 	    }
+	    else {
+		$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, 0, $repo->{id});
+	    }
 	}
 
 	for my $ppd (@check_ppd) {
