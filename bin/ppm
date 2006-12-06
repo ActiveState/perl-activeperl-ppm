@@ -578,7 +578,7 @@ sub do_repo {
             ) || usage();
 	    usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^\d+$/);
 	}
-	$ppm->repo_sync(force => $force, (@ARGV ? ("repo" => $ARGV[0]) : ()));
+	$ppm->repo_sync(force => $force, validate => 1, (@ARGV ? ("repo" => $ARGV[0]) : ()));
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";

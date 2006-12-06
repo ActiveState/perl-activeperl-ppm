@@ -381,6 +381,10 @@ sub repo_set_packlist_uri {
 
 sub repo_sync {
     my($self, %opt) = @_;
+
+    # force implies validate
+    $opt{validate} ||= $opt{force};
+
     my @repos;
     my $dbh = $self->dbh;
     local $dbh->{AutoCommit} = 0;
@@ -403,7 +407,7 @@ sub repo_sync {
     for my $repo (@repos) {
 	my @check_ppd;
 	my %delete_package;
-	if (!$opt{force} && $repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
+	if (!$opt{validate} && $repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
 	    @check_ppd = (); # XXX should we still check them?
 	    ppm_log("DEBUG", "$repo->{packlist_uri} is still fresh");
 	}
@@ -413,7 +417,7 @@ sub repo_sync {
 	    my $res;
 	    if ($repo->{packlist_last_status_code}) {
 		# if we continue to get errors from repo, only hit it occasionally
-		if (!$opt{force} &&
+		if (!$opt{validate} &&
 		    HTTP::Status::is_error($repo->{packlist_last_status_code}) &&
 		    (time - $repo->{packlist_last_access} < 5 * 60))
 		{
