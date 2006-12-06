@@ -764,9 +764,14 @@ sub do_repo {
 
 sub do_search {
     $USAGE = "search <pattern>";
+    my $sync = 1;
+    require Getopt::Long;
+    Getopt::Long::GetOptions(
+        'sync!' => \$sync,
+     ) || usage();
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
-    $ppm->repo_sync;
+    $ppm->repo_sync if $sync;
     my @fields = ("name", "version", "release_date", "abstract", "repo_id");
     my @res = $ppm->search($pattern, @fields);
     if (@res) {
@@ -860,11 +865,13 @@ sub do_install {
     my $force;
     my $nodeps;
     my $area;
+    my $sync = 1;
     require Getopt::Long;
     Getopt::Long::GetOptions(
         force => \$force,
 	'area=s' => \$area,
 	nodeps => \$nodeps,
+        'sync!' => \$sync,
      ) || usage();
     usage() unless @ARGV == 1;
     my @args;
@@ -889,7 +896,7 @@ sub do_install {
 	}
 	else {
 	    # seach for feature in repos
-            $ppm->repo_sync;
+            $ppm->repo_sync if $sync;
 	    $feature = $ppm->feature_fixup_case($feature);
 	    _install($area, $ppm->packages_missing(want => [$feature], @args));
 	}
@@ -904,15 +911,17 @@ sub do_install {
 sub do_upgrade {
     $USAGE = "upgrade [<pkg> | --install]";
     my $install;
+    my $sync = 1;
     if (@ARGV) {
 	require Getopt::Long;
 	Getopt::Long::GetOptions(
 	    'install' => \$install,
+            'sync!' => \$sync,
 	) || usage();
 	usage() if @ARGV > 1;
     }
     if (@ARGV && $ARGV[0] =~ /::/) {
-	$ppm->repo_sync;
+	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
 	return _install(undef, $ppm->packages_missing(want => [[$mod, undef]]));
     }
@@ -921,7 +930,7 @@ sub do_upgrade {
     my $pkg_count = 0;
     my $upgrade_count = 0;
     my %shaddow;
-    $ppm->repo_sync;
+    $ppm->repo_sync if $sync;
     for my $area_name ($ppm->areas) {
 	my $area = $ppm->area($area_name);
 	for ($area->packages("id", "name", "version")) {
