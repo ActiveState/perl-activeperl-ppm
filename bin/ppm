@@ -571,14 +571,21 @@ sub do_repo {
     elsif ($cmd eq "sync") {
 	$USAGE = "repo sync [--force] [<num>]";
 	my $force;
+	my $max_ppd;
 	if (@ARGV) {
 	    require Getopt::Long;
 	    Getopt::Long::GetOptions(
 	        force => \$force,
+                'max-ppd=n' => \$max_ppd,
             ) || usage();
 	    usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^\d+$/);
 	}
-	$ppm->repo_sync(force => $force, validate => 1, (@ARGV ? ("repo" => $ARGV[0]) : ()));
+	$ppm->repo_sync(
+	    validate => 1,
+	    force => $force,
+            max_ppd => $max_ppd,
+	    (@ARGV ? ("repo" => $ARGV[0]) : ()),
+        );
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
 	$USAGE = "repo $cmd <num>";
@@ -1411,12 +1418,18 @@ repository:
 
   ppm repo add theory58S
 
-=item B<ppm repo sync> [ B<--force> ] [ I<num> ]
+=item B<ppm repo sync> [ B<--force> ] [ B<--max-ppd> I<max> ] [ I<num> ]
 
 Synchronize local cache of packages found in the enabled repositories.
 With the B<--force> option, download state from remote repositories even
 if the local state has not expired yet.  If I<num> is provided, only sync
 the given repository.
+
+PPM will need to download every PPD file for repositories that don't
+provide a summary file (F<package.xml>).  This can be very slow for
+large repositories.  Thus PPM refuses to start the downloads with
+repositores linking to more that 100 PPD files unless the B<--max-ppd>
+option provides a higher limit.
 
 =item B<ppm search> I<pattern>
 

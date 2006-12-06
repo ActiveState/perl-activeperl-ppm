@@ -491,9 +491,10 @@ sub repo_sync {
 
 		    %delete_package = map { $_ => 1 } @{$dbh->selectcol_arrayref("SELECT id FROM package WHERE repo_id = ?", undef, $repo->{id})};
 
-		    if (@check_ppd > 100 && !$opt{force}) {
+		    my $max_ppd = $opt{max_ppd} || 100;
+		    if (@check_ppd > $max_ppd) {
 			my $num_ppd = @check_ppd;
-			ppm_log("WARN", "The repo $repo->{packlist_uri} links to $num_ppd PPD files. Will not download these many without force.");
+			ppm_log("ERR", "PPD downloads blocked. The repo $repo->{packlist_uri} links to $num_ppd PPD files.  Current download limit is $max_ppd.");
 			@check_ppd = ();
 			%delete_package = ();
 		    }
