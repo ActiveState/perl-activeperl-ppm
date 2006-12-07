@@ -1239,17 +1239,34 @@ repo.
 Updating the URI will loose all cached information about the repo.  A
 new 'repo_sync' is needed to update this information.
 
-=item $client->repo_sync
-
-=item $client->repo_sync( force => 1 )
-
-=item $client->repo_sync( repo => $id )
+=item $client->repo_sync( %args )
 
 Will sync the local cache of packages from the enabled repositories.
 Remote repositories are not contacted if the cache is not considered
-stale yet.  Pass the C<force> option with a TRUE value to force state
-to be transfered again from remote repositories.  Pass C<repo> with an
-identifier to only sync the given repo.
+stale yet.  The following options are recognized:
+
+=over
+
+=item force => $bool
+
+If TRUE force state to be transfered again from remote repositories.
+Make requests unconditional.
+
+=item validate => $bool
+
+If TRUE validate state from remote repositories even if state still
+believed to be fresh.  Will still send conditional requests.
+
+=item max_ppd => $num
+
+If repository is an HTML document set limit for how many PPD links it
+might contain.  The default is 100.
+
+=item repo => $repo_id
+
+Pass C<repo> with an identifier to only sync the given repo.
+
+=back
 
 =item $client->search( $pattern )
 
