@@ -288,7 +288,7 @@ sub activestate_repo {
     1 while $arch =~ s/-(thread|multi|2level)//;
     my $v = ActivePerl::perl_version();
     $v =~ s,^(\d+\.\d+)\.\d+\.,$1/,;
-    my $repo_uri = "http://ppm4.activestate.com/$arch/$v/";
+    my $repo_uri = "http://ppm4.activestate.com/$arch/$v/package.xml";
     if ($^O =~ /^(MSWin32|linux|darwin|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
 	return $repo_uri unless wantarray;
 	return ("ActiveState Package Repository", $repo_uri);
