@@ -1305,6 +1305,7 @@ sub queue_action {
 	my @pkgs = map $ACTION{$_}{'repo_pkg'},
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
 	eval {
+	    $ppm->check_downgrade($repo_pkg);
 	    my @tmp = $ppm->packages_missing(
                 have => \@pkgs,
 		want_deps => [$repo_pkg],

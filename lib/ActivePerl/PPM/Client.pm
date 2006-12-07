@@ -872,7 +872,7 @@ sub check_downgrade {
     }
     if (@downgrade) {
 	my $msg = "Installing " . $pkg->name_version;
-	$msg .= " to get $because" if $pkg->{name} ne $because;
+	$msg .= " to get $because" if $because && $pkg->{name} ne $because;
 	$msg .= " would downgrade";
 	for my $d (@downgrade) {
 	    $msg .= " $d->[0] from version $d->[1] to $d->[2] and";
