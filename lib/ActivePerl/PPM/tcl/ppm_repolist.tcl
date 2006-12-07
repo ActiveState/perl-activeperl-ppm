@@ -247,10 +247,6 @@ snit::widgetadaptor repolist {
 	    %T column move %C %b
 	}
 
-	$tree notify install <Drag>
-	$tree notify install <Drag-begin>
-	$tree notify install <Drag-end>
-	$tree notify install <Drag-receive>
 
 	$tree notify install <Edit-begin>
 	$tree notify install <Edit-end>
@@ -264,11 +260,19 @@ snit::widgetadaptor repolist {
 	    {num styText selRect elemText}
 	}
 
-	# List of lists: {column style element ...} specifying elements
-	# added to the drag image when dragging selected items
-	TreeCtrl::SetDragImage $tree {
-	    {repo styMixed selRect elemText}
+	if {0} {
+	    $tree notify install <Drag>
+	    $tree notify install <Drag-begin>
+	    $tree notify install <Drag-end>
+	    $tree notify install <Drag-receive>
+
+	    # List of lists: {column style element ...} specifying elements
+	    # added to the drag image when dragging selected items
+	    TreeCtrl::SetDragImage $tree {
+		{repo styMixed selRect elemText}
+	    }
 	}
+	TreeCtrl::SetDragImage $tree {}
 
 	# List of lists: {column style element ...} specifying text elements
 	# the user can edit
