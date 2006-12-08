@@ -835,7 +835,7 @@ sub packages_missing {
             !defined($have) || $have < $want)
         {
             if (my $pkg = $self->package_best($feature, $want)) {
-		$self->check_downgrade($pkg, $feature) unless $force;
+		$self->check_downgrade($pkg, $feature, $needed_by) unless $force;
 		push(@pkg_missing, $pkg);
 		if ($needed_by) {
 		    push(@{$pkg->{_needed_by}}, $needed_by);
@@ -862,7 +862,7 @@ sub packages_missing {
 }
 
 sub check_downgrade {
-    my($self, $pkg, $because) = @_;
+    my($self, $pkg, $because, $needed_by) = @_;
     my @downgrade;
     for my $feature (sort keys %{$pkg->{provide}}) {
 	next if $feature eq $pkg->{name};
@@ -873,6 +873,7 @@ sub check_downgrade {
     if (@downgrade) {
 	my $msg = "Installing " . $pkg->name_version;
 	$msg .= " to get $because" if $because && $pkg->{name} ne $because;
+	$msg .= " for $needed_by" if $needed_by;
 	$msg .= " would downgrade";
 	for my $d (@downgrade) {
 	    $msg .= " $d->[0] from version $d->[1] to $d->[2] and";
