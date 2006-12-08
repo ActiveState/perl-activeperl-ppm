@@ -6,7 +6,7 @@ use ActivePerl::PPM::limited_inc;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
-use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with_and join_with_or);
 
 Win32::SetChildShowWindow(0) if defined &Win32::SetChildShowWindow;
 
@@ -47,12 +47,10 @@ unless (defined &$do_cmd) {
 	$do_cmd = "do_$cmd";
     }
     else {
-	@cmds = sort @cmds;
 	require Text::Wrap;
-	my $last = pop(@cmds);
 	usage(Text::Wrap::wrap("", "  ",
                   "Unrecognized ppm command '$CMD'; try one of " .
-                  join(", or ", join(", ", @cmds), $last)
+                  join_with_or(sort @cmds)
 	      )
 	);
     }
@@ -312,11 +310,9 @@ sub _try_abbrev {
     }
     $USAGE = "$cmd <cmd> <args>";
     require Text::Wrap;
-    @_ = sort @_;
-    my $last = pop(@_);
     usage(Text::Wrap::wrap("", "  ",
               "The $cmd command '$subcmd' isn't recognized; try one of " .
-              join(", or ", join(", ", @_), $last)
+              join_with_or(sort @_)
 	 )
     );
 }
@@ -1080,7 +1076,7 @@ sub do_remove {
 		my %args = map { $_ => 1 } @ARGV;
 		@d = grep !$args{$_}, @d;
 		if (@d) {
-		    print "$pkg: required by " . join(", ", sort @d), "\n";
+		    print "$pkg: required by ", join_with_and(sort @d), "\n";
 		    next;
 		}
 	    }

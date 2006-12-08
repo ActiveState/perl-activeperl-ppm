@@ -10,6 +10,7 @@ use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua);
+use ActivePerl::PPM::Util qw(join_with_and join_with_or);
 
 use ActiveState::Path qw(is_abs_path join_path);
 use File::Basename;
@@ -804,10 +805,7 @@ sub packages_missing {
 	}
     }
     if (@missing_upgrade) {
-	@missing_upgrade = sort @missing_upgrade;
-	my $missing = pop(@missing_upgrade);
-	$missing = join(" or ", join(", ", @missing_upgrade), $missing) if @missing_upgrade;
-	push(@err, "No $missing available");
+	push(@err, "No " . join_with_or(sort @missing_upgrade) . " available");
 	@todo = grep defined($_->[1]), @todo;
     }
 
@@ -887,11 +885,9 @@ sub is_downgrade {
 	my $msg = "Installing " . $pkg->name_version;
 	$msg .= " to get $because" if $because && $pkg->{name} ne $because;
 	$msg .= " for $needed_by" if $needed_by;
-	$msg .= " would downgrade";
-	for my $d (@downgrade) {
-	    $msg .= " $d->[0] from version $d->[1] to $d->[2] and";
-	}
-	$msg =~ s/ and$//;
+	$msg .= " would downgrade " . join_with_and(
+	    map "$_->[0] from version $_->[1] to $_->[2]", @downgrade
+        );
 	return $msg;
     }
     return "";

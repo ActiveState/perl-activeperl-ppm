@@ -12,7 +12,7 @@ use strict;
 use Tkx ();
 use ActiveState::Browser ();
 use ActivePerl::PPM::Logger qw(ppm_log);
-use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with_and);
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -1341,7 +1341,7 @@ sub queue_action {
 	if (@deps) {
 	    my @dep_names = map $_->{name}, @deps;
 	    my $s = @dep_names == 1 ? "s" : "";
-	    status_message("\nWARNING: " . join(", ", @dep_names) . " depend$s on $name to be available\n\n", "abstract");
+	    status_message("\nWARNING: " . join_with_and(sort @dep_names) . " depend$s on $name to be available\n\n", "abstract");
 	}
     }
     update_actions();
