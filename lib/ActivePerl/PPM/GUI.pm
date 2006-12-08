@@ -1304,15 +1304,12 @@ sub queue_action {
 	my $repo_pkg = $ACTION{$item}{'repo_pkg'};
 	my @pkgs = map $ACTION{$_}{'repo_pkg'},
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
-	eval {
-	    $ppm->check_downgrade($repo_pkg);
-	};
-	if ($@) {
-	    my $err = $@;
+
+	if (my $err = $ppm->is_downgrade($repo_pkg)) {
 	    ppm_log("WARN", $err);
-	    $err = clean_err($err);
 	    status_message("\nWARNING: $err\n", tag => "abstract");
 	}
+
 	eval {
 	    my @tmp = $ppm->packages_missing(
                 have => \@pkgs,

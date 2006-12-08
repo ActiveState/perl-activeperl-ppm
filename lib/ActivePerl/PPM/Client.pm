@@ -862,6 +862,12 @@ sub packages_missing {
 }
 
 sub check_downgrade {
+    my $self = shift;
+    my $msg = $self->is_downgrade(@_);
+    die $msg if $msg;
+}
+
+sub is_downgrade {
     my($self, $pkg, $because, $needed_by) = @_;
     my @downgrade;
     for my $feature (sort keys %{$pkg->{provide}}) {
@@ -879,8 +885,9 @@ sub check_downgrade {
 	    $msg .= " $d->[0] from version $d->[1] to $d->[2] and";
 	}
 	$msg =~ s/ and$//;
-	die $msg;
+	return $msg;
     }
+    return "";
 }
 
 sub package {
