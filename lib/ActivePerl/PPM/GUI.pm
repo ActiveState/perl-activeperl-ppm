@@ -3,7 +3,7 @@ package ActivePerl::PPM::GUI;
 BEGIN {
     # Don't allow these env vars to disrupt ppm Tkx usage unless we are
     # ourselves in debug mode.
-    unless (defined $ENV{ACTIVEPERL_PPM_DEBUG}) {
+    unless ($ENV{ACTIVEPERL_PPM_DEBUG}) {
         delete $ENV{$_} for qw(PERL_TCL_DLL PERL_TCL_DL_PATH);
     }
 }
@@ -553,10 +553,10 @@ sub repo_sync {
 	%REPOS = ();
 	$ppm->repo_sync;
     }
-    $repolist->clear() if defined($repolist);
+    $repolist->clear() if $repolist;
     for my $repo_id ($ppm->repos) {
 	my $repo = $REPOS{$repo_id} = $ppm->repo($repo_id);
-	if (defined($repolist)) {
+	if ($repolist) {
 	    $repolist->add($repo_id,
 	        repo => $repo->{name},
 		url => $repo->{packlist_uri},
@@ -569,10 +569,10 @@ sub repo_sync {
 }
 
 sub area_sync {
-    $arealist->clear() if (defined($arealist));
+    $arealist->clear() if $arealist;
     for my $area_name ($ppm->areas) {
 	my $area = $ppm->area($area_name);
-	if (defined($arealist)) {
+	if ($arealist) {
 	    $arealist->add($area->name,
 	        num => scalar $area->packages,
 		prefix => $area->prefix,
@@ -586,7 +586,7 @@ sub area_sync {
     if (!$i_area || $i_area->readonly) {
 	$INSTALL_AREA = $ppm->default_install_area || "";
     }
-    if ($INSTALL_AREA && defined($arealist)) {
+    if ($INSTALL_AREA && $arealist) {
 	$arealist->state($INSTALL_AREA, "default");
     }
 }
@@ -622,7 +622,7 @@ sub restore_focus_grab {
 	    Tkx::grab($oldGrab);
 	}
     }
-    $GRAB{$grab}{$focus} = ();
+    $GRAB{$grab}{$focus} = undef;
 }
 
 sub full_refresh {
@@ -1173,7 +1173,7 @@ sub select_item {
 
     ## Record "allowable" actions based on package info
     # XXX work on constraints
-    if (!defined($ACTION{$item})) {
+    unless ($ACTION{$item}) {
 	$ACTION{$item}{'install'} = 0;
 	$ACTION{$item}{'remove'} = 0;
 	$ACTION{$item}{'area'} = $area;
@@ -1551,7 +1551,7 @@ sub select_area_item {
 }
 
 sub show_prefs_dialog {
-    if (defined($prefs_dialog) && Tkx::winfo_exists($prefs_dialog)) {
+    if ($prefs_dialog && Tkx::winfo_exists($prefs_dialog)) {
 	$prefs_dialog->display();
 	Tkx::focus(-force => $prefs_dialog);
 	return;
@@ -1817,7 +1817,7 @@ sub status_error {
 }
 
 sub status_message {
-    if (defined($pw_nb) && defined($status_box)) {
+    if ($pw_nb && $status_box) {
 	$pw_nb->select($status_sw);
 	$status_box->configure(-state => "normal");
 	$status_box->insert("end", @_);
