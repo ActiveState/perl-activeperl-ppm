@@ -780,6 +780,8 @@ sub packages_missing {
 	}
     }
 
+    my $error_handler = delete $args{error_handler};
+
     if ($^W && %args) {
 	require Carp;
 	Carp::carp("Unknown argument '$_' passed") for sort keys %args;
@@ -787,7 +789,7 @@ sub packages_missing {
 
     return unless @todo;
 
-
+    my @err;
     my @missing_upgrade;
     for my $feature (@todo) {
 	$feature = [$feature, 0] unless ref($feature);
@@ -805,7 +807,8 @@ sub packages_missing {
 	@missing_upgrade = sort @missing_upgrade;
 	my $missing = pop(@missing_upgrade);
 	$missing = join(" or ", join(", ", @missing_upgrade), $missing) if @missing_upgrade;
-	die "No $missing available";
+	push(@err, "No $missing available");
+	@todo = grep defined($_->[1]), @todo;
     }
 
     my @pkg_missing;
@@ -821,7 +824,7 @@ sub packages_missing {
 		    my $msg = "Conflict for feature $feature version $have provided by $pkg->{name}, ";
 		    $msg .= "$needed_by " if $needed_by;
 		    $msg .= "want version $want";
-		    die $msg;
+		    push(@err, $msg);
 		}
 		push(@{$pkg->{_needed_by}}, $needed_by) if $needed_by;
 		last;
@@ -835,7 +838,10 @@ sub packages_missing {
             !defined($have) || $have < $want)
         {
             if (my $pkg = $self->package_best($feature, $want)) {
-		$self->check_downgrade($pkg, $feature, $needed_by) unless $force;
+		unless ($force) {
+		    my $err = $self->is_downgrade($pkg, $feature, $needed_by);
+		    push(@err, $err) if $err;
+		}
 		push(@pkg_missing, $pkg);
 		if ($needed_by) {
 		    push(@{$pkg->{_needed_by}}, $needed_by);
@@ -851,20 +857,21 @@ sub packages_missing {
 		}
 	    }
 	    else {
-		die "Can't find any package that provide $feature" .
-		    ($want && $have ? " version $want" : "") .
-		    ($needed_by ? " for $needed_by" : "");
+		push(@err,
+		     "Can't find any package that provide $feature" .
+		     ($want && $have ? " version $want" : "") .
+		     ($needed_by ? " for $needed_by" : ""),
+		);
 	    }
         }
     }
 
-    return $self->package_set_abs_ppd_uri(@pkg_missing);
-}
+    if (@err) {
+	die join("\n", @err) unless $error_handler;
+	$error_handler->(@err);
+    }
 
-sub check_downgrade {
-    my $self = shift;
-    my $msg = $self->is_downgrade(@_);
-    die $msg if $msg;
+    return $self->package_set_abs_ppd_uri(@pkg_missing);
 }
 
 sub is_downgrade {
@@ -1401,6 +1408,16 @@ is C<missing>.  If $str is C<all> then dependent packages are returned
 even if they are already installed.  If $str is C<missing> then only
 missing dependencies are returned.  If $str is C<none> then
 dependencies are ignored.
+
+=item error_handler => \&callback
+
+Call the given error handler instead of croaking in the case of
+trouble.  Error messages are provided as argument.  There can be more
+than one.
+
+Providing an error_handler allow the function to return missing
+packages for working dependencies even if not all dependencies worked
+out.
 
 =back
 
