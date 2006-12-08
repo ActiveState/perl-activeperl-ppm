@@ -15,4 +15,5 @@ ok(clean_err("foo _at bar"), "foo at bar");
 ok(join_with("and", "foo"), "foo");
 ok(join_with("and", "foo", "bar"), "foo and bar");
 ok(join_with("and", "foo", "bar", "baz"), "foo, bar and baz");
-ok(join_with("or", 1..10), "1, 2, 3, 4, 5, 6, 7, 8, 9 or 10");
+ok(join_with("or", 1..10), "1, 2, 3, 4, 5, 6, 7, 8, 9, or 10");
+ok(join_with("or", "foo bar", "bar foo", "foo"), "foo bar, bar foo, or foo");

@@ -24,7 +24,11 @@ sub clean_err {
 sub join_with {
     my $conjunc = shift;
     my $text = pop(@_);
-    $text = join(" $conjunc ", join(", ", @_), $text) if @_;
+    if (@_) {
+	my $serial_comma = (@_ > 1) ? "," : "";
+	$serial_comma = "" if @_ <= 5 && !grep /\s/, $text, @_;
+	$text = join("$serial_comma $conjunc ", join(", ", @_), $text);
+    }
     return $text;
 }
 
