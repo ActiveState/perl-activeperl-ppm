@@ -2,7 +2,7 @@
 
 use strict;
 use Test qw(plan ok);
-plan tests => 8;
+plan tests => 9;
 
 use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with);
 
