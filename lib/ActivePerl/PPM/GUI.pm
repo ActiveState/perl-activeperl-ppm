@@ -18,6 +18,7 @@ use ActivePerl::PPM::Util qw(is_cpan_package clean_err);
 use File::Basename qw(dirname);
 use Cwd qw(cwd abs_path);
 
+my @pending_status_message;
 my $ppm = $::ppm;
 $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 
@@ -283,6 +284,7 @@ for my $tw ($details, $status_box) {
 $pw_nb->add($status_sw, -text => "Status");
 $pw_nb->add($details_sw, -text => "Details");
 $pw_nb->select($status_sw);
+status_message(@$_) for @pending_status_message;
 
 $pw->add($pkglist, -weight => 3);
 $pw->add($pw_nb, -weight => 1);
@@ -1822,6 +1824,9 @@ sub status_message {
 	$status_box->configure(-state => "disabled");
 	$status_box->see("end");
 	Tkx::update('idletasks');
+    }
+    else {
+	push(@pending_status_message, [@_]);
     }
     if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 	print $_[0];
