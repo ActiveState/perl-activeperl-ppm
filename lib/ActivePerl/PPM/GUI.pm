@@ -625,7 +625,7 @@ sub restore_focus_grab {
 
 sub full_refresh {
     my $first_time = shift;
-    status_message("Synchronizing Database ... ", tag => "h2");
+    status_message("Synchronizing Database ... ", "h2");
     $mw->configure(-cursor => "watch");
     Tkx::update();
     set_focus_grab($status_box);
@@ -638,7 +638,7 @@ sub full_refresh {
     }
     area_sync();
     refresh();
-    status_message("DONE\n", tag => "h2");
+    status_message("DONE\n", "h2");
     $mw->configure(-cursor => "");
     restore_focus_grab($status_box);
     if ($first_time && $INSTALL_AREA eq "") {
@@ -761,10 +761,10 @@ sub verify {
 	    status_message("Package '$package' is not installed\n");
 	    return;
 	}
-	status_message("Verifying $package ...\n", tag => "h2");
+	status_message("Verifying $package ...\n", "h2");
     }
     else {
-	status_message("Verifying all packages ...\n", tag => "h2");
+	status_message("Verifying all packages ...\n", "h2");
     }
     my %status;
     for my $area (@areas) {
@@ -1307,26 +1307,22 @@ sub queue_action {
 
 	if (my $err = $ppm->is_downgrade($repo_pkg)) {
 	    ppm_log("WARN", $err);
-	    status_message("\nWARNING: $err\n\n", tag => "abstract");
+	    status_message("\nWARNING: $err\n\n", "abstract");
 	}
 
 	my @tmp = $ppm->packages_missing(
 	     have => \@pkgs,
 	     want_deps => [$repo_pkg],
              error_handler => sub {
-		 status_message("\nWARNING: $_\n\n", tag => "abstract")
+		 status_message("\nWARNING: $_\n\n", "abstract")
 		     for @_;
              },
         );
 	my @need;
 	for my $pkg (@tmp) {
-	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
-	        tag => "abstract",
-	    );
+	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n", "abstract");
 	    if ($pkg->has_script("install")) {
-		status_message("... but $pkg->{name} has an install script and must be installed from the command line\n",
-		    tag => "abstract",
-		);
+		status_message("... but $pkg->{name} has an install script and must be installed from the command line\n", "abstract");
 	    }
 	    else {
 		push(@need, $pkg);
@@ -1343,9 +1339,7 @@ sub queue_action {
 	if (@deps) {
 	    my @dep_names = map $_->{name}, @deps;
 	    my $s = @dep_names == 1 ? "s" : "";
-	    status_message("\nWARNING: " . join(", ", @dep_names) . " depend$s on $name to be available\n\n",
-		tag => "abstract",
-            );
+	    status_message("\nWARNING: " . join(", ", @dep_names) . " depend$s on $name to be available\n\n", "abstract");
 	}
     }
     update_actions();
@@ -1813,31 +1807,24 @@ sub status_error {
 	$err = clean_err($err);
     }
     if ($context) {
-	status_message("\nERROR $context:\n\t$err\n", tag => "abstract");
+	status_message("\nERROR $context:\n\t$err\n", "abstract");
     }
     else {
-	status_message("\nERROR: $err\n", tag => "abstract");
+	status_message("\nERROR: $err\n", "abstract");
     }
 }
 
 sub status_message {
-    my $msg = shift;
-    my %opts = @_;
-    my $tag = delete $opts{tag} || "";
-    my $ins = delete $opts{insert} || "end";
-    my $clr = delete $opts{clear} || 0;
-
     if (defined($pw_nb) && defined($status_box)) {
 	$pw_nb->select($status_sw);
 	$status_box->configure(-state => "normal");
-	$status_box->delete("1.0", "end") if $clr;
-	$status_box->insert($ins, $msg, $tag);
+	$status_box->insert("end", @_);
 	$status_box->configure(-state => "disabled");
-	$status_box->see($ins);
+	$status_box->see("end");
 	Tkx::update('idletasks');
     }
     if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
-	print $msg;
+	print $_[0];
     }
 }
 
