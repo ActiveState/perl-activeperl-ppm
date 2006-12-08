@@ -1307,33 +1307,32 @@ sub queue_action {
 
 	if (my $err = $ppm->is_downgrade($repo_pkg)) {
 	    ppm_log("WARN", $err);
-	    status_message("\nWARNING: $err\n", tag => "abstract");
+	    status_message("\nWARNING: $err\n\n", tag => "abstract");
 	}
 
-	eval {
-	    my @tmp = $ppm->packages_missing(
-                have => \@pkgs,
-		want_deps => [$repo_pkg],
-            );
-	    my @need;
-	    for my $pkg (@tmp) {
-		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+	my @tmp = $ppm->packages_missing(
+	     have => \@pkgs,
+	     want_deps => [$repo_pkg],
+             error_handler => sub {
+		 status_message("\nWARNING: $_\n\n", tag => "abstract")
+		     for @_;
+             },
+        );
+	my @need;
+	for my $pkg (@tmp) {
+	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
+	        tag => "abstract",
+	    );
+	    if ($pkg->has_script("install")) {
+		status_message("... but $pkg->{name} has an install script and must be installed from the command line\n",
 		    tag => "abstract",
-                );
-		if ($pkg->has_script("install")) {
-		    status_message("... but $pkg->{name} has an install script and must be installed from the command line\n",
-			tag => "abstract",
-		    );
-		}
-	        else {
-		    push(@need, $pkg);
-		}
+		);
 	    }
-	    $ACTION{$item}{'deps'} = \@need;
-	};
-	if ($@) {
-	    status_error();
+	    else {
+		push(@need, $pkg);
+	    }
 	}
+	$ACTION{$item}{'deps'} = \@need;
     }
     if ($ACTION{$item}{'remove'}) {
 	# Find out if removing this breaks dependencies
@@ -1341,8 +1340,10 @@ sub queue_action {
 	my @deps = $ppm->packages_depending_on($ACTION{$item}{'pkg'},
 					       $ACTION{$item}{'area'});
 	$ACTION{$item}{'deps'} = \@deps;
-	for my $pkg (@deps) {
-	    status_message("$pkg->{name} depends on $name\n",
+	if (@deps) {
+	    my @dep_names = map $_->{name}, @deps;
+	    my $s = @dep_names == 1 ? "s" : "";
+	    status_message("\nWARNING: " . join(", ", @dep_names) . " depend$s on $name to be available\n\n",
 		tag => "abstract",
             );
 	}
@@ -1385,12 +1386,8 @@ sub run_actions {
     if (@items) {
 	my $dep_cnt = 0;
 	for my $item (@items) {
-	    status_message("Prerequisite packages to be installed:\n");
 	    my $repo_pkg = $ACTION{$item}{'repo_pkg'};
 	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
-		status_message("$repo_pkg->{name} depends on $pkg->{name}\n",
-		    tag => "abstract",
-                );
 		$dep_cnt++;
 	    }
 	}
@@ -1401,12 +1398,8 @@ sub run_actions {
     if (@items) {
 	my $dep_cnt = 0;
 	for my $item (@items) {
-	    status_message("Packages that may become unusable:\n");
 	    my $name = $ACTION{$item}{'pkg'}->name;
 	    for my $pkg (@{$ACTION{$item}{'deps'}}) {
-		status_message("$pkg->{name} depends on $name\n",
-	            tag => "abstract",
-                );
 		$dep_cnt++;
 	    }
 	}
@@ -1447,15 +1440,16 @@ sub commit_actions {
 			   grep($ACTION{$_}{'install'}, keys %ACTION));
     if (@install_pkgs) {
 	eval {
-	    my @need = $ppm->packages_missing(have => \@install_pkgs,
-					      want_deps => \@install_pkgs);
+	    my @need = $ppm->packages_missing(
+	        have => \@install_pkgs,
+		want_deps => \@install_pkgs,
+		force => 1,  # dependency warnings already displayed
+            );
 	    push(@install_pkgs, grep !$_->has_script("install"), @need);
 	};
 	if ($@) {
 	    status_error();
 	}
-	status_message("Preparing install to $INSTALL_AREA area of:\n");
-	status_message("\t" . $_->{name} . "\n") for @install_pkgs;
 	eval {
 	    $ppm->install(
                 area => $INSTALL_AREA,
