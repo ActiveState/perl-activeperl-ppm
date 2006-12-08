@@ -27,7 +27,7 @@ sub join_with {
     if (@_) {
 	my $serial_comma = (@_ > 1) ? "," : "";
 	$serial_comma = "" if @_ <= 5 && !grep /\s/, $text, @_;
-	$text = join("$serial_comma $conjunc ", join(", ", @_), $text);
+	$text = join(", ", @_) . "$serial_comma $conjunc $text";
     }
     return $text;
 }
