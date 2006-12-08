@@ -1306,6 +1306,14 @@ sub queue_action {
 	    grep($ACTION{$_}{'install'}, keys %ACTION);
 	eval {
 	    $ppm->check_downgrade($repo_pkg);
+	};
+	if ($@) {
+	    my $err = $@;
+	    ppm_log("WARN", $err);
+	    $err = clean_err($err);
+	    status_message("\nWARNING: $err\n", tag => "abstract");
+	}
+	eval {
 	    my @tmp = $ppm->packages_missing(
                 have => \@pkgs,
 		want_deps => [$repo_pkg],
