@@ -3,7 +3,7 @@ package ActivePerl::PPM::Util;
 use strict;
 use base 'Exporter';
 
-our @EXPORT_OK = qw(is_cpan_package clean_err join_with_and join_with_or);
+our @EXPORT_OK = qw(is_cpan_package clean_err join_with);
 
 sub is_cpan_package {
     my $pkg_name = shift;
@@ -21,15 +21,7 @@ sub clean_err {
     return $err;
 }
 
-sub join_with_and {
-    _join_with("and", @_);
-}
-
-sub join_with_or {
-    _join_with("or", @_);
-}
-
-sub _join_with {
+sub join_with {
     my $conjunc = shift;
     my $text = pop(@_);
     $text = join(" $conjunc ", join(", ", @_), $text) if @_;
