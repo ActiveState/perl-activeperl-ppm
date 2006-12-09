@@ -11,7 +11,7 @@ BEGIN {
 use strict;
 use Tkx ();
 use ActiveState::Browser ();
-use ActivePerl::PPM::Logger qw(ppm_log);
+use ActivePerl::PPM::Logger qw(ppm_log ppm_status);
 use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with);
 
 # get our cwd for Tcl files
@@ -627,7 +627,7 @@ sub restore_focus_grab {
 
 sub full_refresh {
     my $first_time = shift;
-    status_message("Synchronizing Database ... ", "h2");
+    my $activity = ppm_status("begin", "Synchronizing Database");
     $mw->configure(-cursor => "watch");
     Tkx::update();
     set_focus_grab($status_box);
@@ -640,7 +640,8 @@ sub full_refresh {
     }
     area_sync();
     refresh();
-    status_message("DONE\n", "h2");
+    $activity->end;
+
     $mw->configure(-cursor => "");
     restore_focus_grab($status_box);
     if ($first_time && $INSTALL_AREA eq "") {
@@ -1418,15 +1419,14 @@ sub commit_actions {
 	    my $name = $pkglist->data($item, "name");
 	    my $area = $ACTION{$item}{'area'};
 	    my $area_name = $area->name;
-	    my $txt = "Removing $name from $area_name area ... ";
-	    status_message($txt);
+	    my $activity = ppm_status("begin", "Removing $name from $area_name area");
 	    eval { $area->uninstall($name); };
 	    if ($@) {
+		{ local $@; $activity->end("failed"); }
 		status_error();
 		return;
 	    }
 	    else {
-		status_message("DONE\n");
 		$removed++;
 	    }
 	}
@@ -1446,6 +1446,7 @@ sub commit_actions {
 	if ($@) {
 	    status_error();
 	}
+	my $activity = ppm_status("begin", "Installing @{[scalar(@install_pkgs)]} packages");
 	eval {
 	    $ppm->install(
                 area => $INSTALL_AREA,
@@ -1453,11 +1454,9 @@ sub commit_actions {
             );
 	};
 	if ($@) {
+	    { local $@; $activity->end("failed"); }
 	    status_error();
 	    return;
-	}
-	else {
-	    status_message("DONE\n");
 	}
     }
     elsif ($removed && eval { require ActivePerl::DocTools; }) {
@@ -1844,8 +1843,10 @@ BEGIN {
     sub begin {
 	my $self = shift;
 	my $what = shift;
+	my $depth = $self->depth;
 	ActivePerl::PPM::GUI::status_message("\n") if $prefixed;
-	ActivePerl::PPM::GUI::status_message("$what ... ");
+	my $indent = "  " x $depth;
+	ActivePerl::PPM::GUI::status_message("$indent$what ... ", ($depth == 0 ? "h2" : ""));
 	$prefixed = 1;
 	$self->SUPER::begin($what, @_);
     }
@@ -1860,10 +1861,14 @@ BEGIN {
 
     sub end {
 	my $self = shift;
-	my $outcome = shift || "DONE";
+	my $outcome = shift || "done";
 	my $what = $self->SUPER::end;
-	$outcome = "$what $outcome" unless $prefixed;
-	ActivePerl::PPM::GUI::status_message("$outcome\n");
+	my $depth = $self->depth;
+	unless ($prefixed) {
+	    my $indent = "  " x $depth;
+	    $outcome = "$indent$what $outcome" unless $prefixed;
+	}
+	ActivePerl::PPM::GUI::status_message("$outcome\n", ($depth == 0 ? "h2" : ""));
 	$prefixed = 0;
     }
 }
