@@ -1071,9 +1071,9 @@ sub install {
 	}
 
 	# install
-	my $to = $area->name;
-	$to = " to $to area" if $to;
-	$status->begin("Installing$to");
+	my $in_area = $area->name;
+	$in_area = " in $in_area area" if $in_area;
+	$status->begin("Updating files$in_area");
 	$install_summary = $area->install(@pkgs);
 	if ($install_summary) {
 	    $status->end;
