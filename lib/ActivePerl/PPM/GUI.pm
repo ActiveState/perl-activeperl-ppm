@@ -508,9 +508,18 @@ $statusbar->add($lbl);
 Tkx::tooltip($lbl, "Number of packages selected for removal");
 
 $lbl = $statusbar->new_ttk__label(-text => "Install Area:", -anchor => 'e', @smallfont);
-$statusbar->add($lbl, -separator => 1, -weight => 1);
+$statusbar->add($lbl, -separator => 1);
 $lbl = $statusbar->new_ttk__label(-textvariable => \$INSTALL_AREA, @smallfontbold);
 $statusbar->add($lbl);
+
+my $progress = -1;
+my $progressbar = $statusbar->new_ttk__progressbar(
+    -mode => "determinate",
+    -variable => \$progress,
+    -length => 50,
+);
+$statusbar->add($progressbar, -separator => 1, -weight => 1);
+
 
 # Run preferences loading handler after UI has been instantiated
 on_load();
@@ -1853,7 +1862,14 @@ BEGIN {
     }
 
     sub tick {
-	# XXX update some progressbar
+	my $self = shift;
+	# update some progressbar
+        if (@_) {
+	    my $p = shift;
+	    $p = 1 if $p > 1;
+	    $progress = $p * 100;
+        }
+
 	Tkx::update('idletasks');
 	if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
 	    print "#";
@@ -1871,5 +1887,6 @@ BEGIN {
 	}
 	ActivePerl::PPM::GUI::status_message("$outcome\n", ($depth == 0 ? "h2" : ""));
 	$prefixed = 0;
+	$progress = -1;
     }
 }
