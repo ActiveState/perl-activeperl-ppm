@@ -1446,7 +1446,8 @@ sub commit_actions {
 	if ($@) {
 	    status_error();
 	}
-	my $activity = ppm_status("begin", "Installing @{[scalar(@install_pkgs)]} packages");
+	my $what = @install_pkgs > 1 ? (@install_pkgs . " packages") : "package";
+	my $activity = ppm_status("begin", "Installing $what");
 	eval {
 	    $ppm->install(
                 area => $INSTALL_AREA,
