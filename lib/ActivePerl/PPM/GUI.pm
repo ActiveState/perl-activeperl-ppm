@@ -516,9 +516,10 @@ my $progress = -1;
 my $progressbar = $statusbar->new_ttk__progressbar(
     -mode => "determinate",
     -variable => \$progress,
-    -length => 50,
+    -length => 80,
 );
-$statusbar->add($progressbar, -separator => 1, -weight => 1);
+$statusbar->add($statusbar->new_frame, -separator => 1, -weight => 10);
+$statusbar->add($progressbar, -weight => 1);
 
 
 # Run preferences loading handler after UI has been instantiated
