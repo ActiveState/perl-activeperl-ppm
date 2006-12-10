@@ -518,7 +518,7 @@ my $progressbar = $statusbar->new_ttk__progressbar(
     -variable => \$progress,
     -length => 80,
 );
-$statusbar->add($statusbar->new_frame, -separator => 1, -weight => 10);
+$statusbar->add($statusbar->new_ttk__frame, -separator => 1, -weight => 10);
 $statusbar->add($progressbar, -weight => 1);
 
 
