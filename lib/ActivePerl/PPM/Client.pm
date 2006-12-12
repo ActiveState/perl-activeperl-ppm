@@ -272,6 +272,22 @@ sub config_get {
     return wantarray ? @res : $res[0];
 }
 
+sub config_list {
+    my $self = shift;
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare(
+        "SELECT key, value FROM config" .
+	(@_ ? " WHERE key GLOB ?" : "") .
+        " ORDER BY key",
+    );
+    $sth->execute(@_);
+    my @kv;
+    while (my($k, $v) = $sth->fetchrow_array) {
+	push(@kv, $k, $v);
+    }
+    return @kv;
+}
+
 sub config_save {
     my $self = shift;
     my $dbh = $self->dbh;
@@ -1159,6 +1175,13 @@ Might return C<undef> if there is no appropriate default.
 =item ($value1, $value2, ...) = $client->config_get( $key1, $key2, ...)
 
 Read back one or more configuration values previosly saved.
+
+=item ($key, $value, ...) = $client->config_list
+
+=item ($key, $value, ...) = $client->config_list( $glob_pattern )
+
+Return all key/value pairs where $key match the given $glob_pattern.
+If $glob_pattern is missing return all key/value pairs.
 
 =item $client->config_save( $key => $value )
 

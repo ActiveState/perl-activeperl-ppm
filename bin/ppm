@@ -227,13 +227,29 @@ sub do_help {
 
 sub do_config {
     $USAGE = "config <name> [<val>]";
-    usage() unless @ARGV && $ARGV[0] =~ /^\w+(\.\w+)*$/;
+    usage() unless @ARGV;
     if (@ARGV == 1) {
-	my $v = $ppm->config_get($ARGV[0]);
+	my $key = shift(@ARGV);
+	$key = '*' if $key eq "list";
+	if ($key =~ /[*?]/) {
+	    my @kv = $ppm->config_list($key);
+	    unless (@kv) {
+		print "*** no configuration options matching '$key' found ***\n";
+		return;
+	    }
+	    while (@kv) {
+		my($k, $v) = splice(@kv, 0, 2);
+		$v = "<undef>" unless defined $v;
+		printf "$k = $v\n";
+	    }
+	    return;
+	}
+	my $v = $ppm->config_get($key);
 	$v = "<undef>" unless defined $v;
 	print "$v\n";
     }
     elsif (@ARGV == 2) {
+	usage() unless $ARGV[0] =~ /^\w+(\.\w+)*$/;
 	$ppm->config_save(@ARGV);
     }
     else {
@@ -1224,6 +1240,10 @@ are synced.
 =item B<ppm config> I<name> [ I<value> ]
 
 Get or set various PPM configuration values.
+
+=item B<ppm config list>
+
+List all configuration options currently set.
 
 =item B<ppm describe> I<num>
 
