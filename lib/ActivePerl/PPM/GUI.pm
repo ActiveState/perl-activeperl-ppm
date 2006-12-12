@@ -932,6 +932,42 @@ sub menus {
 	-accelerator => "${plat_acc_ctrl}4",
 	-command => [\&filter],
     );
+
+    $sm->add_separator();
+    $ssm = $sm->new_menu(-name => "text");
+    $sm->add_cascade(-label => "Text Size", -menu => $ssm, -underline => 7);
+    # These commands rely on the internal bindings by style::as MouseWheel
+    $ssm->add_command(
+	-label => "Increase",
+	-underline => 0,
+	# Conflicts with pkglist mark for install
+	#-accelerator => "${plat_acc_ctrl}+",
+	-command => sub {
+	    my $X = Tkx::winfo_rootx($pkglist);
+	    my $Y = Tkx::winfo_rooty($pkglist);
+	    Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, 120, "");
+	},
+    );
+    $ssm->add_command(
+	-label => "Decrease",
+	-underline => 0,
+	# Conflicts with pkglist mark for remove
+	#-accelerator => "${plat_acc_ctrl}-",
+	-command => sub {
+	    my $X = Tkx::winfo_rootx($pkglist);
+	    my $Y = Tkx::winfo_rooty($pkglist);
+	    Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, -120, "");
+	},
+    );
+    if (0) {
+	# style::as currently has no sense of "Normal", just relative
+	$ssm->add_separator();
+	$ssm->add_command(
+	    -label => "Normal",
+	    -underline => 0,
+	);
+    }
+
     $sm->add_separator();
     $ssm = $fields_menu = $sm->new_menu(-name => "cols");
     $sm->add_cascade(-label => "View Columns", -menu => $ssm, -underline => 5);
@@ -1036,6 +1072,14 @@ sub menus {
         -value => '-decreasing',
         @sort_opts,
     );
+
+    if ($ENV{'ACTIVEPERL_PPM_DEBUG'}) {
+	$sm->add_separator();
+	$sm->add_command(
+	    -label => "Debug Console",
+	    -command => sub { Tkx::catch("tkcon show"); },
+	);
+    }
 
     # Action menu
     $action_menu = $sm = $menu->new_menu(-name => "action");
