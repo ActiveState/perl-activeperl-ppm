@@ -891,6 +891,7 @@ sub do_tree {
 
 sub _tree {
     my($pkg, $reason, $depth) = @_;
+    $depth ||= 0;
     print "  " x $depth, "package ", $pkg->name_version;
     print " provide $reason" if $reason && $reason ne $pkg->{name};
     print "\n";
