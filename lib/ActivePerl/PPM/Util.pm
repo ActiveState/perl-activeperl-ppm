@@ -3,7 +3,7 @@ package ActivePerl::PPM::Util;
 use strict;
 use base 'Exporter';
 
-our @EXPORT_OK = qw(is_cpan_package clean_err join_with);
+our @EXPORT_OK = qw(is_cpan_package clean_err join_with update_html_toc);
 
 sub is_cpan_package {
     my $pkg_name = shift;
@@ -30,6 +30,16 @@ sub join_with {
 	$text = join(", ", @_) . "$serial_comma $conjunc $text";
     }
     return $text;
+}
+
+sub update_html_toc {
+    if (eval { require ActivePerl::DocTools; }) {
+	eval { ActivePerl::DocTools::WriteTOC() };
+	if ($@) {
+	    require PPM::Logger;
+	    PPM::Logger::ppm_log("ERR", $@);
+	}
+    }
 }
 
 1;

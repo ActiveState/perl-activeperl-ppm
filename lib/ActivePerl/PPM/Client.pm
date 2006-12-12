@@ -10,7 +10,7 @@ use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua);
-use ActivePerl::PPM::Util qw(join_with);
+use ActivePerl::PPM::Util qw(join_with update_html_toc);
 
 use ActiveState::Path qw(is_abs_path join_path);
 use File::Basename;
@@ -1090,9 +1090,7 @@ sub install {
 	    $pkg->run_script("install", $area, "$tmpdir/$pname", $install_summary->{pkg}{$pkg->{name}});
 	}
 
-	if (eval { require ActivePerl::DocTools; }) {
-	    ActivePerl::DocTools::WriteTOC();
-	}
+	update_html_toc();
     };
     my $err = $@;
     require File::Path;

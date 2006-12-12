@@ -6,7 +6,7 @@ use ActivePerl::PPM::limited_inc;
 use ActivePerl::PPM::Client;
 use ActivePerl::PPM::Web qw(web_ua);
 use ActivePerl::PPM::Logger qw(ppm_log);
-use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with update_html_toc);
 
 Win32::SetChildShowWindow(0) if defined &Win32::SetChildShowWindow;
 
@@ -1098,9 +1098,7 @@ sub do_remove {
 	}
     }
     if ($removed_count) {
-	if (eval { require ActivePerl::DocTools; }) {
-	    ActivePerl::DocTools::WriteTOC();
-	}
+	update_html_toc();
     }
     else {
 	die "No packages uninstalled";

@@ -12,7 +12,7 @@ use strict;
 use Tkx ();
 use ActiveState::Browser ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_status);
-use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with);
+use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with update_html_toc);
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
@@ -1514,8 +1514,8 @@ sub commit_actions {
 	    return;
 	}
     }
-    elsif ($removed && eval { require ActivePerl::DocTools; }) {
-	ActivePerl::DocTools::WriteTOC();
+    elsif ($removed) {
+	update_html_toc();
     }
 
     # Don't remain in "upgradable" or "modified" filter state
