@@ -872,6 +872,61 @@ sub do_describe {
     return;
 }
 
+sub do_tree {
+    $USAGE = "tree [<num> | <package>]";
+    usage unless @ARGV == 1;
+    my $pkg = shift(@ARGV);
+    if ($pkg =~ /^\d+$/) {
+	my $tmp = $ppm->search_lookup($pkg) ||
+	    die "*** no package #$pkg, do a '$PROGNAME search' first ***\n";
+	$pkg = $tmp;
+    }
+    else {
+	my $tmp = $ppm->package_best($pkg, 0) ||
+	    die "*** no package called $pkg ***\n";
+	$pkg = $tmp;
+    }
+    _tree($pkg);
+}
+
+sub _tree {
+    my($pkg, $reason, $depth) = @_;
+    print "  " x $depth, "package ", $pkg->name_version;
+    print " provide $reason" if $reason && $reason ne $pkg->{name};
+    print "\n";
+    my $require = $pkg->{require};
+    if ($require && %$require) {
+	for my $feature (sort keys %$require) {
+	    print "  " x $depth, "  needs $feature";
+	    my $vers = $require->{$feature};
+	    if ($vers) {
+		print " v$vers or better";
+	    }
+
+	    my @facts;
+	    my $found;
+	    for my $area_name ($ppm->areas) {
+		my $area = $ppm->area($area_name);
+		if (my $have = $area->feature_have($feature)) {
+		    $have = 0 if $have eq "0E0";
+		    push(@facts, ($have || $vers ? "v$have " : "") . "installed in $area_name area");
+		    $found++ if $have >= $vers;
+		}
+	    }
+	    push(@facts, "not installed") unless $found;
+
+	    my $subpkg = $ppm->package_best($feature, $vers);
+	    push(@facts, "not provided by any repo") unless $subpkg;
+	    print " (", join_with("and", @facts), ")" if @facts;
+	    print "\n";
+	    _tree($subpkg, $feature, $depth + 1) if $subpkg;
+	}
+    }
+    else {
+	print "  " x $depth , "  (no dependencies)\n";
+    }
+}
+
 sub do_install {
     $USAGE = "install [--force] [--nodeps] [--area <area>] <module> | <url> | <file> | <num>";
     my $force;
@@ -1174,6 +1229,8 @@ Manage and search repositories:
     ppm repo suggest
     ppm search <pattern>
     ppm describe <num>
+    ppm tree <package>
+    ppm tree <num>
 
 Obtain version and copyright information about this program:
 
@@ -1478,8 +1535,17 @@ match, limited information is displayed.  If many packages match, only
 the package names and version numbers are displayed, one per line.
 
 The number prefixing each entry in search output can be used to look
-up full information with B<ppm describe> I<num> or to install the
-package with B<ppm install> I<num>.
+up full information with B<ppm describe> I<num>, dependencies with
+B<ppm tree> I<num> or to install the package with B<ppm install>
+I<num>.
+
+=item B<ppm tree> I<package>
+
+=item B<ppm tree> I<num>
+
+Shows all the dependencies (recusively) for a particular package.  The
+package can be identified by a package name or the associated number
+for the package returned by the last C<ppm search> command.
 
 =item B<ppm uninstall> ...
 
