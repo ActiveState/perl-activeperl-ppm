@@ -36,8 +36,8 @@ sub update_html_toc {
     if (eval { require ActivePerl::DocTools; }) {
 	eval { ActivePerl::DocTools::WriteTOC() };
 	if ($@) {
-	    require PPM::Logger;
-	    PPM::Logger::ppm_log("ERR", $@);
+	    require ActivePerl::PPM::Logger;
+	    ActivePerl::PPM::Logger::ppm_log("ERR", $@);
 	}
     }
 }
