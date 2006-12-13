@@ -516,6 +516,7 @@ my $progress = -1;
 my $progressbar = $statusbar->new_ttk__progressbar(
     -mode => "determinate",
     -variable => \$progress,
+    -max => 1,
     -length => 80,
 );
 $statusbar->add($statusbar->new_ttk__frame, -separator => 1, -weight => 10);
@@ -1907,11 +1908,9 @@ BEGIN {
 
     sub tick {
 	my $self = shift;
-	# update some progressbar
         if (@_) {
-	    my $p = shift;
-	    $p = 1 if $p > 1;
-	    $progress = $p * 100;
+	    # update the progressbar
+	    $progress = shift;
 	    if (defined($progressbar) && !Tkx::winfo_ismapped($progressbar)) {
 		# This works as progressbar should be last element
 		$statusbar->add($progressbar, -weight => 1);
