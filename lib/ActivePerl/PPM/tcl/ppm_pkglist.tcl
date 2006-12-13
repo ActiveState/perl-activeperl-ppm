@@ -142,15 +142,14 @@ snit::widgetadaptor pkglist {
 
 	# determine appropriate state (adjusts icon)
 	set state ""
-	set available [$tree item text $item available]
+	set repo_pkg_id [$tree item text $item repo_pkg_id]
 	# installed means having an area, not necessarily an installed version
-	set installed [$tree item text $item installed]
 	set area      [$tree item text $item area]
 	lappend state [expr {$area eq "" ? "!installed" : "installed"}]
-	lappend state [expr {$available eq "" ? "!available" : "available"}]
-	lappend state [expr {(($installed eq "")
-			      || ($available eq "")
-			      || $installed eq $available) ?
+	lappend state [expr {$repo_pkg_id eq "" ? "!available" : "available"}]
+	lappend state [expr {(($area eq "")
+			      || ($repo_pkg_id eq "")
+			      || ![pkg_upgradable $name $area $repo_pkg_id]) ?
 			     "!upgradable" : "upgradable"}]
 	$self state $item $state
 

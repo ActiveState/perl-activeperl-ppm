@@ -528,6 +528,19 @@ on_load();
 # map all view items, but only call one of the sort* view items
 map view($_), grep($_ ne "sortorder", keys %VIEW);
 
+Tkx::interp_alias("", "pkg_upgradable", "", [sub {
+    my($name, $area, $repo_pkg_id) = @_;
+    my $ret = eval {
+	my $installed = $ppm->area($area)->package($name);
+	my $available = $ppm->package($repo_pkg_id);
+	$available->better_than($installed);
+    };
+    if ($@) {
+	ppm_log("WARN", $@);
+    }
+    return $ret || 0;  # Tcl need a real zero
+}]);
+
 # Now let's get started ...
 Tkx::update('idletasks');
 
