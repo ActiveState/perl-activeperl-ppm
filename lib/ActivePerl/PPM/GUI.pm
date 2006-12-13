@@ -519,8 +519,7 @@ my $progressbar = $statusbar->new_ttk__progressbar(
     -length => 80,
 );
 $statusbar->add($statusbar->new_ttk__frame, -separator => 1, -weight => 10);
-$statusbar->add($progressbar, -weight => 1);
-Tkx::grid(remove => $progressbar);
+#$statusbar->add($progressbar, -weight => 1);
 
 # Run preferences loading handler after UI has been instantiated
 on_load();
@@ -1913,8 +1912,9 @@ BEGIN {
 	    my $p = shift;
 	    $p = 1 if $p > 1;
 	    $progress = $p * 100;
-	    if (defined($progressbar) && Tkx::winfo_exists($progressbar)) {
-		Tkx::grid($progressbar);
+	    if (defined($progressbar) && !Tkx::winfo_ismapped($progressbar)) {
+		# This works as progressbar should be last element
+		$statusbar->add($progressbar, -weight => 1);
 	    }
         }
 
@@ -1936,8 +1936,8 @@ BEGIN {
 	ActivePerl::PPM::GUI::status_message("$outcome\n", ($depth == 0 ? "h2" : ""));
 	$prefixed = 0;
 	$progress = -1;
-	if (defined($progressbar) && Tkx::winfo_exists($progressbar)) {
-	    Tkx::grid(remove => $progressbar);
+	if (defined($progressbar) && Tkx::winfo_ismapped($progressbar)) {
+	    $statusbar->remove($progressbar);
 	}
     }
 }
