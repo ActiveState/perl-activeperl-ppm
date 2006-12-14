@@ -85,7 +85,7 @@ sub progress {
                304 => "not modified",
                403 => "forbidden",
                404 => "not found",
-	    }->{$code} || "status $code");
+	    }->{$code} || "failed $code " . $response->message);
 	}
     }
     ppm_status($status, @arg);
