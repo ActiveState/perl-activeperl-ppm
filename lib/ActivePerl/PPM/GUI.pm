@@ -22,6 +22,8 @@ my @pending_status_message;
 my $ppm = $::ppm;
 $ActiveState::Browser::HTML_DIR = $ppm->area("perl")->html;
 
+status_message("$::bad_proxy\n\n", "abstract") if $::bad_proxy;
+
 # these will be filled in the sync()
 my %REPOS;
 my $INSTALL_AREA;

@@ -59,6 +59,19 @@ unless (defined &$do_cmd) {
 # This must be initialized before PPM::GUI is used
 our $ppm = ActivePerl::PPM::Client->new;
 
+our $bad_proxy;
+if (my $proxy = $ENV{http_proxy}) {
+    require URI;
+    $proxy = URI->new($proxy);
+    my $scheme = $proxy->scheme;
+    unless ($scheme && $scheme =~ /^http/ && $proxy->host) {
+	$bad_proxy = qq(Unrecognized proxy setting "$ENV{http_proxy}" ignored.\nThe http_proxy environment variable should be of the form "http://proxy.example.com".);
+	print STDERR "$bad_proxy\n";
+	ppm_log("WARN", $bad_proxy);
+	delete $ENV{http_proxy};
+    }
+}
+
 eval {
     no strict 'refs';
     ppm_log("INFO", "$PROGNAME $CMD" . (@ARGV ? " @ARGV" : ""));
