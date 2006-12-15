@@ -61,10 +61,14 @@ our $ppm = ActivePerl::PPM::Client->new;
 
 our $bad_proxy;
 if (my $proxy = $ENV{http_proxy}) {
+    if ($proxy =~ m,^[^?:/@]+(:\d+)?$,) {
+	# forgiving; allow http_proxy="<host>:<port>"
+	$proxy = $ENV{http_proxy} = "http://$proxy";
+    }
     require URI;
     $proxy = URI->new($proxy);
     my $scheme = $proxy->scheme;
-    unless ($scheme && $scheme =~ /^http/ && $proxy->host) {
+    unless ($scheme && $scheme =~ /^https?$/ && $proxy->host) {
 	$bad_proxy = qq(Unrecognized proxy setting "$ENV{http_proxy}" ignored.\nThe http_proxy environment variable should be of the form "http://proxy.example.com".);
 	print STDERR "$bad_proxy\n";
 	ppm_log("WARN", $bad_proxy);
