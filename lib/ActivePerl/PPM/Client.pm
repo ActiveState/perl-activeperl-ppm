@@ -933,6 +933,26 @@ sub package_set_abs_ppd_uri {
     return @pkgs;
 }
 
+sub _topo_sort {
+    my %pkgs = map { $_->{name} => $_ } @_;
+    my @res;
+    _topo_visit($_, \%pkgs, \@res) for reverse @_;
+    delete $_->{_topo_visited} for @_;
+    return reverse @res;
+}
+
+sub _topo_visit {
+    my($p, $pkgs, $res) = @_;
+    return unless $p;
+    return if $p->{_topo_visited}++;
+    if (my $needed_by = $p->{_needed_by}) {
+	for my $dep (@$needed_by) {
+	    _topo_visit($pkgs->{$dep}, $pkgs, $res);
+	}
+    }
+    push(@$res, $p);
+}
+
 sub install {
     my($self, %args) = @_;
     my $area = delete $args{area} || $self->default_install_area || die "No area";
@@ -1101,7 +1121,7 @@ sub install {
 	}
 
 	# run install scripts
-	for my $pkg (@pkgs) {
+	for my $pkg (_topo_sort(@pkgs)) {
 	    my $pname = $pkg->name_version;
 	    $pkg->run_script("install", $area, "$tmpdir/$pname", $install_summary->{pkg}{$pkg->{name}});
 	}
