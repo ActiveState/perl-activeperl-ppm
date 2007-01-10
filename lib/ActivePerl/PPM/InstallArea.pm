@@ -326,6 +326,7 @@ sub install {
 		delete $pkg->{id};  # might be left over from the RepoPackage
 	    }
 	    $state{pkg_id} = $pkg_id = $pkg->dbi_store($dbh);
+	    $state{pkg_name} = $pkg->{name};
 	    $state{packlist} = ExtUtils::Packlist->new;
 
 	    ppm_log("NOTICE", "Installing $pkg->{name} with id $pkg_id");
@@ -534,7 +535,19 @@ sub _save_file_info {
 	my $err = $@;
 	my $name = $state->{dbh}->selectrow_array("SELECT name FROM package, file WHERE package.id = package_id AND file.path = ?", undef, $rpath);
 	die $err unless $name;
-	die "File conflict; package $name already provide $path";
+	if ($ENV{ACTIVEPERL_PPM_STEAL_FILES}) {
+	    $state->{dbh}->do("INSERT OR REPLACE INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $rpath, $info->{md5}, $info->{mode});
+	    ppm_log("WARN", "File conflict for '$path'; file owned by package $name overwritten by package $state->{pkg_name}");
+	}
+	else {
+	    die "File conflict for '$path'.
+    The package $name have installed a file that package $state->{pkg_name} wants
+    to install.
+
+    Either uninstall $name first or set the ACTIVEPERL_PPM_STEAL_FILES
+    environment variable to allow the installation of $state->{pkg_name} to
+    overwrite the files owned by $name."
+	}
     }
 }
 
