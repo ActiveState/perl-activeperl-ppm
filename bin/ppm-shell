@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
+BEGIN { $ENV{PERL_RL} = "stub" if $^O eq "MSWin32" }
 use Term::ReadLine ();
 use Text::ParseWords qw(shellwords);
 
