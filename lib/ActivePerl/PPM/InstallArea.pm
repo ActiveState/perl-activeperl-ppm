@@ -541,12 +541,10 @@ sub _save_file_info {
 	}
 	else {
 	    die "File conflict for '$path'.
-    The package $name have installed a file that package $state->{pkg_name} wants
-    to install.
-
-    Either uninstall $name first or set the ACTIVEPERL_PPM_STEAL_FILES
-    environment variable to allow the installation of $state->{pkg_name} to
-    overwrite the files owned by $name."
+    The package $name has already installed a file that package $state->{pkg_name}
+    wants to install.  Uninstall $name, or set the ACTIVEPERL_PPM_STEAL_FILES
+    environment variable to allow the $state->{pkg_name} to overwrite the files owned
+    by $name."
 	}
     }
 }

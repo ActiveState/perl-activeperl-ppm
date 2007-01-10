@@ -1677,11 +1677,10 @@ well.
 
 =item C<ACTIVEPERL_PPM_STEAL_FILES>
 
-If set to a TRUE value resolve file conflicts during install or
-upgrades by allowing the files already installed by other packages to
-be overwritten and ownership transfered to the newly installed
-package.  Don't be surprised if this breaks the package that owned the
-file in the first place.
+If set to a TRUE value, PPM resolves file conflicts during package
+installation or upgrade by allowing files already installed by other
+packages to be overwritten and ownership transferred to the new
+package.  This may break the package that originally owned the file.
 
 =item C<DBI_TRACE>
 
