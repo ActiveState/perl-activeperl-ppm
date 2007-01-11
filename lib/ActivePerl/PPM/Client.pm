@@ -1110,7 +1110,7 @@ sub install {
 	my $in_area = $area->name;
 	$in_area = " in $in_area area" if $in_area;
 	$status->begin("Updating files$in_area");
-	$install_summary = $area->install(@pkgs);
+	$install_summary = $area->install(packages => \@pkgs, force => $args{force});
 	if ($install_summary) {
 	    $status->end;
 	}

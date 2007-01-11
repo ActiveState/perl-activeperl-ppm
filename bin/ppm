@@ -967,28 +967,34 @@ sub do_install {
     eval {
 	if ($feature =~ m,^[a-z][+\w]+:[^:],) {
 	    # looks like an absolute URL
-	    _install_uri($area, $feature, @args);
+	    _install_uri($area, $force, $feature, @args);
 	}
 	elsif ($feature =~ /\.ppd$/) {
 	    require URI::file;
-	    _install_uri($area, URI::file->new_abs($feature), @args);
+	    _install_uri($area, $force, URI::file->new_abs($feature), @args);
 	}
 	elsif ($feature =~ /^\d+$/) {
 	    my $pkg = $ppm->search_lookup($feature) ||
 		die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	    my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
-	    _install($area, $pkg, @deps);
+	    _install($area, $force, $pkg, @deps);
 	}
 	else {
 	    # seach for feature in repos
             $ppm->repo_sync if $sync;
 	    $feature = $ppm->feature_fixup_case($feature);
-	    _install($area, $ppm->packages_missing(want => [$feature], @args));
+	    _install($area, $force, $ppm->packages_missing(want => [$feature], @args));
 	}
     };
     if ($@) {
-	$@ =~ s/( at )/; use --force to install regardless$1/
-	    if $@ =~ /\bwould downgrade\b/;
+	if ($@ =~ /\bwould downgrade\b/) {
+	    $@ =~ s/( at )/; use --force to install regardless$1/;
+	}
+
+	if ($@ =~ /File conflict/ && $@ =~ /The package (\S+) has already/) {
+	    my $pkg = $1;
+	    $@ =~ s/( at )/ Uninstall $pkg, or use --force to allow files\n    to be overwritten.$1/;
+	}
 	die;
     }
 }
@@ -1008,7 +1014,7 @@ sub do_upgrade {
     if (@ARGV && $ARGV[0] =~ /::/) {
 	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install(undef, $ppm->packages_missing(want => [[$mod, undef]]));
+	return _install(undef, 0, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
@@ -1037,7 +1043,7 @@ sub do_upgrade {
 				    die "No writable install area for the upgrade";
 				}
 			    }
-			    _install($install_area, $best);
+			    _install($install_area, 0, $best);
 			}
 		    }
 		}
@@ -1054,9 +1060,7 @@ sub do_upgrade {
 }
 
 sub _install_uri {
-    my $area = shift;
-    my $uri = shift;
-    my @args = @_;
+    my($area, $force, $uri, @args) = @_;
 
     my $res = web_ua->get($uri);
     unless ($res->is_success) {
@@ -1085,11 +1089,12 @@ sub _install_uri {
     # first repo to look for additional packages.  This only works for
     # package features.
 
-    _install($area, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
+    _install($area, $force, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
 }
 
 sub _install {
     my $area = shift;
+    my $force = shift;
     unless (@_) {
 	print "No missing packages to install\n";
 	return;
@@ -1112,7 +1117,7 @@ Run 'ppm help area' to learn how to set up private areas.";
 
     $| = 1;
 
-    my $summary = $ppm->install(packages => \@_, area => $area);
+    my $summary = $ppm->install(packages => \@_, area => $area, force => $force);
     if (my $count = $summary->{count}) {
 	for my $what (sort keys %$count) {
 	    my $n = $count->{$what} || 0;
@@ -1353,7 +1358,11 @@ search> command.
 
 If the package or module requested is already installed, PPM installs
 nothing.  The B<--force> option can be used to make PPM install a
-package even if it's already present.
+package even if it's already present.  With B<--force> PPM resolves
+file conflicts during package installation or upgrade by allowing
+files already installed by other packages to be overwritten and
+ownership transferred to the new package.  This may break the package
+that originally owned the file.
 
 By default, new packages are installed in the C<site> area, but if the
 C<site> area is read only, and there are user-defined areas set up, the
@@ -1674,13 +1683,6 @@ F<$HOME/.ActivePerl/$VERSION/> on Unix systems.
 
 If set to a TRUE value, make PPM print any log output to the console as
 well.
-
-=item C<ACTIVEPERL_PPM_STEAL_FILES>
-
-If set to a TRUE value, PPM resolves file conflicts during package
-installation or upgrade by allowing files already installed by other
-packages to be overwritten and ownership transferred to the new
-package.  This may break the package that originally owned the file.
 
 =item C<DBI_TRACE>
 

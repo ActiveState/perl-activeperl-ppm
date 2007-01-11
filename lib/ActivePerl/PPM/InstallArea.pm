@@ -296,6 +296,7 @@ sub install {
         dbh => $dbh,
 	self => $self,
         pkg_id => undef,
+        force => $args{force},
         commit => [],
         rollback => [],
 	old_files => {},
@@ -538,16 +539,14 @@ sub _save_file_info {
 	my $err = $@;
 	my $name = $state->{dbh}->selectrow_array("SELECT name FROM package, file WHERE package.id = package_id AND file.path = ?", undef, $rpath);
 	die $err unless $name;
-	if ($ENV{ACTIVEPERL_PPM_STEAL_FILES}) {
+	if ($state->{force}) {
 	    $state->{dbh}->do("INSERT OR REPLACE INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $state->{pkg_id}, $rpath, $info->{md5}, $info->{mode});
 	    ppm_log("WARN", "File conflict for '$path'; file owned by package $name overwritten by package $state->{pkg_name}");
 	}
 	else {
 	    die "File conflict for '$path'.
     The package $name has already installed a file that package $state->{pkg_name}
-    wants to install.  Uninstall $name, or set the ACTIVEPERL_PPM_STEAL_FILES
-    environment variable to allow the $state->{pkg_name} to overwrite the files owned
-    by $name."
+    wants to install."
 	}
     }
 }
