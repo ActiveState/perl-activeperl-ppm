@@ -266,7 +266,10 @@ sub feature_have {
 }
 
 sub install {
-    my($self, @packages) = @_;
+    my $self = shift;
+    @_ = (packages => [@_]) if @_ && ref($_[0]);  # legacy
+    my %args = @_;
+    my @packages = @{delete $args{packages} || []};
 
     # check packages and default file based on blib
     croak("No packages to install") unless @packages;
@@ -1029,7 +1032,7 @@ to modify the files of the area.
 
 This also returns TRUE for unintialized install areas.
 
-=item $area->install( \%pkg1, \%pkg2, ... )
+=item $area->install( packages => [\%pkg1, \%pkg2, ...] )
 
 Install the given list of packages as one atomic operation.  The
 function returns TRUE if all packages installed or FALSE if
