@@ -349,7 +349,7 @@ sub has_script {
 }
 
 sub run_script {
-    my($self, $kind, $area, $tmpdir, $pkg_info) = @_;
+    my($self, $kind, $area, $tmpdir, $pkg_info, $run_cb) = @_;
 
     my $script = $self->{script}{$kind};
     return unless $script;
@@ -399,7 +399,6 @@ sub run_script {
 	}
     }
     if (@commands) {
-	require ActiveState::Run;
 	require Cwd;
 	my $old_cwd = Cwd::cwd();
 	local $ENV{PPM_INSTROOT} = $area->prefix;
@@ -415,11 +414,17 @@ sub run_script {
 	}
 	local $ENV{PPM_INSTPACKLIST} = $pkg_info->{packlist} if exists $pkg_info->{packlist};;
 	local $ENV{PPM_PERL} = $^X;
+
+	$run_cb ||= do {
+	    require ActiveState::Run;
+	    \&ActiveState::Run::run;
+	};
+
 	eval {
 	    chdir $tmpdir;
 	    ppm_status("begin", "Running " . $self->name_version . " $kind script");
 	    for my $cmd (@commands) {
-		ActiveState::Run::run(ref($cmd) ? @$cmd : $cmd);
+		&$run_cb(ref($cmd) ? @$cmd : $cmd);
 	    }
             ppm_status("end");
 	};

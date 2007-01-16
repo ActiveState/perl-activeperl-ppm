@@ -1123,7 +1123,10 @@ sub install {
 	# run install scripts
 	for my $pkg (_topo_sort(@pkgs)) {
 	    my $pname = $pkg->name_version;
-	    $pkg->run_script("install", $area, "$tmpdir/$pname", $install_summary->{pkg}{$pkg->{name}});
+	    $pkg->run_script("install", $area, "$tmpdir/$pname",
+		$install_summary->{pkg}{$pkg->{name}},
+		$args{run_cb},
+	    );
 	}
 
 	update_html_toc();
@@ -1477,6 +1480,12 @@ passed should contain C<ActivePerl::PPM::Package> objects.
 
 What install area to install into.  If not provided, then
 $client->default_install_area is used.
+
+=item run_cb => \&func
+
+A callback function that should behave like &ActivePerl::Run::run
+which will be called to execute the commands of the post install
+script.  If not provided, then &ActivePerl::Run::run will be used.
 
 =back
 
