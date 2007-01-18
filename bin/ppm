@@ -1304,7 +1304,7 @@ modules installed in later ones.
 
 The B<--csv> option selects CSV (comma-separated values) format for the
 output. The default field separator can be overridden by the argument
-following B<--cvs>.
+following B<--csv>.
 
 The B<--no-header> option suppresses column headings.
 
@@ -1382,7 +1382,7 @@ matching the given I<pattern>.  See B<ppm search> for I<pattern> syntax.
 
 The B<--csv> option selects CSV (comma-separated values) format for the
 output. The default field separator can be overridden by the argument
-following B<--cvs>.
+following B<--csv>.
 
 The B<--no-header> option suppress printing of the column headings.
 
@@ -1475,7 +1475,7 @@ to identify which number specifies a particular repository.
 
 The B<--csv> option selects comma-separated values format for the
 output. The default field separator can be overridden by the argument
-following B<--cvs>.
+following B<--csv>.
 
 The B<--no-header> option suppress printing of the column headings.
 
