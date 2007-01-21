@@ -122,7 +122,7 @@ sub do_gui {
     	    print STDERR <<EOT;
 ppm gui failed: $err
 
-The PPM grahpical interface can't be used unless the DISPLAY environment
+The PPM graphical interface can't be used unless the DISPLAY environment
 variable is set up.  Either set it to the name of the X server to connect
 to or use $PROGNAME as a command line tool.
 
