@@ -16,6 +16,7 @@ use ActivePerl::PPM::Util qw(is_cpan_package clean_err join_with update_html_toc
 
 # get our cwd for Tcl files
 use File::Basename qw(dirname);
+use File::Spec::Functions qw(devnull);
 use Cwd qw(cwd abs_path);
 
 my @pending_status_message;
@@ -1266,22 +1267,7 @@ sub select_item {
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '-');
 	}
 	else {
-	    if ($pkg->has_script("uninstall")) {
-		$cmd = sub {
-		    my $msg = "$pkg->{name} has an uninstall script and must be uninstalled from the command line with:
-    ppm remove $pkg->{name}";
-		    Tkx::tk___messageBox(
-			-title => "Package with uninstall script",
-			-icon => "info",
-			-type => "ok",
-			-message => $msg,
-		    );
-		    $ACTION{$item}{'remove'} = 0;
-		};
-	    }
-	    else {
-		$cmd = sub { queue_action($item, $name, "remove"); };
-	    }
+	    $cmd = sub { queue_action($item, $name, "remove"); };
 	    $remove_btn->configure(
 	        -state => "normal",
                 -command => $cmd,
@@ -1308,22 +1294,7 @@ sub select_item {
 	    $menu->add_command(-label => $txt, -state => "disabled", -accelerator => '+');
 	}
 	else {
-	    if ($pkg->has_script("install")) {
-		$cmd = sub {
-		    my $msg = "$pkg->{name} has an install script and must be installed from the command line with:
-    ppm install $pkg->{name}";
-		    Tkx::tk___messageBox(
-			-title => "Package with install script",
-			-icon => "info",
-			-type => "ok",
-			-message => $msg,
-		    );
-		    $ACTION{$item}{'install'} = 0;
-		};
-	    }
-	    else {
-		$cmd = sub { queue_action($item, $name, "install"); };
-	    }
+	    $cmd = sub { queue_action($item, $name, "install"); };
 	    $install_btn->configure(
 	        -state => "normal",
                 -command => $cmd,
@@ -1393,12 +1364,7 @@ sub queue_action {
 	my @need;
 	for my $pkg (@tmp) {
 	    status_message("$repo_pkg->{name} depends on $pkg->{name}\n", "abstract");
-	    if ($pkg->has_script("install")) {
-		status_message("... but $pkg->{name} has an install script and must be installed from the command line\n", "abstract");
-	    }
-	    else {
-		push(@need, $pkg);
-	    }
+	    push(@need, $pkg);
 	}
 	$ACTION{$item}{'deps'} = \@need;
     }
@@ -1489,7 +1455,15 @@ sub commit_actions {
 	    my $area = $ACTION{$item}{'area'};
 	    my $area_name = $area->name;
 	    my $activity = ppm_status("begin", "Removing $name from $area_name area");
-	    eval { $area->uninstall($name); };
+	    eval {
+		my $pkg = $area->package($name);
+		die "$name not installed in area $area_name" unless $pkg;
+		$pkg->run_script("uninstall", $area, undef, {
+		    old_version => $pkg->{version},
+		    packlist => $area->package_packlist($pkg->{id}),
+		}, \&run_cmd);
+		$area->uninstall($name);
+	    };
 	    if ($@) {
 		{ local $@; $activity->end("failed"); }
 		status_error();
@@ -1519,8 +1493,9 @@ sub commit_actions {
 	my $activity = ppm_status("begin", "Installing $what");
 	eval {
 	    $ppm->install(
-                area => $INSTALL_AREA,
-                packages => \@install_pkgs,
+		area => $INSTALL_AREA,
+		packages => \@install_pkgs,
+		run_cb => \&run_cmd,
             );
 	};
 	if ($@) {
@@ -1536,6 +1511,43 @@ sub commit_actions {
     # Don't remain in "upgradable" or "modified" filter state
     $FILTER{'type'} = "installed" unless $FILTER{'type'} eq "all";
     refresh();
+}
+
+sub run_cmd {
+    my @cmds = @_;
+    my $ignore_err = $cmds[0] =~ s/^-//;
+    if ($cmds[0] =~ s/\@(-)?//) {
+	$ignore_err if $1;
+    }
+    #status_message("\n  @_\n");
+    my $null = devnull();
+    $cmds[0] =~ s,\\,/,g;
+    my $fh = Tkx::open("| @cmds <$null 2>\@1");
+    Tkx::fconfigure($fh, -blocking => 0);
+    Tkx::fileevent($fh, readable => [\&run_watch, $fh]);
+
+    # wait for the file to be closed before we return
+    Tkx::vwait("run_done");
+}
+
+sub run_watch {
+    my $fh = shift;
+    my($buf, $n);
+    eval { $n = Tkx::gets($fh, \$buf); };
+    if ($@) {
+	eval { Tkx::close($fh); };
+	Tkx::set(run_done => 1);
+	return;
+    }
+    if ($n == -1) {
+	if (Tkx::eof($fh)) {
+	    eval {Tkx::close($fh);};
+	    Tkx::set(run_done => 1);
+	}
+	return;
+    }
+
+    status_message("  | $buf\n");
 }
 
 sub select_repo_item {
@@ -1780,11 +1792,7 @@ sub show_prefs_dialog {
     $rnamee->g_bind("<Return>", [$ret_cmd, $rlocne]);
     $rlocne->g_bind("<Return>", [$ret_cmd, $rnamee]);
     Tkx::grid($rnamel, $rnamee, "-", -sticky => 'ew', -padx => 1, -pady => 1);
-    Tkx::grid($rlocnl, $rlocne, $dir_btn,
-        -sticky => 'ew',
-	-padx => 1,
-        -pady => 1,
-    );
+    Tkx::grid($rlocnl, $rlocne, $dir_btn, -sticky => 'ew', -padx => 1, -pady => 1);
     Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
