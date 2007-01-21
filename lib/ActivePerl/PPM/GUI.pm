@@ -1701,6 +1701,7 @@ sub show_prefs_dialog {
     $addl->setwidget($addf);
     my $name_var = "";
     my $uri_var = "";
+    my $sug_repo_var = "";
     my ($rnamel, $rnamee, $rlocnl, $rlocne);
     my $val_cmd = sub {
 	my ($peek, $w) = @_;
@@ -1791,9 +1792,60 @@ sub show_prefs_dialog {
     };
     $rnamee->g_bind("<Return>", [$ret_cmd, $rlocne]);
     $rlocne->g_bind("<Return>", [$ret_cmd, $rnamee]);
-    Tkx::grid($rnamel, $rnamee, "-", -sticky => 'ew', -padx => 1, -pady => 1);
-    Tkx::grid($rlocnl, $rlocne, $dir_btn, -sticky => 'ew', -padx => 1, -pady => 1);
-    Tkx::grid("x", $save_btn, '-', -sticky => 'e', -pady => 1);
+    my @repos;
+    my $rsuglbl = $addf->new_ttk__label(
+	-text => "Suggested:",
+    );
+    my $rsugbox = $addf->new_ttk__combobox(
+	-textvariable => \$sug_repo_var,
+	-state => "readonly",
+    );
+    eval {
+	require PPM::Repositories;
+	require ActivePerl;
+    };
+    if ($@) {
+	$rsugbox->set("Install PPM-Repositories");
+	$rsugbox->configure(-values => [], -state => "disabled");
+    } else {
+	for my $id (sort keys %PPM::Repositories::Repositories) {
+	    my $repo = $PPM::Repositories::Repositories{$id};
+	    next unless $repo->{Active};
+	    next if $repo->{Type} eq "PPMServer";
+	    my $o = $repo->{PerlO} || [];
+	    next if @$o && !grep $_ eq $^O, @$o;
+	    my $v = $repo->{PerlV} || [];
+	    my $my_v = ActivePerl::perl_version;
+	    next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
+	    push(@repos, "$id :: $repo->{Notes}");
+	}
+	$rsugbox->set("Select from list ...");
+	$rsugbox->configure(-values => [@repos], -state => "readonly");
+	my $rsugbox_cmd = sub {
+	    return unless defined(%PPM::Repositories::Repositories);
+	    return unless $sug_repo_var;
+	    $name_var = $sug_repo_var;
+	    $name_var =~ s/ ::.*$//;
+	    $uri_var = $PPM::Repositories::Repositories{$name_var}->{location};
+	};
+	Tkx::bind($rsugbox, "<<ComboboxSelected>>", $rsugbox_cmd);
+    }
+    Tkx::grid($rnamel, $rnamee, "-", "-",
+	-sticky => 'ew',
+	-padx => 1,
+	-pady => 1
+    );
+    Tkx::grid($rlocnl, $rlocne, "-", $dir_btn,
+	-sticky => 'ew',
+	-padx => 1,
+	-pady => 1,
+    );
+    Tkx::grid($rsuglbl, $rsugbox, $save_btn, "-",
+	-sticky => 'ew',
+	-padx => 1,
+	-pady => 1,
+    );
+    Tkx::grid(configure => $save_btn, -padx => [20, 1]);
     Tkx::grid(columnconfigure => $addf, 1, -weight => 1, -minsize => 20);
 
     Tkx::grid($sw, -sticky => 'news');
