@@ -953,27 +953,27 @@ sub menus {
     $ssm = $sm->new_menu(-name => "text");
     $sm->add_cascade(-label => "Text Size", -menu => $ssm, -underline => 7);
     # These commands rely on the internal bindings by style::as MouseWheel
+    my $incr_text_cmd = sub {
+	my $X = Tkx::winfo_rootx($pkglist);
+	my $Y = Tkx::winfo_rooty($pkglist);
+	Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, 120, "");
+    };
+    my $decr_text_cmd = sub {
+	my $X = Tkx::winfo_rootx($pkglist);
+	my $Y = Tkx::winfo_rooty($pkglist);
+	Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, -120, "");
+    };
     $ssm->add_command(
 	-label => "Increase",
 	-underline => 0,
-	# Conflicts with pkglist mark for install
-	#-accelerator => "${plat_acc_ctrl}+",
-	-command => sub {
-	    my $X = Tkx::winfo_rootx($pkglist);
-	    my $Y = Tkx::winfo_rooty($pkglist);
-	    Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, 120, "");
-	},
+	-accelerator => "${plat_acc_ctrl}+",
+	-command => $incr_text_cmd,
     );
     $ssm->add_command(
 	-label => "Decrease",
 	-underline => 0,
-	# Conflicts with pkglist mark for remove
-	#-accelerator => "${plat_acc_ctrl}-",
-	-command => sub {
-	    my $X = Tkx::winfo_rootx($pkglist);
-	    my $Y = Tkx::winfo_rooty($pkglist);
-	    Tkx::style__as__CtrlMouseWheel($pkglist, $X, $Y, -120, "");
-	},
+	-accelerator => "${plat_acc_ctrl}-",
+	-command => $decr_text_cmd,
     );
     if (0) {
 	# style::as currently has no sense of "Normal", just relative
@@ -983,6 +983,10 @@ sub menus {
 	    -underline => 0,
 	);
     }
+    # Use both equal and plus so users don't have to hit Shift on US kbds
+    $mw->g_bind("<${plat_evt_ctrl}plus>" => $incr_text_cmd);
+    $mw->g_bind("<${plat_evt_ctrl}equal>" => $incr_text_cmd);
+    $mw->g_bind("<${plat_evt_ctrl}minus>" => $decr_text_cmd);
 
     $sm->add_separator();
     $ssm = $fields_menu = $sm->new_menu(-name => "cols");
