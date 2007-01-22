@@ -188,7 +188,7 @@ sub do_version {
     }
     require ActivePerl::PPM;
     print "ppm $ActivePerl::PPM::VERSION\n";
-    print "Copyright (C) 2006 ActiveState Software Inc.  All rights reserved.\n";
+    print "Copyright (C) 2007 ActiveState Software Inc.  All rights reserved.\n";
 }
 
 sub do_help {
@@ -1750,6 +1750,6 @@ L<http://search.cpan.org/dist/PPM-Repositories/>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006 ActiveState Software Inc.  All rights reserved.
+Copyright (C) 2007 ActiveState Software Inc.  All rights reserved.
 
 =cut
