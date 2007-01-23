@@ -492,7 +492,8 @@ sub repo_sync {
 			 $repo->{id});
 
 		# parse document
-		my $cref = $res->decoded_content(ref => 1, default_charset => "none");
+		eval {
+		my $cref = $res->decoded_content(ref => 1, default_charset => "none", raise_error => 1);
 		if ($res->content_type eq "text/html") {
 		    my $base = $res->base;
 		    require HTML::Parser;
@@ -536,6 +537,10 @@ sub repo_sync {
 		}
 		else {
 		    ppm_log("ERR", "Unrecognized repo type " . $res->content_type);
+		}
+		};
+		if ($@) {
+		    ppm_log("ERR", "Unable to process reponse from repo $repo->{name}: $@");
 		}
 	    }
 	    else {
