@@ -1021,7 +1021,9 @@ sub install {
 	    my $extract_file = sub {
 		my($fname, $extractor) = @_;
 		return if $fname =~ m,/\.exists$,;       # don't think these are needed
-		return if $fname =~ m,/html/(bin|site/lib)/,;  # will always regenerate these
+		return if $fname =~ m,^blib/html/(bin|site/lib)/,;  # will always regenerate these
+		return if $fname =~ m,^blib/man1/, && !$area->man1;
+		return if $fname =~ m,^blib/man3/, && !$area->man3;
 		return if is_abs_path($fname);
 
 		my $to = "$tmpdir/$pname/$fname";
