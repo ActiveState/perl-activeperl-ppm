@@ -119,6 +119,16 @@ sub script {
     $self->{dirs}{script};
 }
 
+sub man1 {
+    my $self = shift;
+    $self->{dirs}{man1};
+}
+
+sub man3 {
+    my $self = shift;
+    $self->{dirs}{man3};
+}
+
 sub html {
     my $self = shift;
     $self->{dirs}{html};
