@@ -461,7 +461,7 @@ sub glob2re {
 
 sub terminal_width {
     require Term::ReadKey;
-    my($w) = Term::ReadKey::GetTerminalSize();
+    my($w) = -t STDOUT ? Term::ReadKey::GetTerminalSize() : 80;
     $w ||= 80;
     $w-- if $^O eq "MSWin32";  # can't print on last column
     $w;
