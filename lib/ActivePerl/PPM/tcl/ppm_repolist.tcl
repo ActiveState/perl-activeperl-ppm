@@ -258,6 +258,7 @@ snit::widgetadaptor repolist {
 	    {repo styMixed selRect elemText}
 	    {url styText selRect elemText}
 	    {num styText selRect elemText}
+	    {checked styDate selRect elemDate}
 	}
 
 	if {0} {
@@ -280,6 +281,9 @@ snit::widgetadaptor repolist {
 	    {repo styMixed elemText}
 	    {url styText elemText}
 	}
+
+	# Hack to use FileList bindings without being a file list
+	set ::TreeCtrl::Priv(DirCnt,$tree) 0
 
 	# During editing, hide the text and selection-rectangle elements.
 	$tree notify bind $tree <Edit-begin> {
