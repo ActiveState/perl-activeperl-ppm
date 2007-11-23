@@ -1520,8 +1520,8 @@ sub commit_actions {
 sub run_cmd {
     my @cmds = @_;
     my $ignore_err = $cmds[0] =~ s/^-//;
-    if ($cmds[0] =~ s/\@(-)?//) {
-	$ignore_err if $1;
+    if ($cmds[0] =~ s/^\s*\@(-)?//) {
+	$ignore_err = 1 if $1;
     }
     #status_message("\n  @_\n");
     my $null = devnull();
