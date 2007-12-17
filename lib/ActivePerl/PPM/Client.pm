@@ -38,7 +38,11 @@ sub new {
 
     unless ($arch) {
 	$arch =  $Config{archname};
-	$arch .= sprintf "-%vd", substr($^V, 0, 2) if $] >= 5.008;
+	if ($] >= 5.008) {
+            my $vstring = sprintf "%vd", $^V;
+            $vstring =~ s/\.\d+$//;
+            $arch .= "-$vstring";
+        }
     }
 
     my $etc = $dir; # XXX or "$dir/etc";
@@ -877,7 +881,7 @@ sub packages_missing {
 	    }
 	    else {
 		push(@err,
-		     "Can't find any package that provide $feature" .
+		     "Can't find any package that provides $feature" .
 		     ($want && $have ? " version $want" : "") .
 		     ($needed_by ? " for $needed_by" : ""),
 		);
