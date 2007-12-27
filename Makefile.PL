@@ -24,6 +24,7 @@ WriteMakefile(
                        'LWP' => 5.805,
                        'Archive::Tar' => 1.26,
                        'ActiveState::Handy' => 1.01,
+                       'ActiveState::Version' => 0,
                    },
    dist         => { COMPRESS => 'gzip -9f', SUFFIX => 'gz'},
 );

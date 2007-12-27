@@ -15,6 +15,7 @@ requires:
     'ActiveState::Path': 0
     'ActiveState::Run': 1
     'ActiveState::RelocateTree': 0
+    'ActiveState::Version': 0
     'Term::ReadKey': 0
     'Tkx': 1.02
 mm_fullext: ActivePerl/PPM

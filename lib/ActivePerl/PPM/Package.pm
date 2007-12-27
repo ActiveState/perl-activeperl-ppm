@@ -2,6 +2,7 @@ package ActivePerl::PPM::Package;
 
 use strict;
 use Carp qw(croak);
+use ActiveState::Version qw(vcmp);
 use ActivePerl::PPM::Logger qw(ppm_status);
 
 sub BASE_FIELDS {
@@ -117,77 +118,10 @@ sub compare {
     }
 
     # last resort is heuristic comparison of version labels
-    $c ||= _vcmp($a->{version}, $b->{version});
+    $c ||= vcmp($a->{version}, $b->{version});
 
     return $c;
 }
-
-sub _vcmp {
-    my($v1, $v2) = @_;
-
-    return undef unless defined($v1) && defined($v2);
-
-    # can we compare the version numbers as floats
-    return $v1 <=> $v2 if $v1 =~ /^\d+\.\d+$/ && $v2 =~ /^\d+\.\d+$/;
-
-    # assume dotted form
-    for ($v1, $v2) {
-	s/^v//;
-    }
-    my @a = split(/[-_.p]/, $v1);
-    my @b = split(/[-_.p]/, $v2);
-
-    for (\@a, \@b) {
-	my $num;
-	if ($_->[-1] =~ s/([a-z])$//) {
-	    my $a = $1;
-	    if ($_->[-1] eq "" || $_->[-1] =~ /^\d+$/) {
-		$num = ord($a) - ord('a') + 1;
-	    }
-	    else {
-		$_->[-1] .= $a;
-	    }
-	}
-
-	if (!defined($num) && $_->[-1] =~ s/(a|alpha|b|beta|pre|rc|RC)(\d*)$//) {
-	    my $kind;
-	    ($kind, $num) = ($1, $2);
-	    $num ||= 0;
-	    $num -= {
-               a => 400,
-               alpha => 400,
-	       b => 300,
-               beta => 300,
-               pre => 200,
-               rc => 100,
-	    }->{lc($kind)} || die;
-	}
-
-
-	if (defined $num) {
-	    if (length($_->[-1])) {
-		push(@$_, $num);
-	    }
-	    else {
-		$_->[-1] = $num;
-	    }
-	}
-    }
-
-    while (@a || @b) {
-	my $a = @a ? shift(@a) : 0;
-	my $b = @b ? shift(@b) : 0;
-	unless ($a =~ /^-?\d+$/ && $b =~ /^-?\d+$/) {
-	    return 0 if $a eq $b;
-	    return undef;
-	}
-        if (my $cmp = $a <=> $b) {
-            return $cmp;
-        }
-    }
-    return 0;
-}
-
 
 sub better_than {
     my($self, $other) = @_;
