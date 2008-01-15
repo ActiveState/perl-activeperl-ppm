@@ -108,8 +108,6 @@ Tkx::style(map => "TLabel", -foreground => [invalid => "red"]);
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
 
-#Tkx::style_default('Slim.Toolbutton', -padding => 2);
-
 # make tree widgets use theming on non-x11 platforms
 if ($windowingsystem ne "x11") {
     Tkx::option_add("*TreeCtrl.useTheme", 1);
@@ -200,7 +198,7 @@ Tkx::option_add("*takeFocus", "0");
 Tkx::option_add("*TEntry.takeFocus", "1");
 
 # Main interface
-my $pw = $mw->new_ttk__paned(-orient => "vertical");
+my $pw = $mw->new_ttk__panedwindow(-orient => "vertical");
 my $pkglist = $pw->new_pkglist(
     -width => 550, -height => 350,
     -selectcommand => [\&select_item],
