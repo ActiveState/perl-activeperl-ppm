@@ -94,16 +94,16 @@ elsif ($windowingsystem eq "x11") {
 
 # This code makes themed frames use the notebook's background color.
 # We restrict the use of this to those frames in notebooks.
-Tkx::style(layout => "NotebookPane",
-	   ["NotebookPane.background", -sticky => "news", -expand => 1]);
+Tkx::ttk__style(layout => "NotebookPane",
+		["NotebookPane.background", -sticky => "news", -expand => 1]);
 Tkx::option_add("*TNotebook.TFrame.style", "NotebookPane");
 
 Tkx::option_add("*TEntry.cursor", "xterm");
 
 # Make invalid state entry/label widget change color scheme
-Tkx::style(map => "TEntry", -foreground => [invalid => "red"],
-	   -fieldbackground => [invalid => "yellow"]);
-Tkx::style(map => "TLabel", -foreground => [invalid => "red"]);
+Tkx::ttk__style(map => "TEntry", -foreground => [invalid => "red"],
+		-fieldbackground => [invalid => "yellow"]);
+Tkx::ttk__style(map => "TLabel", -foreground => [invalid => "red"]);
 
 # get 'tooltip' as toplevel command
 Tkx::namespace_import("::tooltip::tooltip");
