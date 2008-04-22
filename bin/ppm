@@ -553,6 +553,21 @@ sub uri_hide_passwd {
     return $url->as_string;
 }
 
+sub repo_by_name {
+    my $name = shift;
+    return unless eval {require PPM::Repositories};
+    unless (defined &PPM::Repositories::get) {
+	my $repo = $PPM::Repositories::Repositories{$name};
+	return($name,$repo->{location});
+    }
+    my %repo = PPM::Repositories::get($name);
+    return unless keys %repo;
+    my($url,$url_noarch) = ($repo{packlist}, $repo{packlist_noarch});
+    $url ||= $url_noarch;
+    undef $url_noarch if $url_noarch && $url_noarch eq $url;
+    return($name,$url,$url_noarch);
+}
+
 sub do_repo {
     my $cmd = shift(@ARGV) || "list";
  AGAIN:
@@ -667,7 +682,14 @@ sub do_repo {
 	    'username=s' => \$user,
             'password=s' => \$pass,
         ) || usage();
+	if ($user) {
+	    $user .= ":$pass" if defined $pass;
+	}
+	else {
+	    usage() if defined $pass;
+	}
 	my $url = shift(@ARGV) || usage();
+	my $url_noarch;
 	my $name;
 	if (@ARGV) {
 	    $name = shift(@ARGV);
@@ -693,27 +715,27 @@ sub do_repo {
 		($name, $url) = $ppm->activestate_repo;
 		die "No ActiveState repo for this platform" unless $url;
 	    }
-	    elsif (eval {require PPM::Repositories} and
-		   my $repo = $PPM::Repositories::Repositories{$url})
-	    {
-		$name ||= $url;
-		$url = $repo->{location};
+	    elsif (($name,$url,$url_noarch) = repo_by_name($url)) {
+		# empty
 	    }
 	    else {
 		die "The repository URL must be absolute or a local directory";
 	    }
 	}
 	if ($user) {
-	    $user .= ":$pass" if defined $pass;
-	    $url = URI->new($url);
-	    $url->userinfo($user);
-	    $url = $url->as_string;
-	}
-	else {
-	    usage() if defined $pass;
+	    for ($url, $url_noarch) {
+		next unless defined;
+		$_ = URI->new($_);
+		$_->userinfo($user);
+		$_ = $_->as_string;
+	    }
 	}
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
+	if ($url_noarch) {
+	    $id = $ppm->repo_add(name => "$name-noarch", packlist_uri => $url_noarch);
+	    print "Repo $id added.\n";
+	}
     }
     elsif ($cmd eq "rename") {
 	$USAGE = "repo rename <num> <name>";
@@ -750,7 +772,8 @@ sub do_repo {
 	};
 	require ActivePerl;
 	my $count = 0;
-	if (my($as_name, $as_url) = $ppm->activestate_repo) {
+	my($as_name, $as_url) = $ppm->activestate_repo;
+	if ($as_name) {
 	    $PPM::Repositories::Repositories{activestate} = {
 		Active => 1,
                 Type => "PPM4",
@@ -758,20 +781,34 @@ sub do_repo {
                 location => $as_url,
 	    };
 	}
-	for my $id (sort keys %PPM::Repositories::Repositories) {
-	    my $repo = $PPM::Repositories::Repositories{$id};
-	    next unless $repo->{Active};
-	    next if $repo->{Type} eq "PPMServer";
-	    my $o = $repo->{PerlO} || [];
-	    next if @$o && !grep $_ eq $^O, @$o;
-	    my $v = $repo->{PerlV} || [];
-	    my $my_v = ActivePerl::perl_version;
-	    next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
-	    print "\n" if $count;
-	    print "$PROGNAME repo add $id\n";
-	    print "   $repo->{Notes}\n";
-	    print "   $repo->{location}\n";
-	    $count++;
+	if (defined &PPM::Repositories::list) {
+	    for my $name (PPM::Repositories::list()) {
+		my %repo = PPM::Repositories::get($name);
+		$repo{packlist} = $as_url if $as_url && $name eq "activestate";
+		print "\n" if $count;
+		print "$PROGNAME repo add $name\n";
+		print "   $repo{desc}\n";
+		print "   $repo{packlist}\n" if $repo{packlist};
+		print "   $repo{packlist_noarch}\n" if $repo{packlist_noarch};
+		$count++;
+	    }
+	}
+	else {
+	    for my $id (sort keys %PPM::Repositories::Repositories) {
+		my $repo = $PPM::Repositories::Repositories{$id};
+		next unless $repo->{Active};
+		next if $repo->{Type} eq "PPMServer";
+		my $o = $repo->{PerlO} || [];
+		next if @$o && !grep $_ eq $^O, @$o;
+		my $v = $repo->{PerlV} || [];
+		my $my_v = ActivePerl::perl_version;
+		next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
+		print "\n" if $count;
+		print "$PROGNAME repo add $id\n";
+		print "   $repo->{Notes}\n";
+		print "   $repo->{location}\n";
+		$count++;
+	    }
 	}
 	if ($count) {
 	    unless ($ppm_repo_ok) {

@@ -1760,7 +1760,11 @@ sub show_prefs_dialog {
 	    require URI::file;
 	    $uri_var = URI::file->new_abs($uri_var);
 	}
+	($uri_var, my $uri_noarch) = split /\0/, $uri_var;
 	eval { $ppm->repo_add(name => $name_var, packlist_uri => $uri_var); };
+	if ($uri_noarch && !$@) {
+	    eval { $ppm->repo_add(name => "$name_var-noarch", packlist_uri => $uri_noarch); };
+	}
 	if ($@) {
 	    ppm_log("ERR", "Adding repository: $@");
 	    Tkx::tk___messageBox(
@@ -1809,28 +1813,53 @@ sub show_prefs_dialog {
     if ($@) {
 	$rsugbox->set("Install PPM-Repositories");
 	$rsugbox->configure(-values => [], -state => "disabled");
-    } else {
-	for my $id (sort keys %PPM::Repositories::Repositories) {
-	    my $repo = $PPM::Repositories::Repositories{$id};
-	    next unless $repo->{Active};
-	    next if $repo->{Type} eq "PPMServer";
-	    my $o = $repo->{PerlO} || [];
-	    next if @$o && !grep $_ eq $^O, @$o;
-	    my $v = $repo->{PerlV} || [];
-	    my $my_v = ActivePerl::perl_version;
-	    next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
-	    push(@repos, "$id :: $repo->{Notes}");
+    }
+    else {
+	if (defined &PPM::Repositories::list) {
+	    for my $name (PPM::Repositories::list()) {
+		# XXX Why don't we allow re-adding the ActiveState repo here?
+		next if $name eq "activestate";
+		my %repo = PPM::Repositories::get($name);
+		push(@repos, "$name :: $repo{desc}");
+	    }
+	    $rsugbox->set("Select from list ...");
+	    $rsugbox->configure(-values => [@repos], -state => "readonly");
+	    my $rsugbox_cmd = sub {
+		return unless defined &PPM::Repositories::get;
+		return unless $sug_repo_var;
+		$name_var = $sug_repo_var;
+		$name_var =~ s/ ::.*$//;
+		my %repo = PPM::Repositories::get($name_var);
+		$uri_var = $repo{packlist} || $repo{packlist_noarch};
+		if ($repo{packlist_noarch} && $repo{packlist_noarch} ne $uri_var) {
+		    $uri_var .= "\0$repo{packlist_noarch}";
+		}
+	    };
+	    Tkx::bind($rsugbox, "<<ComboboxSelected>>", $rsugbox_cmd);
 	}
-	$rsugbox->set("Select from list ...");
-	$rsugbox->configure(-values => [@repos], -state => "readonly");
-	my $rsugbox_cmd = sub {
-	    return unless defined(%PPM::Repositories::Repositories);
-	    return unless $sug_repo_var;
-	    $name_var = $sug_repo_var;
-	    $name_var =~ s/ ::.*$//;
-	    $uri_var = $PPM::Repositories::Repositories{$name_var}->{location};
-	};
-	Tkx::bind($rsugbox, "<<ComboboxSelected>>", $rsugbox_cmd);
+	else {
+	    for my $id (sort keys %PPM::Repositories::Repositories) {
+		my $repo = $PPM::Repositories::Repositories{$id};
+		next unless $repo->{Active};
+		next if $repo->{Type} eq "PPMServer";
+		my $o = $repo->{PerlO} || [];
+		next if @$o && !grep $_ eq $^O, @$o;
+		my $v = $repo->{PerlV} || [];
+		my $my_v = ActivePerl::perl_version;
+		next if @$v && !grep $my_v =~ /^\Q$_\E\b/, @$v;
+		push(@repos, "$id :: $repo->{Notes}");
+	    }
+	    $rsugbox->set("Select from list ...");
+	    $rsugbox->configure(-values => [@repos], -state => "readonly");
+	    my $rsugbox_cmd = sub {
+		return unless defined(%PPM::Repositories::Repositories);
+		return unless $sug_repo_var;
+		$name_var = $sug_repo_var;
+		$name_var =~ s/ ::.*$//;
+		$uri_var = $PPM::Repositories::Repositories{$name_var}->{location};
+	    };
+	    Tkx::bind($rsugbox, "<<ComboboxSelected>>", $rsugbox_cmd);
+	}
     }
     Tkx::grid($rnamel, $rnamee, "-", "-",
 	-sticky => 'ew',
