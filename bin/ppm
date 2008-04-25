@@ -22,7 +22,7 @@ if ($ENV{ACTIVEPERL_PPM_BOX_CHARS}) {
     $BOX_CHARS = $ENV{ACTIVEPERL_PPM_BOX_CHARS};
 }
 elsif ($^O eq "MSWin32") {
-    $BOX_CHARS = "dos";
+    $BOX_CHARS = "dos" if -t STDOUT;
 }
 elsif (($ENV{LC_ALL} || $ENV{LC_CTYPE} || $ENV{LANG} || "") =~ /\bUTF-8\b/)  {
     $BOX_CHARS = "unicode";
