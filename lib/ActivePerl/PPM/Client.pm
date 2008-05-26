@@ -80,14 +80,12 @@ sub new {
 	}
 
 	push(@area, $name);
-	my $autoinit = 0;
-	$autoinit = 1 if $^O eq "darwin" && $dir eq "$ENV{HOME}/Library/ActivePerl";
 	$area{$name} = ActivePerl::PPM::InstallArea->new(
             name => $name,
             prefix => $dir,
             lib => $lib,
             archlib => $archlib,
-            autoinit => $autoinit,
+            autoinit => _user_area($dir),
         );
     }
 
@@ -113,6 +111,18 @@ sub _known_area {
     return "site" if _path_eq($path, $Config{sitelib}, $Config{sitearch});
     return "vendor" if $Config{vendorlib} && _path_eq($path, $Config{vendorlib}, $Config{vendorarch});
     return undef;
+}
+
+sub _user_area {
+    my $path = shift;
+    if ($^O eq "darwin") {
+        return _path_eq($path,
+            "$ENV{HOME}/Library/ActivePerl",
+            "$ENV{HOME}/Library/ActivePerl-5.8",
+            "$ENV{HOME}/Library/ActivePerl-5.10",
+        );
+    }
+    return 0;
 }
 
 sub _path_eq {
@@ -145,6 +155,8 @@ sub _area_name {
 	}
 	closedir($dh);
     }
+
+    return "user" if _user_area($path);
 
     # try to find a usable name from the $path
     my @path = split(/[\/\\]/, $path);
