@@ -46,7 +46,7 @@ sub new {
     }
 
     my $etc = $dir; # XXX or "$dir/etc";
-    my @inc = defined(*main::INC_ORIG) ? @main::INC_ORIG : @INC;
+    my @inc = @main::INC_ORIG ? @main::INC_ORIG : @INC;
 
     # determine what install areas exists from @INC
     my @area;
