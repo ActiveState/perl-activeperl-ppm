@@ -17,11 +17,11 @@ sub file_eq { require File::Compare; File::Compare::compare(@_) == 0 };
 
 use ActivePerl::PPM::Client;
 
-my $client = ActivePerl::PPM::Client->new($prefix);
+my $client = ActivePerl::PPM::Client->new($prefix, inc => []);
 ok(j($client->areas), "site|perl");
 undef($client);
 
-$client = ActivePerl::PPM::Client->new($prefix);
+$client = ActivePerl::PPM::Client->new($prefix, inc => []);
 ok(j($client->areas), "site|perl");
 ok($client->area("site")->name, "site");
 

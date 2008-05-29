@@ -18,9 +18,11 @@ use File::Basename;
 use base 'ActivePerl::PPM::DBH';
 
 sub new {
-    my($class, $dir, $arch) = @_;
+    my $class = shift;
+    my $dir = shift if @_ % 2;
+    my %opt = @_;
 
-    $dir ||= $ENV{ACTIVEPERL_PPM_HOME} ||
+    $dir ||= $opt{home} || $ENV{ACTIVEPERL_PPM_HOME} ||
         do {
 	    if ($^O eq "MSWin32") {
 		require Win32;
@@ -36,6 +38,7 @@ sub new {
 	    }
 	};
 
+    my $arch = $opt{arch};
     unless ($arch) {
 	$arch =  $Config{archname};
 	if ($] >= 5.008) {
@@ -46,7 +49,7 @@ sub new {
     }
 
     my $etc = $dir; # XXX or "$dir/etc";
-    my @inc = @main::INC_ORIG ? @main::INC_ORIG : @INC;
+    my @inc = $opt{inc} ? @{$opt{inc}} : (@main::INC_ORIG ? @main::INC_ORIG : @INC);
 
     # determine what install areas exists from @INC
     my @area;
@@ -1189,9 +1192,30 @@ The following methods are provided:
 
 =item $client = ActivePerl::PPM::Client->new( $home_dir )
 
+=item $client = ActivePerl::PPM::Client->new( %opt )
+
 The constructor creates a new client based on the configuration found
 in $home_dir which defaults to F<$ENV{HOME}/.ActivePerl> directory of the
 current user.  If no such directory is found it is created.
+
+Alternatively, key/value pairs to configure the client is passed in.  The following options are recognized:
+
+=over
+
+=item home => $home_dir
+
+Directory where the client configuration database lives.
+
+=item inc => \@array
+
+Override the list of locations to initialize install areas from.
+
+=item arch => $arch
+
+Allow to override the architecture identification string used.  Mainly
+userful for debugging.
+
+=back
 
 =item $client->arch
 
