@@ -10,6 +10,7 @@ use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua);
+use ActivePerl::PPM::Arch ();
 use ActivePerl::PPM::Util qw(join_with update_html_toc);
 
 use ActiveState::Path qw(is_abs_path join_path);
@@ -38,15 +39,7 @@ sub new {
 	    }
 	};
 
-    my $arch = $opt{arch};
-    unless ($arch) {
-	$arch =  $Config{archname};
-	if ($] >= 5.008) {
-            my $vstring = sprintf "%vd", $^V;
-            $vstring =~ s/\.\d+$//;
-            $arch .= "-$vstring";
-        }
-    }
+    my $arch = $opt{arch} || ActivePerl::PPM::Arch::arch();
 
     my $etc = $dir; # XXX or "$dir/etc";
     my @inc = $opt{inc} ? @{$opt{inc}} : (@main::INC_ORIG ? @main::INC_ORIG : @INC);
@@ -320,11 +313,9 @@ sub config_save {
 }
 
 sub activestate_repo {
-    my $arch = $Config{archname};
-    1 while $arch =~ s/-(thread|multi|2level)//;
-    my $v = ActivePerl::perl_version();
-    $v =~ s,^(\d+\.\d+)\.\d+\.,$1/,;
-    my $repo_uri = "http://ppm4.activestate.com/$arch/$v/package.xml";
+    my $arch = ActivePerl::PPM::Arch::short_arch();
+    $arch =~ s,-(5.\d+)$,/$1,;
+    my $repo_uri = "http://ppm4.activestate.com/$arch/$ActivePerl::VERSION/package.xml";
     if ($^O =~ /^(MSWin32|linux|darwin|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
 	return $repo_uri unless wantarray;
 	return ("ActiveState Package Repository", $repo_uri);
