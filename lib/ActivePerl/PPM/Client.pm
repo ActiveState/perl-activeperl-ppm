@@ -994,7 +994,7 @@ sub install {
 	    if ($codebase =~ /\.(tgz|zip)$/) {
 		$pkg->{codebase_type} = $1;
 	    }
-	    elsif ($codebase =~ /\.tar\.gz$/) {
+	    elsif ($codebase =~ /\.(?:tar\.gz|ppmx)$/) {
 		$pkg->{codebase_type} = "tgz";
 	    }
 	    die "Don't know how to unpack $codebase" unless $pkg->{codebase_type};

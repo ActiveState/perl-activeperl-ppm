@@ -1004,9 +1004,10 @@ sub do_install {
     eval {
 	if ($feature =~ m,^[a-z][+\w]+:[^:],) {
 	    # looks like an absolute URL
-	    _install_uri($area, $force, $feature, @args);
+            require URI;
+	    _install_uri($area, $force, URI->new($feature), @args);
 	}
-	elsif ($feature =~ /\.ppd$/) {
+	elsif ($feature =~ /\.(?:ppd|ppmx)$/) {
 	    require URI::file;
 	    _install_uri($area, $force, URI::file->new_abs($feature), @args);
 	}
@@ -1103,6 +1104,34 @@ sub _install_uri {
     unless ($res->is_success) {
 	die $res->status_line;
     }
+
+    my $tmp_ppmx;
+    if ($uri =~ /\.ppmx$/) {
+        # need a file
+        require File::Temp;
+        $tmp_ppmx = File::Temp->new(
+            TEMPLATE => "ppm-XXXXXX",
+            SUFFIX => ".ppmx",
+            TMPDIR => 1,
+        );
+        $tmp_ppmx->print($res->content);
+        $tmp_ppmx->flush;
+
+        require Archive::Tar;
+        my $ppd;
+        my $tar = Archive::Tar->new($tmp_ppmx->filename, 1);
+        for my $file ($tar->get_files) {
+            #print "TAR path: ", $file->full_path, "\n";
+            if ($file->name =~ /\.ppd$/) {
+                $ppd = $file;
+                last;
+            }
+        }
+        die "No PPD found inside $uri" unless $ppd;
+        $res->remove_header("Content-Encoding");
+        $res->content($ppd->get_content);
+    }
+
     require ActivePerl::PPM::PPD;
     my $cref = $res->decoded_content(ref => 1, default_charset => "none");
     my $pkg = ActivePerl::PPM::Package->new_ppd($$cref,
@@ -1120,6 +1149,10 @@ sub _install_uri {
     }
     else {
 	die "The PPD does not provide code to install for this platform";
+    }
+
+    if ($tmp_ppmx) {
+        $pkg->{codebase} = $tmp_ppmx->filename;
     }
 
     # XXX follow dependencies with the "directory" of $pkg $uri as the
