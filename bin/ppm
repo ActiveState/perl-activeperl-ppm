@@ -1293,6 +1293,7 @@ Install, upgrade and remove packages:
     ppm install [--area <area>] [--force] <pkg>
     ppm install [--area <area>] [--force] <module>
     ppm install [--area <area>] <url>
+    ppm install [--area <area>] <file>.ppmx
     ppm install [--area <area>] <file>.ppd
     ppm install [--area <area>] <num>
     ppm upgrade [--install]
@@ -1413,6 +1414,8 @@ Prints the documentation for ppm (this file).
 
 =item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
 
+=item B<ppm install> I<file>.ppmx [ B<--area> I<area> ] [ B<--nodeps> ]
+
 =item B<ppm install> I<file>.ppd [ B<--area> I<area> ] [ B<--nodeps> ]
 
 =item B<ppm install> I<url> [ B<--area> I<area> ] [ B<--nodeps> ]
@@ -1422,7 +1425,7 @@ Prints the documentation for ppm (this file).
 Install a package and its dependencies.
 
 The argument to B<ppm install> can be the name of a package, the name of
-a module provided by the package, the file name or the URL of a PPD file,
+a module provided by the package, the file name or the URL of a PPMX or PPD file,
 or the associated number for the package returned by the last C<ppm
 search> command. 
 
@@ -1698,6 +1701,12 @@ under C<$PREFIX>.
 Temporary directories used during install.  Packages to be installed
 are unpacked here.
 
+=item F<*.ppmx>
+
+These files contains a single package that can be installed by PPM.
+They are compressed tarballs containing the PPD file for the package
+and the F<blib> tree to be installed.
+
 =item F<*.ppd>
 
 XML files containing meta information about packages.  Each package has
@@ -1762,6 +1771,10 @@ PPM version 4 is a complete rewrite.  The main changes since PPM version 3 are:
 =item *
 
 The command line shell has been replaced with a graphical user interface.
+
+=item *
+
+Support for *.ppmx files (since PPM version 4.3)
 
 =item *
 

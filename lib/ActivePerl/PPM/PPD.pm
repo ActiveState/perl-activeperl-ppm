@@ -209,7 +209,10 @@ attributes.  Parent must be a SOFTPKG element.
 The required HREF attribute provides a URI where the binary package
 (the tared up C<blib> tree) of the package can be obtained.  The URI
 can be relative and is then resolved based on the URI of the PPD
-document.  No content.  Parent must be SOFTPKG or
+document.  The referenced file must either be a F<.ppmx>, F<.tar.gz>,
+or F<.zip> file.
+
+The CODEBASE element has no content.  Parent must be SOFTPKG or
 IMPLEMENTATION.
 
 =item <DEPENDENCY NAME="..." VERSION="..."/>
