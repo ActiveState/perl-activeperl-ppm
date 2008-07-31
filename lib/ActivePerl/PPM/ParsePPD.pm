@@ -5,6 +5,12 @@ use strict;
 require XML::Parser::Expat;
 our @ISA = qw(XML::Parser::ExpatNB);
 
+my %FEATURE_TAG = (
+   REQUIRE => 1,
+   PROVIDE => 1,
+   DEPENDENCY => 1,
+);
+
 my %TEXT_TAG = (
    ABSTRACT => 1,
    AUTHOR => 1,
@@ -33,10 +39,8 @@ sub new {
 	Start => sub {
 	    my $p = shift;
 	    my $tag = shift;
-	    if (0) {
-	        # dummy
-	    }
-	    elsif ($tag eq "REQUIRE" || $tag eq "PROVIDE" || $tag eq "DEPENDENCY") {
+
+	    if ($FEATURE_TAG{$tag}) {
 		my %attr = @_;
 		if ($tag eq "DEPENDENCY") {
 		    # legacy
