@@ -12,6 +12,18 @@ sub BASE_FIELDS {
     );
 }
 
+sub dbi_have {
+    my($self, $dbh) = @_;
+    unless ($self->{id}) {
+        if (my $id = $dbh->selectrow_array("SELECT id FROM package WHERE name = ? AND version = ? AND repo_id = ?",
+                                           undef, $self->{name}, $self->{version}, $self->{repo_id}))
+        {
+            $self->{id} = $id;
+        }
+    }
+    return $self->{id};
+}
+
 1;
 
 __END__

@@ -226,10 +226,16 @@ sub _init_db {
     if ($v == 0) {
 	ppm_log("WARN", "Setting up schema for $db_file");
 	_init_ppm_schema($dbh, $self->{arch});
-	$dbh->do("PRAGMA user_version = 1");
+        $dbh->do("CREATE UNIQUE INDEX package_idx ON package (name, version, repo_id)");
+	$dbh->do("PRAGMA user_version = 2");
 	$dbh->commit;
     }
-    elsif ($v != 1) {
+    elsif ($v == 1) {
+        $dbh->do("CREATE UNIQUE INDEX package_idx ON package (name, version, repo_id)");
+	$dbh->do("PRAGMA user_version = 2");
+        $dbh->commit;
+    }
+    elsif ($v != 2) {
 	die "Unrecognized database schema $v for $db_file";
     }
 
@@ -531,18 +537,41 @@ sub repo_sync {
 		elsif ($$cref =~ /<REPOSITORY(?:SUMMARY)?\b/) {
 		    my $status = ppm_status();
 		    $status->begin("Updating $repo->{name} database");
-		    _repo_delete_packages($dbh, $repo->{id});
+                    my %rem;
+                    if ($opt{force}) {
+                        _repo_delete_packages($dbh, $repo->{id});
+                    }
+                    else {
+                        my $sth = $dbh->prepare("SELECT id FROM package WHERE repo_id = $repo->{id}");
+                        $sth->execute;
+                        while (my($id) = $sth->fetchrow_array) {
+                            $rem{$id}++;
+                        }
+                    }
 		    $status->tick;
 		    require ActivePerl::PPM::ParsePPD;
 		    my $p = ActivePerl::PPM::ParsePPD->new(sub {
 			my $pkg = shift;
 			$pkg = ActivePerl::PPM::RepoPackage->new_ppd($pkg, arch => $self->{arch});
+                        return unless $pkg->{codebase};
 			$pkg->{repo_id} = $repo->{id};
-			$pkg->dbi_store($dbh) if $pkg->{codebase};
+                        if (%rem && $pkg->dbi_have($dbh)) {
+                            delete $rem{$pkg->{id}};
+                        }
+                        else {
+                            $pkg->dbi_store($dbh);
+                        }
 			$status->tick;
 		    });
 		    $p->parse_more($$cref);
 		    $p->parse_done;
+                    if (%rem) {
+                        my $ids = join(",", sort {$a <=> $b} keys %rem);
+                        print "XXX deleting $ids\n";
+                        $dbh->do("DELETE FROM feature WHERE package_id IN ($ids)");
+                        $dbh->do("DELETE FROM script WHERE package_id IN ($ids)");
+                        $dbh->do("DELETE FROM package WHERE id IN ($ids)");
+                    }
 		    $status->end;
 		}
 		else {
