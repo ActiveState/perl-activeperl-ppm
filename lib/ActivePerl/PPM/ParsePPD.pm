@@ -54,6 +54,18 @@ sub new {
                 $p->{txt} = "";
 		$p->setHandlers(Char => $ch);
 	    }
+	    elsif ($tag eq "SOFTPKG") {
+		my @c = $p->context;
+		$p->xpcroak("$tag must be root") if @c && "@c" !~ /^REPOSITORY(SUMMARY)?$/;
+		my %attr = @_;
+		$p->xpcroak("Required SOFTPKG attribute NAME and VERSION missing")
+		    unless exists $attr{NAME} && exists $attr{VERSION};
+
+		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION}, release_date => $attr{DATE} );
+		$p->{softpkg}{base} = $p->{base} if $p->{base};
+
+		$p->{ctx} = $p->{softpkg};
+	    }
 	    elsif ($tag eq "IMPLEMENTATION") {
 		$p->{ctx} = {};
 		push(@{$p->{softpkg}{lc $tag}}, $p->{ctx});
@@ -73,18 +85,6 @@ sub new {
 		$h->{uri} = $attr{HREF} if exists $attr{HREF};
                 $p->{txt} = "";
 		$p->setHandlers(Char => $ch);
-	    }
-	    elsif ($tag eq "SOFTPKG") {
-		my @c = $p->context;
-		$p->xpcroak("$tag must be root") if @c && "@c" !~ /^REPOSITORY(SUMMARY)?$/;
-		my %attr = @_;
-		$p->xpcroak("Required SOFTPKG attribute NAME and VERSION missing")
-		    unless exists $attr{NAME} && exists $attr{VERSION};
-
-		%{$p->{softpkg}} = ( name => $attr{NAME}, version => $attr{VERSION}, release_date => $attr{DATE} );
-		$p->{softpkg}{base} = $p->{base} if $p->{base};
-
-		$p->{ctx} = $p->{softpkg};
 	    }
 	    elsif ($tag =~ /^REPOSITORY(SUMMARY)?$/) {
 		$p->xpcroak("$tag must be root") if $p->depth;
