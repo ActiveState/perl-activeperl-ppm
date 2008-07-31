@@ -6,9 +6,9 @@ require XML::Parser::Expat;
 our @ISA = qw(XML::Parser::ExpatNB);
 
 my %FEATURE_TAG = (
-   REQUIRE => 1,
-   PROVIDE => 1,
-   DEPENDENCY => 1,
+   REQUIRE => "require",
+   PROVIDE => "provide",
+   DEPENDENCY => "require",
 );
 
 my %TEXT_TAG = (
@@ -41,14 +41,19 @@ sub new {
 	    my $tag = shift;
 
 	    if ($FEATURE_TAG{$tag}) {
-		my %attr = @_;
-		if ($tag eq "DEPENDENCY") {
-		    # legacy
-		    $tag = "REQUIRE";
-		    $attr{VERSION} = "0";
-		}
-		$attr{NAME} =~ s/::$// if $attr{NAME} =~ /::\w+::/;
-		$p->{ctx}{lc $tag}{$attr{NAME}} = $attr{VERSION} || 0;
+                if ($_[0] eq "NAME" && (@_ == 2 || $_[2] eq "VERSION")) {
+                    # the fast way to pick out the attributes
+                    $_[3] = 0 if $tag eq "DEPENDENCY";
+                    $_[1] =~ s/(::\w+)::$/$1/;
+                    $p->{ctx}{$FEATURE_TAG{$tag}}{$_[1]} = $_[3] || 0;
+                }
+                else {
+                    # the slower way to do it
+                    my %attr = @_;
+                    $attr{VERSION} = 0 if $tag eq "DEPENDENCY";
+                    $attr{NAME} =~ s/(::\w+)::$/$1/;
+                    $p->{ctx}{$FEATURE_TAG{$tag}}{$attr{NAME}} = $attr{VERSION} || 0;
+                }
 	    }
 	    elsif ($TEXT_TAG{$tag}) {
                 $p->{txt} = "";
