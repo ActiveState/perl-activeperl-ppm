@@ -23,8 +23,11 @@ sub new {
     my $handler = shift;
     my $self = $class->SUPER::new;
 
-    $self->{txt} = [];
     $self->{softpkg} = {};
+
+    my $ch = sub {
+        $_[0]->{txt} .= $_[1];
+    };
 
     $self->setHandlers(
 	Start => sub {
@@ -44,7 +47,8 @@ sub new {
 		$p->{ctx}{lc $tag}{$attr{NAME}} = $attr{VERSION} || 0;
 	    }
 	    elsif ($TEXT_TAG{$tag}) {
-		@{$p->{txt}} = ();
+                $p->{txt} = "";
+		$p->setHandlers(Char => $ch);
 	    }
 	    elsif ($tag eq "IMPLEMENTATION") {
 		$p->{ctx} = {};
@@ -63,7 +67,8 @@ sub new {
 		my $h = $p->{ctx}{script}{lc $tag} = {};
 		$h->{exec} = $attr{EXEC} if exists $attr{EXEC};
 		$h->{uri} = $attr{HREF} if exists $attr{HREF};
-		@{$p->{txt}} = ();
+                $p->{txt} = "";
+		$p->setHandlers(Char => $ch);
 	    }
 	    elsif ($tag eq "SOFTPKG") {
 		my @c = $p->context;
@@ -96,13 +101,15 @@ sub new {
 		$p->{ctx}{architecture} ||= $p->{arch} || "noarch";
 		$p->{ctx} = $p->{softpkg};
 	    }
-	    elsif ($TEXT_TAG{$tag} && @{$p->{txt}}) {
-		$p->{ctx}{lc $tag} = join("", @{$p->{txt}});
+	    elsif ($TEXT_TAG{$tag}) {
+		$p->{ctx}{lc $tag} = $p->{txt};
+                $p->setHandlers(Char => undef);
 	    }
-	    elsif ($tag =~ /^(UN)?INSTALL$/ && @{$p->{txt}}) {
+	    elsif ($tag =~ /^(UN)?INSTALL$/) {
 		my $h = $p->{ctx}{script}{lc $tag};
-		$h->{text} = join("", @{$p->{txt}})
+		$h->{text} = $p->{txt}
 		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
+                $p->setHandlers(Char => undef);
 	    }
 	    elsif ($tag eq "SOFTPKG") {
 		my $pkg = $p->{softpkg};
@@ -113,9 +120,6 @@ sub new {
 		return;
 	    }
 	},
-        Char => sub {
-	    push(@{$_[0]->{txt}}, $_[1]);
-         },
     );
 
     return $self;
