@@ -749,6 +749,7 @@ sub sync_db {
     my($self, %opt) = @_;
     my $dbh = $self->dbh;
     local $dbh->{AutoCommit} = 0;
+    local $dbh->{PrintError} = 0;  # the Perl package might have conflicting files
     my $name = $self->name || "unnamed";
     ppm_status("begin", "Syncing $name PPM database with .packlists");
     my $unchanged = 0;
@@ -797,9 +798,20 @@ sub sync_db {
 	    }
 ;	    unless (eval { $dbh->do("INSERT INTO file (package_id, path, md5, mode) VALUES (?, ?, ?, ?)", undef, $id, $path, $info->{md5}, $info->{mode}) })
 	    {
-		my $epath = $self->_expand_path($path);
 		my $owner = $dbh->selectrow_array("SELECT package.name FROM package, file WHERE package.id = file.package_id AND file.path = ?", undef, $path);
-		ppm_log("ERR", "Package $pkg: File conflict for $epath already owned by $owner");
+		if ($pkg eq "Perl") {
+		    # no problem
+		    ppm_debug("Package $owner: Have overwritten Perl's $f");
+		    next;
+		}
+		if ($owner eq "Perl") {
+		    ppm_debug("Package $pkg: Have overwritten Perl's $f");
+		    $dbh->do("UPDATE file SET package_id = ?, md5 = ?, mode = ? WHERE path = ?", undef,
+			     $id, $info->{md5}, $info->{mode}, $path);
+		    next;
+		    
+		}
+		ppm_log("ERR", "Package $pkg: File conflict for $f already owned by $owner");
 		next;
 	    }
 
