@@ -1067,6 +1067,7 @@ sub do_upgrade {
 	    next if @ARGV && lc($ARGV[0]) ne lc($pkg_name);
 	    $pkg_count++;
 	    next if $shaddow{$pkg_name}++;
+	    eval {
 	    if (my $best = $ppm->package_best($pkg_name, 0)) {
 		if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
 		    my $pkg = $area->package($pkg_id);
@@ -1085,6 +1086,10 @@ sub do_upgrade {
 			}
 		    }
 		}
+	    }
+	    };
+	    if ($@) {
+		ppm_log("ERR", $@);
 	    }
 	}
     }
