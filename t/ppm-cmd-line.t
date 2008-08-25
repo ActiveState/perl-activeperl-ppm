@@ -78,18 +78,16 @@ ok($ppm_out, qr/^perl\s+(\d+)/m);
 # try installing from our live repo
 my $live_repo = 1;
 $live_repo = 0 if $^O eq "aix";
-# XXX no repo for 5.10 yet
-$live_repo = 0 if $] >= 5.010;
 $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bsolaris(-\w+)*-64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bx86-solaris\b/;
 if ($live_repo) {
-    ppm("install", "Tie-Log", "--area", $prefix_base, "--force");
+    ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
     ok($?, 0);
-    ppm("verify", "Tie-Log");
+    ppm("verify", "File-Slurp");
     ok($?, 0);
-    ok(ppm("files", "Tie-Log") =~ m,^\Q$prefix\E/lib/Tie/Log\.pm$,m); #lib/Tie/Log\.pm$,m);
-    ok(ppm("remove", "Tie-Log"), "Tie-Log: uninstalled\n");
+    ok(ppm("files", "File-Slurp") =~ m,^\Q$prefix\E/lib/File/Slurp\.pm$,m);
+    ok(ppm("remove", "File-Slurp"), "File-Slurp: uninstalled\n");
 }
 else {
     skip("No live repo for $Config{archname}") for 1..4;
