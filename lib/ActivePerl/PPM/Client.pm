@@ -594,7 +594,7 @@ sub repo_sync {
 		}
 		};
 		if ($@) {
-		    ppm_log("ERR", "Unable to process reponse from repo $repo->{name}: $@");
+		    ppm_log("ERR", "Unable to process response from repo $repo->{name}: $@");
 		}
 	    }
 	    else {

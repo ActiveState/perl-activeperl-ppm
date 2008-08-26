@@ -37,7 +37,7 @@ sub simple_request {
     my $res = $self->SUPER::simple_request($req, @_);
 
     if ($res->content_type =~ m,^application/(x-)?gzip$,) {
-	# tweak reponse so that 'decoded_content' will decode it
+	# tweak response so that 'decoded_content' will decode it
 	$res->content_type("application/octet-stream");
 	$res->push_header("Content-Encoding", "gzip");
     }
