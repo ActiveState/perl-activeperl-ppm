@@ -767,8 +767,9 @@ sub feature_have {
 
     if (!@_ && $feature =~ /::/) {
 	require ActiveState::ModInfo;
+        require ActiveState::Version;
 	if (my $path = ActiveState::ModInfo::find_module($feature, $self->{inc})) {
-	    return ActiveState::ModInfo::parse_version($path) || 0;
+	    return ActiveState::Version::vnumify(ActiveState::ModInfo::parse_version($path));
 	}
 	ppm_debug("Module $feature not found in \@INC");
     }
@@ -1072,6 +1073,7 @@ sub install {
 	    my $codebase_file = $pkg->{codebase_file};
 
 	    require ActiveState::ModInfo;
+            require ActiveState::Version;
 	    my $extract_file = sub {
 		my($fname, $extractor) = @_;
 		return if $fname =~ m,/\.exists$,;       # don't think these are needed
@@ -1087,7 +1089,7 @@ sub install {
 		    if ($mod =~ s,^blib/(?:lib|arch)/,,) {
 			$mod = ActiveState::ModInfo::fname2mod($mod);
 			$mod .= "::" unless $mod =~ /::/;
-			$pkg->{provide}{$mod} = ActiveState::ModInfo::parse_version($to) || 0;
+			$pkg->{provide}{$mod} = ActiveState::Version::vnumify(ActiveState::ModInfo::parse_version($to));
 		    }
 		}
 	    };

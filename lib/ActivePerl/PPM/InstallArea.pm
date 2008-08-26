@@ -4,6 +4,7 @@ use strict;
 use Config qw(%Config);
 use Carp qw(croak);
 use ActiveState::ModInfo qw(fname2mod parse_version);
+use ActiveState::Version qw(vnumify);
 use ActiveState::Path qw(join_path);
 use File::Compare ();
 use File::Basename ();
@@ -825,11 +826,11 @@ sub sync_db {
 		unless ($opt{keep_package_version}) {
 		    (my $mod_pkg = $mod) =~ s/::/-/g;
 		    if ($mod_pkg eq $pkg && defined($vers)) {
-			$dbh->do("UPDATE package SET version = ? WHERE id = ?", undef, $vers, $id);
+			$dbh->do("UPDATE package SET version = ? WHERE id = ?", undef, "$vers", $id);
 		    }
 		}
 		$mod .= "::" unless $mod =~ /::/;
-		$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef, $id, $mod, ($vers || 0), "p");
+		$dbh->do("INSERT INTO feature (package_id, name, version, role) VALUES(?, ?, ?, ?)", undef, $id, $mod, vnumify($vers), "p");
 	    }
 	}
 	$dbh->commit;
