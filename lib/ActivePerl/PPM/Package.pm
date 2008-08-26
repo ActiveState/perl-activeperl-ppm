@@ -3,7 +3,7 @@ package ActivePerl::PPM::Package;
 use strict;
 use Carp qw(croak);
 use ActiveState::Version qw(vcmp);
-use ActivePerl::PPM::Logger qw(ppm_status);
+use ActivePerl::PPM::Logger qw(ppm_status ppm_log);
 
 sub BASE_FIELDS {
     return (
@@ -94,6 +94,7 @@ sub compare {
     my($a, $b) = @_;
 
     my $c = undef;
+    my $c_mod = undef;
 
     if ($a->features_declared && $b->features_declared) {
 	# compare the shared features to see if we have a winner
@@ -103,9 +104,13 @@ sub compare {
 	    $c = 0 unless defined $c;
 	    next if $c2 == 0;
 	    if ($c) {
-		return undef unless $c == $c2;  # conflict
+		unless ($c == $c2) {
+		    ppm_log("ERR", "Version compare conflict for package $a->{name}; $c_mod ($a->{provide}{$c_mod} <=> $b->{provide}{$c_mod}) and $mod ($a->{provide}{$mod} <=> $b->{provide}{$mod}) have inconsistent ordering");
+		    return undef;
+		}
 	    }
 	    else {
+		$c_mod = $mod if !$c && $c2;
 		$c = $c2;
 	    }
 	}
