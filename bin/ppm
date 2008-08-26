@@ -1220,7 +1220,7 @@ sub do_remove {
 
     my $removed_count = 0;
     for my $pkg (@ARGV) {
-	my $area; ($opt_area ? $ppm->area($opt_area) : ());
+	my $area;
 	my $pkg_o;
 	if ($opt_area) {
 	    $area =  $ppm->area($opt_area);
