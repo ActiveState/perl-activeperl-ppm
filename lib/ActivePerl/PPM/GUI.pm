@@ -1136,7 +1136,7 @@ sub menus {
         $web->add_command(
             -label => "Report Bug",
             -command => [\&ActiveState::Browser::open,
-			 "http://bugs.activestate.com/enter_bug.cgi?set_product=ActivePerl"],
+			 "http://bugs.activestate.com/enter_bug.cgi?product=ActivePerl"],
         );
         $web->add_command(
             -label => "ActiveState Repository",
