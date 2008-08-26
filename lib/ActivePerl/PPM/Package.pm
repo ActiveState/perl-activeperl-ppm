@@ -122,8 +122,10 @@ sub compare {
 	}
     }
 
-    # last resort is heuristic comparison of version labels
-    $c ||= vcmp($a->{version}, $b->{version});
+    unless ($c && $a->{name} eq $b->{name}) {
+	# last resort is heuristic comparison of version labels
+	$c ||= vcmp($a->{version}, $b->{version});
+    }
 
     return $c;
 }
