@@ -622,13 +622,19 @@ sub do_repo {
 	        force => \$force,
                 'max-ppd=n' => \$max_ppd,
             ) || usage();
-	    usage() if @ARGV > 1 || (@ARGV && $ARGV[0] !~ /^\d+$/);
+	    usage() if @ARGV > 1;
+	}
+	my @repo;
+	if (@ARGV) {
+	    my $repo = $ppm->repo($ARGV[0]);
+	    die "No such repo; 'ppm repo list' will print what's available" unless $repo;
+	    push(@repo, repo => $repo->{id});
 	}
 	$ppm->repo_sync(
 	    validate => 1,
 	    force => $force,
             max_ppd => $max_ppd,
-	    (@ARGV ? ("repo" => $ARGV[0]) : ()),
+	    @repo,
         );
     }
     elsif ($cmd eq "on" || $cmd eq "off" || $cmd eq "delete" || $cmd eq "describe") {
@@ -637,8 +643,8 @@ sub do_repo {
 	my $repo = $ppm->repo($ARGV[0]);
 	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
 	if ($cmd eq "delete") {
-	    $ppm->repo_delete($ARGV[0]);
-	    print "Repo $ARGV[0] deleted.\n";
+	    $ppm->repo_delete($repo->{id});
+	    print "Repo $repo->{id} deleted.\n";
 	}
 	elsif ($cmd eq "describe") {
 	    require ActiveState::Duration;
@@ -670,7 +676,7 @@ sub do_repo {
 	    }
 	}
 	else {
-	    $ppm->repo_enable($ARGV[0], $cmd eq "on");
+	    $ppm->repo_enable($repo->{id}, $cmd eq "on");
 	}
     }
     elsif ($cmd eq "add") {

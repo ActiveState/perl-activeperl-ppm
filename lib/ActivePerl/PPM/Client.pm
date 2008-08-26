@@ -331,7 +331,22 @@ sub repos {
 sub repo {
     my($self, $id) = @_;
     my $dbh = $self->dbh;
-    my $hash = $dbh->selectrow_hashref("SELECT * FROM repo WHERE id = ?", undef, $id);
+    my $hash;
+    if ($id =~ /^\d+$/) {
+	$hash = $dbh->selectrow_hashref("SELECT * FROM repo WHERE id = ?", undef, $id);
+    }
+    else {
+	$hash = $dbh->selectrow_hashref("SELECT * FROM repo WHERE name = ?", undef, $id);
+	unless ($hash) {
+	    my $sth = $dbh->prepare("SELECT * FROM repo WHERE name like ? ORDER BY id");
+	    $sth->execute("%$id%");
+	    my @h;
+	    while (my $h = $sth->fetchrow_hashref) {
+		push(@h, $h);
+	    }
+	    $hash = $h[0] if @h == 1;  # unique
+	}
+    }
     if ($hash) {
 	my $pkgs = $dbh->selectrow_array("SELECT count(*) FROM package WHERE repo_id = ?", undef, $id);
 	$hash->{pkgs} = $pkgs;
