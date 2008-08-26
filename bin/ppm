@@ -1322,6 +1322,7 @@ Manage and search repositories:
     ppm repo on <num>
     ppm repo off <num>
     ppm repo describe <num>
+    ppm repo add <name>
     ppm repo add <url> [<name>] [--username <user> [--password <passwd>]]
     ppm repo rename <num> <name>
     ppm repo location <num> <url>
@@ -1533,6 +1534,13 @@ Alias for B<ppm repo>.  Provided for PPM version 3 compatibility.
 =item B<ppm repo>
 
 Alias for B<ppm repo list>.
+
+=item B<ppm repo add> I<name>
+
+Add the named resposity for PPM to fetch packages from.  The names
+recognized are shown by the B<ppm repo suggest> command.  Use B<ppm
+repo add activestate> if you want to restore the default ActiveState
+repo after deleting it.
 
 =item B<ppm repo add> I<url> [ I<name> ] [ B<--username> I<user> [ B<--password> I<password> ]
 
