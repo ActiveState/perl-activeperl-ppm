@@ -122,9 +122,12 @@ sub compare {
 	}
     }
 
-    unless ($c && $a->{name} eq $b->{name}) {
-	# last resort is heuristic comparison of version labels
-	$c ||= vcmp($a->{version}, $b->{version});
+    if (!$c && $a->{name} eq $b->{name}) {
+	# last resort is heuristic comparison of version labels and release dates
+	$c = vcmp($a->{version}, $b->{version});
+	if (!$c && $a->{release_date} && $b->{release_date}) {
+	    $c = $a->{release_date} cmp $b->{release_date};  # YYYY-MM-DD strings
+	}
     }
 
     return $c;
