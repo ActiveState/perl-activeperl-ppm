@@ -1220,6 +1220,10 @@ sub do_remove {
 
     my $removed_count = 0;
     for my $pkg (@ARGV) {
+	if ($pkg =~ /^\d+$/) {
+	    print "$pkg: not installed\n";
+	    next;
+	}
 	my $area;
 	my $pkg_o;
 	if ($opt_area) {
