@@ -20,6 +20,9 @@ sub BASE_FIELDS {
     );
 }
 
+our $COMPARE_FEATURES = 1;
+$COMPARE_FEATURES = $ENV{ACTIVEPERL_PPM_COMPARE_FEATURES} if exists $ENV{ACTIVEPERL_PPM_COMPARE_FEATURES};
+
 #
 # constructors
 #
@@ -96,7 +99,7 @@ sub compare {
     my $c = undef;
     my $c_mod = undef;
 
-    if ($a->features_declared && $b->features_declared) {
+    if ($COMPARE_FEATURES && $a->features_declared && $b->features_declared) {
 	# compare the shared features to see if we have a winner
 	for my $mod (keys %{$a->{provide}}) {
 	    next unless exists $b->{provide}{$mod};
