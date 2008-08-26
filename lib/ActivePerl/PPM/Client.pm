@@ -338,7 +338,7 @@ sub repo {
     else {
 	$hash = $dbh->selectrow_hashref("SELECT * FROM repo WHERE name = ?", undef, $id);
 	unless ($hash) {
-	    my $sth = $dbh->prepare("SELECT * FROM repo WHERE name like ? ORDER BY id");
+	    my $sth = $dbh->prepare("SELECT * FROM repo WHERE name LIKE ?");
 	    $sth->execute("%$id%");
 	    my @h;
 	    while (my $h = $sth->fetchrow_hashref) {
