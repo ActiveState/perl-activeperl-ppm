@@ -3,7 +3,7 @@ package ActivePerl::PPM::Arch;
 use strict;
 use base 'Exporter';
 
-our @EXPORT_OK = qw(arch short_arch pretty_arch);
+our @EXPORT_OK = qw(arch short_arch pretty_arch osname @archs);
 
 use Config qw(%Config);
 
@@ -23,6 +23,14 @@ sub short_arch {
     return $arch;
 }
 
+sub osname {
+    my $arch = shift || arch();
+    for (qw(MSWin32 darwin aix linux solaris)) {
+        return $_ if index($arch, $_) >= 0;
+    }
+    return "hpux";  # the odd one
+}
+
 sub pretty_arch {
     my $arch = shift || arch();
     1 while $arch =~ s/-(thread|multi|2level)//;
@@ -34,15 +42,52 @@ sub pretty_arch {
     elsif ($arch eq "aix") {
         $arch = "AIX";
     }
-    elsif ($arch =~ /^MSWin32-x86(_64)?$/) {
+    elsif ($arch =~ /^MSWin32-x(86|64)?$/) {
         $arch = "Windows";
-        $arch .= " 64" if $1;
+        $arch .= " 64" if $1 eq "64";
+    }
+    elsif ($arch =~ /^(i686|x86_64|ia64)-linux$/) {
+        my $cpu = $1;
+        $cpu = "x86" if $cpu eq "i686";
+        $cpu = "IA64" if $cpu eq "ia64";
+	$arch = "Linux ($cpu)";
+    }
+    elsif ($arch =~ /^(x86|sun4)-solaris(-64)?$/) {
+        $arch = "Solaris";
+        $arch .= " 64" if $2;
+        $arch .= " ($1)" if $1 ne "sun4";
+    }
+    elsif ($arch =~ /^(IA64\.ARCHREV_0|PA-RISC\d+\.\d+)(-LP64)?$/) {
+        $arch = "HP-UX";
+        $arch .= " 64" if $2;
+        my $cpu = $1;
+        $cpu = "IA64" if $cpu =~ /^IA64/;
+        $cpu =~ s/(?<=^PA-RISC)/ /;
+        $arch .= " ($cpu)";
     }
     else {
         $arch = ucfirst($arch);  # lame
     }
     return "ActivePerl $perl on $arch";
 }
+
+our @archs = qw(
+    IA64.ARCHREV_0
+    IA64.ARCHREV_0-LP64
+    MSWin32-x86
+    MSWin32-x64
+    PA-RISC1.1
+    PA-RISC2.0-LP64
+    aix
+    darwin
+    i686-linux
+    ia64-linux
+    sun4-solaris
+    sun4-solaris-64
+    x86-solaris
+    x86-solaris-64
+    x86_64-linux
+);
 
 1;
 
