@@ -42,7 +42,7 @@ sub pretty_arch {
     elsif ($arch eq "aix") {
         $arch = "AIX";
     }
-    elsif ($arch =~ /^MSWin32-x(86|64)?$/) {
+    elsif ($arch =~ /^MSWin32-x(86|64)$/) {
         $arch = "Windows";
         $arch .= " 64" if $1 eq "64";
     }

@@ -5,7 +5,7 @@ use Config qw(%Config);
 use Carp qw(croak);
 use ActiveState::ModInfo qw(fname2mod parse_version);
 use ActiveState::Version qw(vnumify);
-use ActiveState::Path qw(join_path);
+use ActiveState::Path qw(join_path abs_path);
 use File::Compare ();
 use File::Basename ();
 
@@ -259,6 +259,12 @@ sub package_files {
     return $self->dbh->selectrow_array("SELECT count(*) FROM file WHERE package_id = ?", undef, $id)
 	unless wantarray;
     return map $self->_expand_path($_), @{$self->dbh->selectcol_arrayref("SELECT path FROM file WHERE package_id = ? ORDER BY path", undef, $id)}
+}
+
+sub file_owner {
+    my($self, $path) = @_;
+    $path = $self->_relative_path(abs_path($path));
+    return $self->dbh->selectrow_array("SELECT package_id FROM file WHERE path = ?", undef, $path);
 }
 
 sub package_packlist {
@@ -1196,6 +1202,11 @@ package provide the given feature.
 
 Returns the list of names for the files that belong to the given
 package.  In scalar context return the number of files.
+
+=item $area->file_owner( $path )
+
+Return the $id if the package that owns the given file, or C<undef> if
+the file is not tracked by this install area.
 
 =item $area->package_packlist( $id )
 

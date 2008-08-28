@@ -1022,6 +1022,9 @@ sub install {
     my @pkgs = @{delete $args{packages} || []};
     die "No packages to install" unless @pkgs;
 
+    my $install_html = eval { require ActivePerl::DocTools; };
+    $install_html = $args{install_html} if defined $args{install_html};
+
     my $ua = web_ua();
     my $status = ppm_status();
     my $tmpdir = do { require File::Temp; File::Temp::tempdir("ppm-XXXXXX", TMPDIR => 1) };
@@ -1151,7 +1154,7 @@ sub install {
 	}
 
 	# generate HTML from the POD
-	if (eval { require ActivePerl::DocTools; }) {
+	if ($install_html) {
 	    require Cwd;
 	    my $pwd = Cwd::cwd();
 	    chdir($tmpdir) || die "Can't chdir $tmpdir: $!";
@@ -1192,7 +1195,7 @@ sub install {
 	    );
 	}
 
-	update_html_toc();
+	update_html_toc() if $install_html;
     };
     my $err = $@;
     require File::Path;
