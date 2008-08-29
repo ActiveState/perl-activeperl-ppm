@@ -96,6 +96,10 @@ sub features_declared {
 sub compare {
     my($a, $b) = @_;
 
+    if ($a->{name} eq $b->{name} && defined $a->{version} && defined $b->{version} && $a->{version} eq $b->{version} ) {
+	return 0;
+    }
+
     my $c = undef;
     my $c_mod = undef;
 
@@ -128,9 +132,6 @@ sub compare {
     if (!$c && $a->{name} eq $b->{name}) {
 	# last resort is heuristic comparison of version labels and release dates
 	$c = vcmp($a->{version}, $b->{version});
-	if (!$c && $a->{release_date} && $b->{release_date}) {
-	    $c = $a->{release_date} cmp $b->{release_date};  # YYYY-MM-DD strings
-	}
     }
 
     return $c;
