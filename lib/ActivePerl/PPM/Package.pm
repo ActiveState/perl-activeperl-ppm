@@ -96,7 +96,12 @@ sub features_declared {
 sub compare {
     my($a, $b) = @_;
 
-    if ($a->{name} eq $b->{name} && defined $a->{version} && defined $b->{version} && $a->{version} eq $b->{version} ) {
+    if ($a->{name} eq $b->{name}
+        && defined($a->{version})
+        && defined($b->{version})
+        && length($a->{version})
+        && $a->{version} eq $b->{version})
+    {
 	return 0;
     }
 
