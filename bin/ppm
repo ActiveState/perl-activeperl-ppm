@@ -881,7 +881,7 @@ sub do_search {
 	    my $count_width = length(@res);
 	    for (@res) {
 		$count++;
-		printf "%*d: %s v%s\n", $count_width, $count, $_->[0], $_->[1];
+		printf "%*d: %s %s\n", $count_width, $count, $_->[0], $_->[1];
 	    }
 	}
     }
@@ -961,7 +961,7 @@ sub _tree {
 	    print "  " x $depth, "  needs $feature";
 	    my $vers = $require->{$feature};
 	    if ($vers) {
-		print " v$vers or better";
+		print " $vers or better";
 	    }
 
 	    my @facts;
@@ -1078,7 +1078,7 @@ sub do_upgrade {
 		if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
 		    my $pkg = $area->package($pkg_id);
 		    if ($best->better_than($pkg)) {
-			print "$pkg_name $best->{version} (have v$pkg_version)\n";
+			print "$pkg_name $best->{version} (have $pkg_version)\n";
 			$upgrade_count++;
 			if ($install) {
 			    my $install_area = $area_name;
