@@ -100,6 +100,7 @@ sub compare {
         && defined($a->{version})
         && defined($b->{version})
         && length($a->{version})
+        && length($b->{version})
         && $a->{version} eq $b->{version})
     {
 	return 0;
