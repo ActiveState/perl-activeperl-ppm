@@ -99,9 +99,8 @@ sub compare {
     if ($a->{name} eq $b->{name}
         && defined($a->{version})
         && defined($b->{version})
-        && length($a->{version})
-        && length($b->{version})
-        && $a->{version} eq $b->{version})
+        && $a->{version} eq $b->{version}
+        && length($a->{version}))
     {
 	return 0;
     }
