@@ -1166,7 +1166,8 @@ sub _install_uri {
     }
 
     if ($tmp_ppmx) {
-        $pkg->{codebase} = $tmp_ppmx->filename;
+        require URI::file;
+        $pkg->{codebase} = URI::file->new_abs($tmp_ppmx->filename);
     }
 
     # XXX follow dependencies with the "directory" of $pkg $uri as the
