@@ -72,21 +72,21 @@ sub pretty_arch {
 }
 
 our @archs = qw(
-    IA64.ARCHREV_0
-    IA64.ARCHREV_0-LP64
     MSWin32-x86
     MSWin32-x64
-    PA-RISC1.1
-    PA-RISC2.0-LP64
-    aix
     darwin
     i686-linux
+    x86_64-linux
     ia64-linux
     sun4-solaris
     sun4-solaris-64
     x86-solaris
     x86-solaris-64
-    x86_64-linux
+    PA-RISC1.1
+    PA-RISC2.0-LP64
+    IA64.ARCHREV_0
+    IA64.ARCHREV_0-LP64
+    aix
 );
 
 1;
