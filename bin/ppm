@@ -999,11 +999,9 @@ sub _tree {
 	    print "\n";
 	}
 
-	if (%subpkg) {
-	    for (sort keys %subpkg) {
-		my $h = $subpkg{$_};
-		_tree($h->{pkg}, $seen, join_with("and", @{$h->{reason}}), $depth + 1);
-	    }
+	for (sort keys %subpkg) {
+	    my $h = $subpkg{$_};
+	    _tree($h->{pkg}, $seen, join_with("and", @{$h->{reason}}), $depth + 1);
 	}
     }
     else {
