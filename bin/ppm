@@ -966,6 +966,7 @@ sub _tree {
 
     my $require = $pkg->{require};
     if ($require && %$require) {
+	my %subpkg;
 	for my $feature (sort keys %$require) {
 	    print "  " x $depth, "  needs $feature";
 	    my $vers = $require->{$feature};
@@ -985,11 +986,24 @@ sub _tree {
 	    }
 	    push(@facts, "not installed") unless $found;
 
-	    my $subpkg = $ppm->package_best($feature, $vers);
-	    push(@facts, "not provided by any repo") unless $subpkg;
+	    if (my $subpkg = $ppm->package_best($feature, $vers)) {
+		my $h = $subpkg{$subpkg->name_version} ||= {
+		    pkg => $subpkg,
+		};
+		push(@{$h->{reason}}, $feature) if $feature ne $pkg->name;
+	    }
+	    else {
+		push(@facts, "not provided by any repo");
+	    }
 	    print " (", join_with("and", @facts), ")" if @facts;
 	    print "\n";
-	    _tree($subpkg, $seen, $feature, $depth + 1) if $subpkg;
+	}
+
+	if (%subpkg) {
+	    for (sort keys %subpkg) {
+		my $h = $subpkg{$_};
+		_tree($h->{pkg}, $seen, join_with("and", @{$h->{reason}}), $depth + 1);
+	    }
 	}
     }
     else {
