@@ -949,15 +949,21 @@ sub do_tree {
 	    die "*** no package called $pkg ***\n";
 	$pkg = $tmp;
     }
-    _tree($pkg);
+    _tree($pkg, {});
 }
 
 sub _tree {
-    my($pkg, $reason, $depth) = @_;
+    my($pkg, $seen, $reason, $depth) = @_;
     $depth ||= 0;
+
     print "  " x $depth, "package ", $pkg->name_version;
     print " provide $reason" if $reason && $reason ne $pkg->{name};
     print "\n";
+    
+    if ($seen->{$pkg->name_version}++) {
+	return;
+    }
+
     my $require = $pkg->{require};
     if ($require && %$require) {
 	for my $feature (sort keys %$require) {
@@ -983,7 +989,7 @@ sub _tree {
 	    push(@facts, "not provided by any repo") unless $subpkg;
 	    print " (", join_with("and", @facts), ")" if @facts;
 	    print "\n";
-	    _tree($subpkg, $feature, $depth + 1) if $subpkg;
+	    _tree($subpkg, $seen, $feature, $depth + 1) if $subpkg;
 	}
     }
     else {
