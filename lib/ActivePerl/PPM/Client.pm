@@ -18,6 +18,13 @@ use File::Basename;
 
 use base 'ActivePerl::PPM::DBH';
 
+# for HTTP::Response::freshness_lifetime
+my $DAY = 24*60*60;
+my %EXPIRY_DEFAULTS = (
+    h_min => 1 * $DAY,
+    h_max => 7 * $DAY,
+);
+
 sub new {
     my $class = shift;
     my $dir = shift if @_ % 2;
@@ -506,14 +513,14 @@ sub repo_sync {
 	    #print $res->status_line, "\n";
 	    if ($res->code == 304) {  # not modified
 		@check_ppd = @{$dbh->selectcol_arrayref("SELECT ppd_uri FROM package WHERE ppd_uri NOTNULL AND repo_id = ?", undef, $repo->{id})};
-		$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, $res->fresh_until, $repo->{id});
+		$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, $res->fresh_until(%EXPIRY_DEFAULTS), $repo->{id});
 	    }
 	    elsif ($res->is_success) {
 		$dbh->do("UPDATE repo SET packlist_etag=?, packlist_lastmod=?, packlist_size=?, packlist_fresh_until=? WHERE id=?", undef,
 			 scalar($res->header("ETag")),
 			 scalar($res->header("Last-Modified")),
 			 scalar($res->header("Content-Length")),
-			 $res->fresh_until,
+			 $res->fresh_until(%EXPIRY_DEFAULTS),
 			 $repo->{id});
 
 		# parse document
@@ -638,7 +645,7 @@ sub _check_ppd {
     my $ppd_res = $ua->get($abs_url, @h);
     #print $ppd_res->as_string, "\n" unless $ppd_res->code eq 200 || $ppd_res->code eq 304;
     if ($row && $ppd_res->code == 304) {  # not modified
-	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until, $row->{id});
+	$dbh->do("UPDATE package SET ppd_fresh_until = ? WHERE id = ?", undef, $ppd_res->fresh_until(%EXPIRY_DEFAULTS), $row->{id});
 	delete $delete_package->{$row->{id}} if $delete_package;
     }
     elsif ($ppd_res->is_success) {
@@ -654,7 +661,7 @@ sub _check_ppd {
 	    $ppd->{ppd_uri} = $rel_url;
 	    $ppd->{ppd_etag} = $ppd_res->header("ETag");
 	    $ppd->{ppd_lastmod} = $ppd_res->header("Last-Modified");
-	    $ppd->{ppd_fresh_until} = $ppd_res->fresh_until;
+	    $ppd->{ppd_fresh_until} = $ppd_res->fresh_until(%EXPIRY_DEFAULTS);
 
 	    $ppd->dbi_store($dbh);
 	    delete $delete_package->{$row->{id}} if $delete_package && $row;
