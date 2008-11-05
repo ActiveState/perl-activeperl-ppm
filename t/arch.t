@@ -12,6 +12,6 @@ print "# pretty_arch = ", pretty_arch(), "\n";
 
 ok(length(arch()) > length(short_arch()));
 
-for (@archs) {
-    print "# ", pretty_arch($_), "\n";
+for (@archs, "noarch", "noarch-5.8") {
+    printf "# %-22s %s\n", $_, pretty_arch($_);
 }

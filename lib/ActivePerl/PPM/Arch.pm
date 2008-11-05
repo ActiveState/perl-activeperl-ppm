@@ -66,7 +66,9 @@ sub pretty_arch {
     elsif ($arch =~ /^(x86|sun4)-solaris(-64)?$/) {
         $arch = "Solaris";
         $arch .= " 64" if $2;
-        $arch .= " ($1)" if $1 ne "sun4";
+	my $cpu = $1;
+	$cpu = "SPARC" if $cpu eq "sun4";
+        $arch .= " ($cpu)";
     }
     elsif ($arch =~ /^(IA64\.ARCHREV_0|PA-RISC\d+\.\d+)(-LP64)?$/) {
         $arch = "HP-UX";
