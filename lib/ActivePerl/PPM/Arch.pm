@@ -3,7 +3,7 @@ package ActivePerl::PPM::Arch;
 use strict;
 use base 'Exporter';
 
-our @EXPORT_OK = qw(arch short_arch pretty_arch osname @archs);
+our @EXPORT_OK = qw(arch short_arch full_arch pretty_arch osname @archs);
 
 use Config qw(%Config);
 
@@ -23,11 +23,22 @@ sub short_arch {
     return $arch;
 }
 
+sub full_arch {
+    my $arch = shift;
+    return $arch if $arch =~ /-thread\b/;
+    my $perl = "";
+    $perl = $1 if $arch =~ s/(-5\.\d\d?)$//;
+    return "$arch-thread-multi-2level$perl" if $arch =~ /^darwin/;
+    return "$arch-multi-thread$perl"        if $arch =~ /^MSWin/;
+    return "$arch-thread-multi$perl";
+}
+
 sub osname {
     my $arch = shift || arch();
     for (qw(MSWin32 darwin aix linux solaris)) {
         return $_ if index($arch, $_) >= 0;
     }
+    return "" if $arch eq "noarch";
     return "hpux";  # the odd one
 }
 
@@ -64,6 +75,10 @@ sub pretty_arch {
         $cpu = "IA64" if $cpu =~ /^IA64/;
         $cpu =~ s/(?<=^PA-RISC)/ /;
         $arch .= " ($cpu)";
+    }
+    elsif ($arch eq "noarch") {
+	return "ActivePerl" if $perl eq "5.6";
+	return "ActivePerl $perl (and later)";
     }
     else {
         $arch = ucfirst($arch);  # lame
@@ -114,12 +129,19 @@ appended.
 
 =item short_arch()
 
+=item short_arch( $arch )
+
 This is the shorteded architecture string; dropping the segments for
 features that will always be enabled for ActivePerl ("thread",
 "multi", "2level").
 
 Used to form the URL for the PPM CPAN repositories provided by
 ActiveState.
+
+=item full_arch( $short_arch )
+
+Convert back from a short arch string to a full one.  If the passed arch
+string is already full it's returned unchanged.
 
 =item pretty_arch()
 
