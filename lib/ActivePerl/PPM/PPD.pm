@@ -164,8 +164,10 @@ specified.
 
 The PPM PPD is an XML based format used to describe PPM packages.
 The format is based on the now defunct OSD specification
-(L<http://www.w3.org/TR/NOTE-OSD>).  This shows an example of a
-minimal PPD document:
+(L<http://www.w3.org/TR/NOTE-OSD>).  PPD files need to use the
+F<.ppd> suffix to be recognized.
+
+This shows an example of a minimal PPD document:
 
   <SOFTPKG NAME="Acme-Buffy" VERSION="1.3" DATE="2002-03-27">
     <AUTHOR CPAN="LBROCARD">Leon Brocard &lt;leon@astray.com></AUTHOR>
@@ -438,6 +440,53 @@ The TITLE element is deprecated and ignored.  The SOFTPKG/NAME
 attribute is the title.
 
 =back
+
+=head1 REPOSITORYSUMMARY XML FORMAT
+
+Because it's inefficient to transfer lots of small PPD files
+repositories usually collect them together in a F<package.xml> file
+and the ppm client know to look for this file when a new repository is
+added.  The F<package.xml> has the <REPOSITORYSUMMARY> element as root
+and it's kids are the <SOFTPKG> elements of the PPD files it
+contains.
+
+For historic reasons the tagname <REPOSITORY> can be used as an
+alternative to <REPOSITORYSUMMARY>.
+
+The <REPOSITORYSUMMARY> tag allow for the following optional attributes:
+
+=over
+
+=item BASE="I<URL>"
+
+The value is an absolute URL that's used as base for resolving any
+relative URLs in the package descriptions.  If not provided the URL of
+the F<package.xml> file itself is the base.
+
+=item ARCHITECTURE="..."
+
+If specified this provide a default for the <ARCHITECTURE NAME="..."/>
+element in each of the embedded PPDs.  It's common to package together
+all packages for a given architecture and this provide a way to avoid
+repeating the <ARCHITECTURE> element for every package.
+
+=back
+
+=head1 PPMX FILE FORMAT
+
+A PPM package basically consist of a PPD file and the tarball of code
+referenced by the <CODEBASE> element.  It's often convenient to bundle
+them together and that's what PPMX files provide for.  PPMX files are
+F<.tar.gz> files where the first file inside the tarball is the PPD
+file.  PPMX files need to use the F<.ppmx> suffix to be recognized.
+
+The name of the PPD file inside the tarball needs to end with F<.ppd>
+but the rest of the name can be anything.  The <CODEBASE> of the
+embedded PPD file is effectively ignored as it is forced to reference
+the PPMX file itself.
+
+Install and uninstall scripts embedded in the PPMX file are not
+supported yet.
 
 =head1 SEE ALSO
 
