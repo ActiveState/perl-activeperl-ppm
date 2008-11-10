@@ -535,9 +535,13 @@ Returns a list of (feature, version) pairs describing what features
 this package require to be installed for it to work properly.  A
 feature name with a double colon in it represent a perl module.
 
+=back
+
 =head2 Comparators
 
 The following functions/methods can be used to order packages.
+
+=over
 
 =item $pkg->compare( $other )
 
