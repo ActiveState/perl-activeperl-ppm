@@ -168,7 +168,7 @@ The format is based on the now defunct OSD specification
 minimal PPD document:
 
   <SOFTPKG NAME="Acme-Buffy" VERSION="1.3" DATE="2002-03-27">
-    <AUTHOR>Leon Brocard (leon@astray.com)</AUTHOR>
+    <AUTHOR CPAN="LBROCARD">Leon Brocard &lt;leon@astray.com></AUTHOR>
     <ABSTRACT>
       An encoding scheme for Buffy the Vampire Slayer fans
     </ABSTRACT>
@@ -199,10 +199,11 @@ either SOFTPKG or IMPLEMENTATION.
 Packages or implementations marked with "noarch" are assumed to
 installable on any architecture.
 
-=item <AUTHOR>...</AUTHOR>
+=item <AUTHOR CPAN="...">...</AUTHOR>
 
-Content is the package author's name (with email address). No
-attributes.  Parent must be a SOFTPKG element.
+Content is the package author's name (with email address). The
+optional CPAN attribute can be used for CPAN packages to carry the
+CPAN author ID. Parent must be a SOFTPKG element.
 
 =item <CODEBASE HREF="..."/>
 
