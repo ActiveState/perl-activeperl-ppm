@@ -86,7 +86,6 @@ while (@ARGV) {
 	}
     }
     my @pkgs = ($$cref =~ /(<SOFTPKG\s.*?<\/SOFTPKG\s*>)/gs);
-    splice(@pkgs, 5) if @pkgs > 5;  # XXX smaller size during debug
     for (@pkgs) {
 	$_ = PPD->new($_, $base, $arch);
 	$_->merge_arch;
