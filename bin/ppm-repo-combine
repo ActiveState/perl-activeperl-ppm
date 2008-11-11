@@ -3,6 +3,14 @@
 use strict;
 use warnings;
 
+# TODO:
+#  - merge in ARCHITECTURE from REPOSITORYSUMMARY
+#  - absolutize all HREFs
+#  - relativeize all HREFs (REPOSITORYSUMMARY BASE)
+#  - merge PPDs
+#  - dereference HTML (directory listings of PPD files)
+#  - download HREFs (create standalone directory)
+
 use Getopt::Long qw(GetOptions);
 use LWP 5.820;
 use URI;
