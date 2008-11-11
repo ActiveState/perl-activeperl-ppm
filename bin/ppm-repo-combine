@@ -88,8 +88,6 @@ while (@ARGV) {
     my @pkgs = ($$cref =~ /(<SOFTPKG\s.*?<\/SOFTPKG\s*>)/gs);
     for (@pkgs) {
 	$_ = PPD->new($_, $base, $arch);
-	$_->merge_arch;
-	$_->absolutize;
     }
     push(@ppd, @pkgs);
 }
@@ -108,35 +106,27 @@ BEGIN {
 
     sub new {
 	my($class, $xml, $base, $arch) = @_;
-	bless [$xml, $base, $arch], $class;
-    }
+	my $self = bless \$xml, $class;
 
-    sub arch {
-	my $self = shift;
-	$self->[2] || "noarch";
+	# absolutize all the HREFs
+	$$self =~ s{(\sHREF\s*=\s*)"([^"]*)"}{
+            my $href = URI->new_abs($2, $base);
+            qq($1"$href");
+        }ge;
+
+	# set ARCHITECTURE if this came from a non-standard context
+	$arch ||= "noarch";
+	if ($arch ne "noarch" && $$self !~ /<ARCHITECTURE/) {
+	    $self->push_elem(qq(<ARCHITECTURE NAME="$arch"/>));
+	}
+
+	$self;
     }
 
     sub indent {
 	my $self = shift;
-	return $1 if $self->[0] =~ /^(\s+)<AUTHOR/m;
+	return $1 if $$self =~ /^(\s+)<AUTHOR/m;
 	return "";
-    }
-
-    sub absolutize {
-	my $self = shift;
-	my $base = $self->[1];
-	$self->[0] =~ s{(\sHREF\s*=\s*)"([^"]*)"}{
-            my $href = URI->new_abs($2, $base);
-            qq($1"$href");
-        }ge;
-    }
-
-    sub merge_arch {
-	my $self = shift;
-        my $arch = $self->arch;
-	if ($arch ne "noarch" && $self->[0] !~ /<ARCHITECTURE/) {
-	    $self->push_elem(qq(<ARCHITECTURE NAME="$arch"/>));
-	}
     }
 
     sub push_elem {
@@ -144,12 +134,12 @@ BEGIN {
 	if (my $indent = $self->indent) {
 	    $xml =~ s/^/$indent/g;
 	}
-	$self->[0] =~ s,(</SOFTPKG\s*>\z),$xml\n$1,;
+	$$self =~ s,(</SOFTPKG\s*>\z),$xml\n$1,;
     }
 
     sub as_xml {
 	my $self = shift;
-	return $self->[0];
+	return $$self;
     }
 }
 
