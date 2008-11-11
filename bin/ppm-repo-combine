@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 # TODO:
-#  - merge in ARCHITECTURE from REPOSITORYSUMMARY
 #  - absolutize all HREFs
 #  - relativeize all HREFs (REPOSITORYSUMMARY BASE)
 #  - merge PPDs
@@ -68,6 +67,7 @@ for (@ARGV) {
     splice(@pkgs, 5) if @pkgs > 5;  # XXX smaller size during debug
     for (@pkgs) {
 	$_ = PPD->new($_, $base, $arch);
+	$_->merge_arch;
     }
     push(@ppd, @pkgs);
 }
@@ -87,6 +87,33 @@ BEGIN {
     sub new {
 	my($class, $xml, $base, $arch) = @_;
 	bless [$xml, $base, $arch], $class;
+    }
+
+    sub arch {
+	my $self = shift;
+	$self->[2] || "noarch";
+    }
+
+    sub indent {
+	my $self = shift;
+	return $1 if $self->[0] =~ /^(\s+)<AUTHOR/m;
+	return "";
+    }
+
+    sub merge_arch {
+	my $self = shift;
+        my $arch = $self->arch;
+	if ($arch ne "noarch" && $self->[0] !~ /<ARCHITECTURE/) {
+	    $self->push_elem(qq(<ARCHITECTURE NAME="$arch"/>));
+	}
+    }
+
+    sub push_elem {
+	my($self, $xml) = @_;
+	if (my $indent = $self->indent) {
+	    $xml =~ s/^/$indent/g;
+	}
+	$self->[0] =~ s,(</SOFTPKG\s*>\z),$xml\n$1,;
     }
 
     sub as_xml {
