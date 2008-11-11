@@ -1,0 +1,129 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Getopt::Long qw(GetOptions);
+use LWP 5.820;
+use URI;
+use URI::file;
+
+GetOptions(\my %opt,
+    'base=s',
+) || usage();
+usage() unless @ARGV;
+
+my $base = $opt{base} ? URI->new($opt{base}) : URI::file->cwd;
+
+my $ua = LWP::UserAgent->new(
+    keep_alive => 1,
+    show_progress => 1,
+);
+
+#print "BASE: $base\n";
+
+my @ppd;
+for (@ARGV) {
+    my $res = $ua->get(URI->new_abs($_, $base));
+    if (my $len = $res->content_length) {
+	if (length($res->content) != $len) {
+	    warn "incomplete download, skipping";
+	    next;
+	}
+    }
+    next unless $res->is_success;
+    if ($res->content_type =~ m,^application/(x-)?gzip$,) {
+        # tweak response so that 'decoded_content' will decode it
+        $res->content_type("application/octet-stream");
+        $res->push_header("Content-Encoding", "gzip");
+    }
+    $res->decode;
+    my $cref = $res->content_ref;
+    unless ($$cref =~ /<SOFTPKG\s/) {
+	warn "contains no PPDs, skipping";
+	next;
+    }
+    my $arch;
+    my $base = $res->base;
+    if ($$cref =~ /<REPOSITORYSUMMARY\s([^>]*)>/s) {
+	my $attr = $1;
+	while (my($k, $v) = ($attr =~ /(\w+)\s*=\s*"([^"]*)"/gcs)) {
+	    if ($k eq "ARCHITECTURE") {
+		$arch = $v;
+	    }
+	    elsif ($k eq "BASE") {
+		$base = URI->new($v);
+	    }
+	}
+    }
+    my @pkgs = ($$cref =~ /(<SOFTPKG\s.*?<\/SOFTPKG\s*>)/gs);
+    splice(@pkgs, 5) if @pkgs > 5;  # XXX smaller size during debug
+    for (@pkgs) {
+	$_ = PPD->new($_, $base, $arch);
+    }
+    push(@ppd, @pkgs);
+}
+
+#use Data::Dump; dd @ppd;
+
+print qq(<?xml version="1.0" encoding="UTF-8"?>\n);
+print "<REPOSITORYSUMMARY>\n";
+for (@ppd) {
+    print $_->as_xml, "\n";
+}
+print "</REPOSITORYSUMMARY>\n";
+
+BEGIN {
+    package PPD;
+
+    sub new {
+	my($class, $xml, $base, $arch) = @_;
+	bless [$xml, $base, $arch], $class;
+    }
+
+    sub as_xml {
+	my $self = shift;
+	return $self->[0];
+    }
+}
+
+sub usage {
+    (my $progname = $0) =~ s,.*/,,;
+    die "Usage: $progname [options] URL...\n";
+}
+
+__END__
+
+=head1 NAME
+
+ppm-repo-combine - Generate combined package.xml file
+
+=head1 SYNOPSIS
+
+B<ppm-repo-combine> [ B<--base> I<URL> ] I<URL>...
+
+=head1 DESCRIPTION
+
+The B<ppm-repo-combine> script takes a list of URLs to F<package.xml>
+or F<.ppd> files on the command line.  The files are fetched and all
+the PPDs combined into a single F<package.xml> file that is printed on
+STDOUT.
+
+Typical usage might be something like:
+
+  ppm-repo-combine $(find . -name \*.ppd) >package.xml
+
+The following options are recognized:
+
+=over
+
+=item B<--base> I<URL>
+
+Set the base URL used for resolving relative URLs.  It defaults to the
+C<file:> URL denoting the current directory.
+
+=back
+
+=head1 SEE ALSO
+
+L<ppm>, L<ActivePerl::PPM::PPD>
