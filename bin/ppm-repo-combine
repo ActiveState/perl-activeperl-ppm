@@ -4,9 +4,10 @@ use strict;
 use warnings;
 
 # TODO:
-#  - relativeize all HREFs (REPOSITORYSUMMARY BASE)
 #  - merge PPDs
 #  - download HREFs (create standalone directory)
+#  - output relative links instead of file:/// links so that
+#    the file can be published as is
 
 use Getopt::Long qw(GetOptions);
 use LWP 5.820;
@@ -93,6 +94,23 @@ while (@ARGV) {
     push(@ppd, @pkgs);
 }
 
+print STDERR scalar(@ppd), " packages found\n";
+
+my $summary_base;
+if (1) {
+    # If we can find a common base URL for all the links we
+    # can shorten the file by using relative links
+    my @href;
+    for my $p (@ppd) {
+	push(@href, $p->links);
+    }
+    if ($summary_base = common_base_url(@href)) {
+	for my $p (@ppd) {
+	    $p->edit_links(sub{ s/^\Q$summary_base//o });
+	}
+    }
+}
+
 #use Data::Dump; dd @ppd;
 if ($opt{sort}) {
     @ppd =
@@ -102,11 +120,33 @@ if ($opt{sort}) {
 }
 
 print qq(<?xml version="1.0" encoding="UTF-8"?>\n);
-print "<REPOSITORYSUMMARY>\n";
+print "<REPOSITORYSUMMARY";
+print qq( BASE="$summary_base") if $summary_base;
+print ">\n";
 for (@ppd) {
     print $_->as_xml, "\n";
 }
 print "</REPOSITORYSUMMARY>\n";
+exit;
+
+sub common_base_url {
+    my $base = longest_common_prefix(@_);
+    if ($base) {
+	$base =~ s,[^/]+\z,,;
+	$base = "" unless $base =~ m,//[^/]*/,;
+    }
+    return $base;
+}
+
+sub longest_common_prefix {
+    return "" unless @_;
+    my $prefix = shift;
+    for (@_) {
+	chop $prefix while substr($_, 0, length $prefix) ne $prefix;
+	last unless length $prefix;
+    }
+    return $prefix;
+}
 
 BEGIN {
     package PPD;
@@ -116,10 +156,7 @@ BEGIN {
 	my $self = bless \$xml, $class;
 
 	# absolutize all the HREFs
-	$$self =~ s{(\sHREF\s*=\s*)"([^"]*)"}{
-            my $href = URI->new_abs($2, $base);
-            qq($1"$href");
-        }ge;
+	$self->edit_links(sub { $_ = URI->new_abs($_, $base); });
 
 	# set ARCHITECTURE if this came from a non-standard context
 	$arch ||= "noarch";
@@ -128,6 +165,12 @@ BEGIN {
 	}
 
 	$self;
+    }
+
+    sub name {
+	my $self = shift;
+	my($name, undef) = $self->name_version;
+	return $name;
     }
 
     sub name_version {
@@ -140,6 +183,22 @@ BEGIN {
 	return ($name, $version) if wantarray;
 	$name .= "-$version" if defined($version);
 	return $name;
+    }
+
+    sub links {
+	my $self = shift;
+	my @href = $$self =~ /\sHREF\s*=\s*"([^"]*)"/g;
+	return @href;
+    }
+
+    sub edit_links {
+	my($self, $cb) = @_;
+	local $_;
+	$$self =~ s{(\sHREF\s*=\s*)"([^"]*)"}{
+	    $_ = $2;
+	    &$cb;
+            qq($1"$_");
+        }ge;
     }
 
     sub indent {
