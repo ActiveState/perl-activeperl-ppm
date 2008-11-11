@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 # TODO:
-#  - absolutize all HREFs
 #  - relativeize all HREFs (REPOSITORYSUMMARY BASE)
 #  - merge PPDs
 #  - dereference HTML (directory listings of PPD files)
@@ -52,14 +51,14 @@ for (@ARGV) {
     }
     my $arch;
     my $base = $res->base;
-    if ($$cref =~ /<REPOSITORYSUMMARY\s([^>]*)>/s) {
+    if ($$cref =~ /<REPOSITORYSUMMARY(\s[^>]*)>/s) {
 	my $attr = $1;
-	while (my($k, $v) = ($attr =~ /(\w+)\s*=\s*"([^"]*)"/gcs)) {
-	    if ($k eq "ARCHITECTURE") {
-		$arch = $v;
+	while ($attr =~ /\G\s+(\w+)\s*=\s*"([^"]*)"/g) {
+	    if ($1 eq "ARCHITECTURE") {
+		$arch = $2;
 	    }
-	    elsif ($k eq "BASE") {
-		$base = URI->new($v);
+	    elsif ($1 eq "BASE") {
+		$base = URI->new($2);
 	    }
 	}
     }
@@ -68,6 +67,7 @@ for (@ARGV) {
     for (@pkgs) {
 	$_ = PPD->new($_, $base, $arch);
 	$_->merge_arch;
+	$_->absolutize;
     }
     push(@ppd, @pkgs);
 }
@@ -98,6 +98,15 @@ BEGIN {
 	my $self = shift;
 	return $1 if $self->[0] =~ /^(\s+)<AUTHOR/m;
 	return "";
+    }
+
+    sub absolutize {
+	my $self = shift;
+	my $base = $self->[1];
+	$self->[0] =~ s{(\sHREF\s*=\s*)"([^"]*)"}{
+            my $href = URI->new_abs($2, $base);
+            qq($1"$href");
+        }ge;
     }
 
     sub merge_arch {
