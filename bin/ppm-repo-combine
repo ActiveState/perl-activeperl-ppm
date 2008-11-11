@@ -6,7 +6,6 @@ use warnings;
 # TODO:
 #  - relativeize all HREFs (REPOSITORYSUMMARY BASE)
 #  - merge PPDs
-#  - dereference HTML (directory listings of PPD files)
 #  - download HREFs (create standalone directory)
 
 use Getopt::Long qw(GetOptions);
@@ -29,8 +28,9 @@ my $ua = LWP::UserAgent->new(
 #print "BASE: $base\n";
 
 my @ppd;
-for (@ARGV) {
-    my $res = $ua->get(URI->new_abs($_, $base));
+while (@ARGV) {
+    my $url = shift;
+    my $res = $ua->get(URI->new_abs($url, $base));
     if (my $len = $res->content_length) {
 	if (length($res->content) != $len) {
 	    warn "incomplete download, skipping";
@@ -45,6 +45,29 @@ for (@ARGV) {
     }
     $res->decode;
     my $cref = $res->content_ref;
+
+    if ($res->content_is_html) {
+	my $base = $res->base;
+	my @href;
+	require HTML::Parser;
+	my $p = HTML::Parser->new(
+	    report_tags => [qw(a)],
+	    start_h => [sub {
+		my $href = shift->{href} || return;
+		push(@href, URI->new_abs($href, $base)) if $href =~ /\.ppd$/;
+	    }, "attr"],
+	);
+	$p->parse($$cref)->eof;
+	if (@href) {
+	    warn "Following " . scalar(@href) . " PPD links";
+	    unshift(@ARGV, @href);
+	}
+	else {
+	    warn "HTML resource without PPD links, skipping";
+	}
+	next;
+    }
+
     unless ($$cref =~ /<SOFTPKG\s/) {
 	warn "contains no PPDs, skipping";
 	next;
@@ -149,13 +172,23 @@ B<ppm-repo-combine> [ B<--base> I<URL> ] I<URL>...
 =head1 DESCRIPTION
 
 The B<ppm-repo-combine> script takes a list of URLs to F<package.xml>
-or F<.ppd> files on the command line.  The files are fetched and all
-the PPDs combined into a single F<package.xml> file that is printed on
-STDOUT.
+or F<*.ppd> files on the command line.  The files are fetched, links
+rewritten and all the PPDs combined into a single F<package.xml> file
+that is printed on STDOUT.
 
 Typical usage might be something like:
 
   ppm-repo-combine $(find . -name \*.ppd) >package.xml
+
+For each URL that reference an HTML document, all the links to F<.ppd>
+files will be followed and incorporated in the output file.  This is
+useful as it allows us to create F<package.xml> files from web server
+generated directory index pages.  Links to C<package.xml> files are
+ignored.
+
+Local directories are also treated the same way, that is all F<*.ppd>
+files contained in them are incorporated (but F<*.ppd> files in
+sub-directories are not).
 
 The following options are recognized:
 
@@ -164,7 +197,8 @@ The following options are recognized:
 =item B<--base> I<URL>
 
 Set the base URL used for resolving relative URLs.  It defaults to the
-C<file:> URL denoting the current directory.
+C<file:> URL denoting the current directory, which means that local
+relative file name are interpreted in the obvious way.
 
 =back
 
