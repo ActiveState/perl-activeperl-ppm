@@ -15,6 +15,7 @@ use URI::file;
 
 GetOptions(\my %opt,
     'base=s',
+    'sort',
 ) || usage();
 usage() unless @ARGV;
 
@@ -93,6 +94,12 @@ while (@ARGV) {
 }
 
 #use Data::Dump; dd @ppd;
+if ($opt{sort}) {
+    @ppd =
+        map $_->[-1],
+	sort { $a->[0] cmp $b->[0] }
+	map [lc($_->name_version), $_], @ppd;
+}
 
 print qq(<?xml version="1.0" encoding="UTF-8"?>\n);
 print "<REPOSITORYSUMMARY>\n";
@@ -121,6 +128,18 @@ BEGIN {
 	}
 
 	$self;
+    }
+
+    sub name_version {
+	my $self = shift;
+	return unless $$self =~ /^<SOFTPKG(\s[^>]+)/;
+	my $attr = $1;
+	my($name, $version);
+	$name = $1 if $attr =~ /\sNAME\s*=\s*"([^"]*)"/;
+	$version = $1 if $attr =~ /\sVERSION\s*=\s*"([^"]*)"/;
+	return ($name, $version) if wantarray;
+	$name .= "-$version" if defined($version);
+	return $name;
     }
 
     sub indent {
@@ -188,6 +207,11 @@ The following options are recognized:
 Set the base URL used for resolving relative URLs.  It defaults to the
 C<file:> URL denoting the current directory, which means that local
 relative file name are interpreted in the obvious way.
+
+=item B<--sort>
+
+Output the packages in sorted order.  Packages are first ordered by name
+and then by version numbers.
 
 =back
 
