@@ -1952,7 +1952,7 @@ sub about {
         -type => "ok",
 	-message => "PPM version $ActivePerl::PPM::VERSION
 ActivePerl version $perl_version
-\xA9 2007 ActiveState Software Inc.",
+\xA9 2008 ActiveState Software Inc.",
     );
 }
 
