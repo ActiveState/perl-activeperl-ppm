@@ -70,7 +70,7 @@ sub new {
 	$ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
 	$^O eq "MSWin32"          ? "$ENV{TEMP}\\ppm4.log" :
 	$^O eq "darwin"           ? "$ENV{HOME}/Library/Logs/ppm4.log" :
-	                            "$ENV{HOME}/ppm4.log";
+        do { mkdir("$ENV{HOME}/.ActivePerl", 0755); "$ENV{HOME}/.ActivePerl/ppm4.log" };
     my $fh;
     if ($ENV{HARNESS_ACTIVE}) {
 	# suppress logging when running under Test::Harness

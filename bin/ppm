@@ -1731,10 +1731,11 @@ like "818".
 SQLite database where ppm keeps its configuration and caches meta
 information about the content of the enabled repositories.
 
-=item F<$HOME/ppm4.log>
+=item F<$HOME/.ActivePerl/ppm4.log>
 
 Log file created to record actions that PPM takes.  On Windows this is
 logged to F<$TEMPDIR/ppm4.log>.
+On Mac OS X this is logged to F<$HOME/Library/Logs/ppm4.log>.
 
 =item F<$PREFIX/etc/ppm-$NAME-area.db>
 
