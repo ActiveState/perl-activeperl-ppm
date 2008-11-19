@@ -1806,6 +1806,17 @@ PPM uses L<DBI> to access the internal SQLite databases. Setting
 DBI_TRACE allow you to see what queries are performed.  Output goes to
 STDERR.  See L<DBI> for further details.
 
+=item C<http_proxy>
+
+PPM uses L<LWP> to access remote repositories.  If you need HTTP
+traffic pass via a proxy server to reach the repository, you must set
+the C<http_proxy> environment variable.  Some examples:
+
+   export http_proxy=http://proxy.mycompany.com
+   export http_proxy=http://username:password@proxy.mycompany.com
+
+See L<LWP::UserAgent/env_proxy> for more.
+
 =back
 
 =head1 WHAT'S NEW IN VERSION 4
