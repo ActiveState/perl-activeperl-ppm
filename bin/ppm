@@ -1812,8 +1812,11 @@ PPM uses L<LWP> to access remote repositories.  If you need HTTP
 traffic pass via a proxy server to reach the repository, you must set
 the C<http_proxy> environment variable.  Some examples:
 
-   export http_proxy=http://proxy.mycompany.com
-   export http_proxy=http://username:password@proxy.mycompany.com
+   Using bash:
+       export http_proxy=http://proxy.mycompany.com
+
+   Using cmd.exe:
+       set http_proxy=http://username:password@proxy.mycompany.com:8008
 
 See L<LWP::UserAgent/env_proxy> for more.
 
