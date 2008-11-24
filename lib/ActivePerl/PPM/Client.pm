@@ -1446,14 +1446,11 @@ available.
 
 =item $client->package( $id )
 
-=item $client->package( $name )
-
 =item $client->package( $name, $version )
 
 Returns the L<ActivePerl::PPM::RepoPackage> object matching the
-arguments or C<undef> if none match.  As there can be multiple
-packages with the same name, an arbitrary one is selected if $name but
-no $version is given.
+arguments or C<undef> if none match.  If $version is passed as C<undef>,
+the package needs to be versionless to be returned.
 
 =item $client->feature_best( $feature )
 
