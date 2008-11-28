@@ -978,6 +978,7 @@ sub _tree {
 	    my $found;
 	    for my $area_name ($ppm->areas) {
 		my $area = $ppm->area($area_name);
+                next unless $area->initialized;
 		if (my $have = $area->feature_have($feature)) {
 		    $have = 0 if $have eq "0E0";
 		    push(@facts, ($have || $vers ? "v$have " : "") . "installed in $area_name area");
