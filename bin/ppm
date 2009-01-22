@@ -1046,7 +1046,7 @@ sub do_install {
 	    _install($area, $force, $pkg, @deps);
 	}
 	else {
-	    # seach for feature in repos
+	    # search for feature in repos
             $ppm->repo_sync if $sync;
 	    $feature = $ppm->feature_fixup_case($feature);
 	    _install($area, $force, $ppm->packages_missing(want => [$feature], @args));
@@ -1628,7 +1628,7 @@ from the new location.
 
 =item B<ppm repo search> ...
 
-Alias for B<ppm seach>.
+Alias for B<ppm search>.
 
 =item B<ppm repo suggest>
 
