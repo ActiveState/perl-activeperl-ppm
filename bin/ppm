@@ -959,7 +959,7 @@ sub _tree {
     print "  " x $depth, "package ", $pkg->name_version;
     print " provide $reason" if $reason && $reason ne $pkg->{name};
     print "\n";
-    
+
     if ($seen->{$pkg->name_version}++) {
 	return;
     }
@@ -1425,7 +1425,7 @@ other than PPM (e.g. the CPAN shell), with the ppm database. PPM
 searches the install area(s) for packages, making PPM database entries
 if they do not already exist, or dropping entries for packages that no
 longer exist.  When used without an I<area> argument, all install areas
-are synced. 
+are synced.
 
 =item B<ppm config> I<name> [ I<value> ]
 
@@ -1466,7 +1466,7 @@ Install a package and its dependencies.
 The argument to B<ppm install> can be the name of a package, the name of
 a module provided by the package, the file name or the URL of a PPMX or PPD file,
 or the associated number for the package returned by the last C<ppm
-search> command. 
+search> command.
 
 If the package or module requested is already installed, PPM installs
 nothing.  The B<--force> option can be used to make PPM install a
@@ -1655,7 +1655,7 @@ Search for packages matching I<pattern> in all enabled repositories.
 For I<pattern>, use the wildcard C<*> to match any number of characters
 and the wildcard C<?> to match a single character.  For example, to find
 packages starting with the string "List" search for C<list*>. Searches
-are case insensitive.  
+are case insensitive.
 
 If I<pattern> contains C<::>, PPM will search for packages that provide
 modules matching the pattern.
@@ -1762,7 +1762,7 @@ information.
 
 =item F<package.xml>
 
-Meta information about repositories.  When a repository is added, PPM 
+Meta information about repositories.  When a repository is added, PPM
 looks for this file and if present, monitors it too stay in sync with
 the state of the repository.
 
