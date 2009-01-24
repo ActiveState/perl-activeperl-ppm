@@ -18,7 +18,7 @@ sub arch {
 }
 
 sub short_arch {
-    my $arch = arch();
+    my $arch = shift || arch();
     1 while $arch =~ s/-(thread|multi|2level)//;
     return $arch;
 }

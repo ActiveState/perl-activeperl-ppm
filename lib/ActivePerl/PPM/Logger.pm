@@ -26,6 +26,14 @@ sub LOG_DEBUG   () { 7 }
 my $logger;
 my $status;
 
+sub ppm_set_logger {
+    $logger = shift;
+}
+
+sub ppm_set_status {
+    $status = shift;
+}
+
 sub ppm_logger {
     return $logger ||= ActivePerl::PPM::Logger->new;
 }

@@ -20,32 +20,33 @@ sub new {
     unshift(@_, "name") if @_ == 1;
     my %opt = @_;
     my $name = delete $opt{name} || "";
+    my $config = $opt{perl_config} || \%Config;
 
     my %dirs;
     if ($name eq "perl") {
 	%dirs = (
-            prefix => $Config{prefix},
-	    archlib => $Config{archlib},
-            lib => $Config{privlib},
-	    bin => $Config{bin},
-            script => $Config{scriptdir},
-            man1 => $Config{man1dir},
-            man3 => $Config{man3dir},
-            html => $Config{installhtmldir},   # XXX ActivePerl hack
+            prefix => $config->{prefix},
+	    archlib => $config->{archlib},
+            lib => $config->{privlib},
+	    bin => $config->{bin},
+            script => $config->{scriptdir},
+            man1 => $config->{man1dir},
+            man3 => $config->{man3dir},
+            html => $config->{installhtmldir},   # XXX ActivePerl hack
 	);
     }
     elsif ($name eq "site" || $name eq "vendor") {
-	my $prefix = $Config{"${name}prefix"}
+	my $prefix = $config->{"${name}prefix"}
 	    || croak("No $name InstallDirs configured for this perl");
 	%dirs = (
 	    prefix => $prefix,
-	    archlib => $Config{"${name}arch"},
-            lib => $Config{"${name}lib"},
-	    bin => $Config{"${name}bin"},
-            script => $Config{"${name}script"},
-            man1 => $Config{"${name}man1dir"},
-            man3 => $Config{"${name}man3dir"},
-            html => $Config{installhtmldir},   # XXX ActivePerl hack
+	    archlib => $config->{"${name}arch"},
+            lib => $config->{"${name}lib"},
+	    bin => $config->{"${name}bin"},
+            script => $config->{"${name}script"},
+            man1 => $config->{"${name}man1dir"},
+            man3 => $config->{"${name}man3dir"},
+            html => $config->{installhtmldir},   # XXX ActivePerl hack
 	);
     }
     else {
@@ -252,6 +253,14 @@ sub package {
 	return undef unless defined($id);
     }
     return ActivePerl::PPM::Package->new_dbi($self->dbh, $id);
+}
+
+sub package_have {
+    my($self, $name, $version) = @_;
+    return scalar($self->dbh->selectrow_array(
+        "SELECT count(*) FROM package WHERE name = ? AND version = ?", undef,
+        $name, $version,
+    ));
 }
 
 sub package_files {
@@ -1191,6 +1200,11 @@ Find package even if the name does not match exactly.  The package
 will be found if the name match without regard to case or if it
 provide the given name as a feature.  Will croak if multiple packages
 match.
+
+=item $area->package_have( $name, $version )
+
+Returns TRUE if the package with the given name and version number
+is installed.
 
 =item $area->feature_have( $feature )
 

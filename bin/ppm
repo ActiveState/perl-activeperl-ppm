@@ -1307,6 +1307,49 @@ sub do_remove {
     }
 }
 
+sub do_profile {
+    my $cmd = shift(@ARGV) || "save";
+ AGAIN:
+    if ($cmd eq "save") {
+        $USAGE = "profile save [<file>]";
+        my $file = shift(@ARGV);
+        usage() if @ARGV;
+
+        my $fh;
+        if ($file && $file ne "-") {
+            open($fh, ">", $file) || die "Can't create $file: $!";
+        }
+        else {
+            $fh = *STDOUT;
+        }
+
+        print $fh $ppm->profile_xml;
+    }
+    elsif ($cmd eq "restore") {
+        $USAGE = "profile restore [<file>]";
+        my $file = shift(@ARGV);
+        usage() if @ARGV;
+
+        my $fh;
+        if ($file && $file ne "-") {
+            open($fh, "<", $file) || die "Can't open $file: $!";
+        }
+        else {
+            $file = "stdin";
+            $fh = *STDIN;
+        }
+
+        my $xml = do { local $/; <$fh> };
+        die "No profile data found in $file" unless $xml =~ /<PPMPROFILE\b/;
+
+        $ppm->profile_xml_restore($xml);
+    }
+    else {
+	$cmd = _try_abbrev("profile", $cmd, qw(save restore));
+	goto AGAIN;
+    }
+}
+
 BEGIN {
     # aliases for PPM3 compatibility (mostly)
     *do_update = \&do_upgrade;
@@ -1547,6 +1590,17 @@ The location of the package description file.
 Print entries from the log for the last few minutes.  By default print
 log lines for the last minute.  With B<--errors> option suppress
 warnings, trace and debug events.
+
+=item B<ppm profile restore> [ I<filename> ]
+
+Install the packages listed in the given profile file.  If no file is
+given try to read the profile from standard input.
+
+=item B<ppm profile save> [ I<filename> ]
+
+Write profile of configured repositories and installed packages to the
+given file.  If no file is given then print the profile XML to
+standard output.
 
 =item B<ppm query> I<pattern>
 

@@ -3,7 +3,8 @@ package ActivePerl::PPM::Client;
 use strict;
 use Config qw(%Config);
 
-use ActivePerl ();
+use ActivePerl;
+use ActivePerl::PPM ();
 use ActivePerl::PPM::InstallArea ();
 use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::RepoPackage ();
@@ -14,6 +15,7 @@ use ActivePerl::PPM::Arch ();
 use ActivePerl::PPM::Util qw(join_with update_html_toc);
 
 use ActiveState::Path qw(is_abs_path join_path);
+use ActiveState::Handy qw(xml_esc);
 use File::Basename;
 
 use base 'ActivePerl::PPM::DBH';
@@ -27,8 +29,11 @@ my %EXPIRY_DEFAULTS = (
 
 sub new {
     my $class = shift;
-    my $dir = shift if @_ % 2;
+    my $dir;
+    $dir = shift if @_ % 2;
     my %opt = @_;
+
+    my $build = $opt{activeperl_build} || $ActivePerl::BUILD;
 
     $dir ||= $opt{home} || $ENV{ACTIVEPERL_PPM_HOME} ||
         do {
@@ -39,12 +44,14 @@ sub new {
 		    $ENV{APPDATA} || $ENV{HOME};
 		die "No valid setting for APPDATA\n" unless $appdata;
 		$appdata = Win32::GetShortPathName($appdata) || $appdata;
-		"$appdata/ActiveState/ActivePerl/$ActivePerl::VERSION";
+		"$appdata/ActiveState/ActivePerl/$build";
 	    }
 	    else {
-		"$ENV{HOME}/.ActivePerl/$ActivePerl::VERSION";
+		"$ENV{HOME}/.ActivePerl/$build";
 	    }
 	};
+
+    my $config = $opt{perl_config} || \%Config;
 
     my $arch = $opt{arch} || ActivePerl::PPM::Arch::arch();
 
@@ -54,53 +61,65 @@ sub new {
     # determine what install areas exists from @INC
     my @area;
     my %area;
-    my @tmp = @inc;
-    while (@tmp) {
-	my $dir = shift(@tmp);
-	next unless is_abs_path($dir);
-	if (my $name = _known_area($dir)) {
-	    push(@area, $name) unless grep $_ eq $name, @area;
-	    next;
-	}
-
-	my $base = File::Basename::basename($dir);
-	my $archlib;
-	if ($base eq $Config{archname} || $base eq "arch") {
-	    $archlib = $dir;
-	    $dir = File::Basename::dirname($dir);
-	    $dir = join_path($dir, "lib") if $base eq "arch";
-	    shift(@tmp) if $tmp[0] eq $dir;
-	}
-	my $lib = $dir;
-	$base = File::Basename::basename($dir);
-	$dir = File::Basename::dirname($dir) if $base eq "lib";
-
-	my $name = _area_name($dir);
-	while (grep $_ eq $name, @area) {
-	    # make name unique
-	    my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
-	    $name .= "_" . ++$num;
-	}
-
-	push(@area, $name);
-	$area{$name} = ActivePerl::PPM::InstallArea->new(
-            name => $name,
-            prefix => $dir,
-            lib => $lib,
-            archlib => $archlib,
-            autoinit => _user_area($dir),
-        );
+    if ($opt{areas}) {
+        for my $area (@{$opt{areas}}) {
+            my $name = $area->name || die "Can't create client with nameless installarea";
+            push(@area, $name);
+            $area{$name} = $area;
+        }
     }
+    else {
+        my @tmp = @inc;
+        while (@tmp) {
+            my $dir = shift(@tmp);
+            next unless is_abs_path($dir);
+            if (my $name = _known_area($dir, $config)) {
+                push(@area, $name) unless grep $_ eq $name, @area;
+                next;
+            }
 
-    # make sure these install areas always show up
-    for my $a (qw(site perl)) {
-	push(@area, $a) unless grep $_ eq $a, @area;
+            my $base = File::Basename::basename($dir);
+            my $archlib;
+            if ($base eq $config->{archname} || $base eq "arch") {
+                $archlib = $dir;
+                $dir = File::Basename::dirname($dir);
+                $dir = join_path($dir, "lib") if $base eq "arch";
+                shift(@tmp) if $tmp[0] eq $dir;
+            }
+            my $lib = $dir;
+            $base = File::Basename::basename($dir);
+            $dir = File::Basename::dirname($dir) if $base eq "lib";
+
+            my $name = _area_name($dir, $config);
+            while (grep $_ eq $name, @area) {
+                # make name unique
+                my $num = ($name =~ s/_(\d+)//) ? $1 : 1;
+                $name .= "_" . ++$num;
+            }
+
+            push(@area, $name);
+            $area{$name} = ActivePerl::PPM::InstallArea->new(
+                name => $name,
+                prefix => $dir,
+                lib => $lib,
+                archlib => $archlib,
+                autoinit => _user_area($dir),
+            );
+        }
+
+        # make sure these install areas always show up
+        for my $a (qw(site perl)) {
+            push(@area, $a) unless grep $_ eq $a, @area;
+        }
     }
 
     my $self = bless {
 	dir => $dir,
 	etc => $etc,
         arch => $arch,
+        activeperl_build => $build,
+        perl_version => $opt{perl_version} || $config->{version},
+        perl_config => $config,
 	area => \%area,
         area_seq => \@area,
         inc => \@inc,
@@ -110,9 +129,10 @@ sub new {
 
 sub _known_area {
     my $path = shift;
-    return "perl" if _path_eq($path, $Config{privlib}, $Config{archlib});
-    return "site" if _path_eq($path, $Config{sitelib}, $Config{sitearch});
-    return "vendor" if $Config{vendorlib} && _path_eq($path, $Config{vendorlib}, $Config{vendorarch});
+    my $config = shift || \%Config;
+    return "perl" if _path_eq($path, $config->{privlib}, $config->{archlib});
+    return "site" if _path_eq($path, $config->{sitelib}, $config->{sitearch});
+    return "vendor" if $config->{vendorlib} && _path_eq($path, $config->{vendorlib}, $config->{vendorarch});
     return undef;
 }
 
@@ -144,6 +164,7 @@ sub _path_eq {
 
 sub _area_name {
     my $path = shift;
+    my $config = shift || \%Config;
 
     # obtain name from the ppm-*-area.db file if present
     if (opendir(my $dh, "$path/etc")) {
@@ -166,7 +187,7 @@ sub _area_name {
     while (@path) {
 	my $segment = pop(@path);
 	my $lc_segment = lc($segment);
-	next if $segment eq "lib" || $segment eq "arch" || $segment eq $Config{archname};
+	next if $segment eq "lib" || $segment eq "arch" || $segment eq $config->{archname};
 	next if $lc_segment eq "perl" || $lc_segment eq "site" || $lc_segment eq "vendor";
 	return "pdk" if $segment =~ /\bPerl Dev Kit\b/;
 	next unless $segment =~ /^[\w\-.]{1,12}$/;
@@ -192,7 +213,7 @@ sub area {
     return undef unless $name;
     return $self->{area}{$name} ||= do {
 	die "Install area '$name' does not exist" unless grep $_ eq $name, @{$self->{area_seq}};
-	ActivePerl::PPM::InstallArea->new(name => $name, autoinit => 1);
+	ActivePerl::PPM::InstallArea->new(name => $name, autoinit => 1, perl_config => $self->{perl_config});
     }
 }
 
@@ -232,7 +253,7 @@ sub _init_db {
     die "Assert" unless defined $v;
     if ($v == 0) {
 	ppm_log("WARN", "Setting up schema for $db_file");
-	_init_ppm_schema($dbh, $self->{arch});
+	_init_ppm_schema($dbh, $self->{arch}, $self->{activeperl_build});
 	$dbh->do("PRAGMA user_version = 1");
 	$dbh->commit;
     }
@@ -244,7 +265,7 @@ sub _init_db {
 }
 
 sub _init_ppm_schema {
-    my($dbh, $arch) = @_;
+    my($dbh, $arch, $build) = @_;
     $dbh->do(<<'EOT');
 CREATE TABLE config (
     key text primary key,
@@ -275,7 +296,7 @@ EOT
 
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
-    if (my @repo = activestate_repo()) {
+    if (my @repo = activestate_repo($arch, $build)) {
 	$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
     }
 }
@@ -320,9 +341,10 @@ sub config_save {
 }
 
 sub activestate_repo {
-    my $arch = ActivePerl::PPM::Arch::short_arch();
+    my $arch = ActivePerl::PPM::Arch::short_arch(shift);
     $arch =~ s,-(5.\d+)$,/$1,;
-    my $repo_uri = "http://ppm4.activestate.com/$arch/$ActivePerl::VERSION/package.xml";
+    my $v = shift || ActivePerl::BUILD;
+    my $repo_uri = "http://ppm4.activestate.com/$arch/$v/package.xml";
     if ($^O =~ /^(MSWin32|linux|darwin|hpux|solaris)$/ || web_ua()->head($repo_uri)->is_success) {
 	return $repo_uri unless wantarray;
 	return ("ActiveState Package Repository", $repo_uri);
@@ -1029,8 +1051,11 @@ sub install {
     my @pkgs = @{delete $args{packages} || []};
     die "No packages to install" unless @pkgs;
 
+    my $relocate = $^O ne "MSWin32";
+    $relocate = $args{relocate} if exists $args{relocate};
+
     my $install_html = eval { require ActivePerl::DocTools; };
-    $install_html = $args{install_html} if defined $args{install_html};
+    $install_html = $args{install_html} if exists $args{install_html};
 
     my $ua = web_ua();
     my $status = ppm_status();
@@ -1141,11 +1166,11 @@ sub install {
 	    $status->end;
 	}
 
-	# relocate
-	if ($^O ne "MSWin32") {
+	# hashbang lines of scripts might need relocation
+	if ($relocate) {
 	    require ActiveState::RelocateTree;
 	    my $ppm_sponge = ActiveState::RelocateTree::spongedir('ppm');
-	    my $prefix = do { require Config; $Config::Config{prefix} };
+	    my $prefix = $self->{perl_config}{prefix};
 	    for my $pkg (@pkgs) {
 		next unless $pkg->{blib};
 		$status->begin("Relocating " . $pkg->name_version);
@@ -1210,6 +1235,126 @@ sub install {
     die $err if $err;
 
     return $install_summary;
+}
+
+sub profile_xml {
+    my($self, %opt) = @_;
+    my %seen;
+    my @pkgs;
+
+    for my $area_name ($self->areas) {
+        next if $area_name eq "perl";
+        my $area = $self->area($area_name);
+        for my $pkg ($area->packages("name", "version")) {
+            next if $seen{$pkg->[0]}++;
+            push(@pkgs, $pkg);
+        }
+    }
+
+    @pkgs = sort { lc($a->[0]) cmp lc($b->[0]) } @pkgs;
+
+    my @out;
+    push(@out, qq(<PPMPROFILE>\n));
+    push(@out, qq(  <ACTIVEPERL));
+    push(@out, sprintf qq( PRODUCT="%s"), ActivePerl::PRODUCT) if ActivePerl::PRODUCT ne "ActivePerl";
+    push(@out, sprintf qq( VERSION="%s" PERL_VERSION="%s"), $self->{activeperl_build}, $self->{perl_version});
+    push(@out, sprintf qq( PPM_VERSION="%s"), $ActivePerl::PPM::VERSION);
+    push(@out, qq(/>\n));
+    for my $id ($self->repos) {
+        my $repo = $self->repo($id);
+        push(@out, sprintf qq(  <REPOSITORY NAME="%s" HREF="%s"), xml_esc($repo->{name}), xml_esc($repo->{packlist_uri}));
+        push(@out, qq( ENABLED="0")) unless $repo->{enabled};
+        push(@out, qq(/>\n));
+    }
+    for (@pkgs) {
+        my($name, $version) = @$_;
+        push(@out, sprintf qq(  <SOFTPKG NAME="%s" VERSION="$version"/>\n), xml_esc($name), xml_esc($version));
+    }
+    push(@out, qq(</PPMPROFILE>\n));
+
+    return join("", @out);
+}
+
+sub profile_xml_restore {
+    my($self, $profile_xml, %opt) = @_;
+
+    require ActivePerl::PPM::Profile;
+    my $profile = ActivePerl::PPM::Profile->new($profile_xml);
+
+    $opt{restore_repo} = 1 unless exists $opt{restore_repo};
+    $opt{restore_pkgs} = 1 unless exists $opt{restore_pkgs};
+
+    if ($opt{restore_repo}) {
+        my %REPO;
+        for my $id ($self->repos) {
+            my $repo = $self->repo($id);
+            $REPO{$repo->{packlist_uri}} = $repo->{enabled};
+        }
+
+        for ($profile->repositories) {
+            if (exists $REPO{$_->{href}}) {
+                ppm_log("INFO", "Repo $_->{href} already configured") if $opt{verbose};
+                next;
+            }
+            if ($_->{href} =~ m,^http://ppm4.activestate.com/,) {
+                $_->{href} = activestate_repo($self->{arch}, $self->{activeperl_build});
+                if (exists $REPO{$_->{href}}) {
+                    ppm_log("INFO", "Repo $_->{href} already configured (arch)") if $opt{verbose};
+                    next;
+                }
+            }
+            my $id = $self->repo_add(
+                name => $_->{name},
+                packlist_uri => $_->{href},
+            );
+
+            $self->repo_enable($id, 0) unless $_->{enabled};
+        }
+    }
+
+    if ($opt{restore_pkgs}) {
+        my $area = $opt{area} || $self->default_install_area;
+        $area = $self->area($area) unless ref($area);
+
+        my @pkgs;
+        my $skipped = 0;
+        for ($profile->packages) {
+            if ($area->package_have($_->{name}, $_->{version})) {
+                ppm_log("DEBUG", "$_->{name}-$_->{version} already installed");
+                $skipped++;
+                next;
+            }
+            if (my $p = $self->package($_->{name}, $_->{version})) {
+                push(@pkgs, $p);
+            }
+            else {
+                if (my $p = $self->package_best($_->{name}, 0)) {
+                    my $msg = "The repositories have " . $p->name_version . " instead of ";
+                    $msg .= "$_->{name}-" if $_->{name} ne $p->name;
+                    $msg .= "$_->{version}";
+                    if ($area->package_have($p->name, $p->version)) {
+                        $msg .= " (already installed)";
+                        ppm_log("WARN", $msg);
+                        $skipped++;
+                        next;
+                    }
+                    ppm_log("WARN", $msg);
+                    push(@pkgs, $p);
+                }
+                else {
+                    ppm_log("WARN", "The repositories don't have $_->{name}");
+                }
+            }
+        }
+
+        $self->install(
+            packages => \@pkgs,
+            area => $area,
+            install_html => 0,
+            relocate => 0,
+        ) if @pkgs;
+        ppm_log("INFO", "$skipped packages already installed") if $skipped && $opt{verbose};
+    }
 }
 
 1;
@@ -1577,6 +1722,40 @@ $client->default_install_area is used.
 A callback function that should behave like &ActivePerl::Run::run
 which will be called to execute the commands of the post install
 script.  If not provided, then &ActivePerl::Run::run will be used.
+
+=back
+
+=item $client->profile_xml
+
+Returns an XML document that describes the configured repositories and
+the installed packages.
+
+=item $client->profile_xml_restore( $profile_xml, %opt )
+
+Will try to restore the repositories and packages described by the
+passed in XML document.  The document should be one generated by the
+profile_xml method.  The following options are recognized:
+
+=over
+
+=item restore_repo => $bool
+
+Pass a FALSE value to suppress adding the repositories found in the
+profile document.
+
+=item restore_pkgs => $bool
+
+Pass a FALSE value to suppress installation of the packages listed in
+the profile document that are missing.
+
+=item verbose => $bool
+
+Log extra information about the steps taken when TRUE.
+
+=item area => $area_name
+
+Which install area to install into.  If not provided, then
+$client->default_install_area is used.
 
 =back
 
