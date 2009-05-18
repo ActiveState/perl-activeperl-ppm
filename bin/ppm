@@ -721,7 +721,7 @@ sub do_repo {
 		$url = URI::file->new_abs($url);
 	    }
 	    elsif ($url eq "activestate") {
-		($name, $url) = $ppm->activestate_repo;
+		($name, $url) = ActivePerl::PPM::Client::activestate_repo();
 		die "No ActiveState repo for this platform" unless $url;
 	    }
 	    elsif (($name,$url,$url_noarch) = repo_by_name($url)) {
@@ -781,7 +781,7 @@ sub do_repo {
 	};
 	require ActivePerl;
 	my $count = 0;
-	my($as_name, $as_url) = $ppm->activestate_repo;
+	my($as_name, $as_url) = ActivePerl::PPM::Client::activestate_repo();
 	if ($as_name) {
 	    $PPM::Repositories::Repositories{activestate} = {
 		Active => 1,
