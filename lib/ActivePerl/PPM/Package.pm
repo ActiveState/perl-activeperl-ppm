@@ -112,7 +112,7 @@ sub compare {
 	# compare the shared features to see if we have a winner
 	for my $mod (keys %{$a->{provide}}) {
 	    next unless exists $b->{provide}{$mod};
-	    my $c2 = $a->{provide}{$mod} <=> $b->{provide}{$mod};
+	    my $c2 = abs($a->{provide}{$mod} - $b->{provide}{$mod}) < 1e-7 ? 0 : $a->{provide}{$mod} <=> $b->{provide}{$mod};
 	    $c = 0 unless defined $c;
 	    next if $c2 == 0;
 	    if ($c) {
