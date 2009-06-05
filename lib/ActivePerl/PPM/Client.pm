@@ -33,7 +33,7 @@ sub new {
     $dir = shift if @_ % 2;
     my %opt = @_;
 
-    my $build = $opt{activeperl_build} || $ActivePerl::BUILD;
+    my $build = $opt{activeperl_build} || ActivePerl::BUILD;
 
     $dir ||= $opt{home} || $ENV{ACTIVEPERL_PPM_HOME} ||
         do {
