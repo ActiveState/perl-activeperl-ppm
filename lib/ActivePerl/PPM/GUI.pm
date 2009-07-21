@@ -1234,9 +1234,12 @@ sub select_item {
 	$details->insert('end', "\n");
     }
     if ($areaid) {
-	$details->insert('end', "\nInstalled files:\n", 'h2');
-	for my $file ($area->package_files($pkg->{id})) {
-	    $details->insert('end', "\t$file\n");
+	my @files = $area->package_files($pkg->{id});
+	if (@files) {
+	    $details->insert('end', "\nInstalled files:\n", 'h2');
+	    for my $file (@files) {
+		$details->insert('end', "\t$file\n");
+	    }
 	}
     }
     # Remove trailing newline and prevent editing of widget
