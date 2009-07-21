@@ -418,10 +418,16 @@ sub do_list {
 			my $size = 0;
 			$size += ActiveState::DiskUsage::du($_) for @files;
 			$size = sprintf "%.0f KB", $size / 1024 unless defined($csv);
-			$row{size} = $size
+			$row{size} = $size;
+
+			unless (defined $csv) {
+			    $row{files} ||= "-" if $field{files};
+			    $row{size} = "-" unless @files;
+			}
 		    }
 		    else {
 			$row{files} = $area->package_files($row{id});
+			$row{files} ||= "-" unless defined $csv;
 		    }
 		}
 		$row{area} = $area->name if $field{area};
