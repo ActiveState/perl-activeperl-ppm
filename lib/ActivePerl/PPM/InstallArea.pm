@@ -726,6 +726,18 @@ sub _init_db {
     unless ($dbh->do("UPDATE package SET rowid=0 WHERE 0")) {
 	$self->{readonly}++;
     }
+    elsif ($name eq "site") {
+	# hack to make site autosync when something else has installed into it
+	my $mtime = (stat $db_file)[9];
+	my $perllocal = "$Config{privlib}/perllocal.pod";
+	if ($mtime < (stat $perllocal)[9] || 0) {
+	    # perllocal.pod has been modified after the database file was
+	    $self->sync_db;
+	    # ensure that it's modified even when sync_db found nothing to do
+	    my $time = time;
+	    utime $time, $time, $db_file;
+	}
+    }
 }
 
 sub initialize {
