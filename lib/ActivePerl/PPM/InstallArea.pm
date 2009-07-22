@@ -1058,13 +1058,13 @@ Exceptions are name(), readonly(), initialized(), packages() and the
 directory accessors (like lib(), script(),...).
 
 The C<autoinit> option can be specified for the constructor to make
-the database be automatically set up on during the first method call
-than need it.
+the database be automatically set up during the first method call
+that needs it.
 
 =item $area->readonly
 
 Returns TRUE if it is not possible to install or remove packages from
-the area.  This is usually caused by the user does not have permission
+the area.  This is usually caused by the user not having permission
 to modify the files of the area.
 
 This also returns TRUE for unintialized install areas.
