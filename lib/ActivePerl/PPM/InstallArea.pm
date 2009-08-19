@@ -726,7 +726,7 @@ sub _init_db {
     unless ($dbh->do("UPDATE package SET rowid=0 WHERE 0")) {
 	$self->{readonly}++;
     }
-    elsif ($name =~ /^(perl|site)$/) {
+    elsif ($name =~ /^(perl|site)$/ && !$ENV{ACTIVEPERL_PPM_SETUP_TIME}) {
 	# hack to make perl & site autosync when something else has installed into it
 	my $mtime = (stat $db_file)[9];
 	my $perllocal = "$Config{privlib}/perllocal.pod";
