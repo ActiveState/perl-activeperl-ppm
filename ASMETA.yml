@@ -1,6 +1,5 @@
 name: ActivePerl-PPM
 version: 4.6
-orig_version: 4.06
 abstract: The Perl Package Manager
 author: ActiveState <support@activestate.com>
 requires:
