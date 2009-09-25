@@ -296,8 +296,10 @@ EOT
 
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
-    if (my @repo = activestate_repo($arch, $build)) {
-	$dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
+    unless (ActivePerl::PRODUCT() =~ /enterprise/i) {
+	if (my @repo = activestate_repo($arch, $build)) {
+	    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
+	}
     }
 }
 
