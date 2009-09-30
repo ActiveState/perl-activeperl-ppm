@@ -1,5 +1,11 @@
 #!perl -w
 
+BEGIN {
+    return unless ActivePerl::PRODUCT() =~ /enterprise/i;
+    print "1..0 # skipped: APED doesn't setup the default repo\n";
+    exit 0;
+}
+
 use strict;
 use Test qw(plan ok skip);
 use URI::file;
