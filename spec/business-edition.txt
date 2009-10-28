@@ -15,15 +15,16 @@ A BE-license can be shared between multiple machines and the subscription does
 not select specific platforms as supported or not.  You either have a valid BE
 subscription or not.
 
-There will not be speparate builds of ActivePerl for users with a BE-license.
+There will not be separate builds of ActivePerl for users with a BE-license.
 The ActivePerl package will adapt based on the presence of the license on the
 client machine where it runs.
 
-There will be separate PPM repos for the freee ActivePerl and for those with
-the BE-license.  The free repos will only contain the latest build of each
+There will be separate PPM repos for the free ActivePerl and for those with the
+BE-license.  The free repos will only contain the latest build of each
 distribution and support for the latest version of ActivePerl.  There will only
 be free repos for Windows x86-32, Mac OS X and Linux x86-32 and x86-64.  There
-will be free repos for both 8xx and 10xx series of releases.
+will be free repos for both 8xx and 10xx series of releases.  The free repos
+will be a strict subset of the corresponding BE-repos.
 
 Scenarios:
 
@@ -45,4 +46,52 @@ Scenarios:
   - BE-license installed
       h) ActivePerl installed
 
+Discussion:
 
+a) In this case 'ppm repo 1' will be the standard "ActiveState Package
+Repository" pointing to http://ppm4.activestate.com/darwin/5.10/1006/package.xml
+or some such.
+
+If the user starts the ppm client it will discover that the BE-license has been
+installed and will ask the user "Do you want to upgrade to the BE-repo?" (a
+dialog in GUI mode and a terminal prompt in command line mode).  If the user
+confirms then repo 1 is deleted and 'ppm repo add
+http://ppm4-be.activestate.com/darwin/5.10/1006/package.xml "ActiveState
+Business Edition Repo"' takes its place and the repo is synced.
+
+If the user declines then ppm remembers this fact and will not prompt again.
+The user continues to use the free repo.
+
+The 'ppm repo suggest' will list 'activestate-be' as an option and then user
+can add this repo manually at any time if she desires.  This option is only
+available when 'ppm' detects the presence of a BE-license on the system.
+
+b) If the subscription expires and the user has configured the BE-repo to be
+current then the next "ppm repo sync" or fetching a package during install will
+fail with "403 Forbidden" status.  The status line message that goes with this
+should explain that the subscription has expired and this will be displayed in
+the 'ppm repo desc' output.
+
+The ppm client will provide additional information to the user about the
+procedure for how to renew the subscription.  The instructions might be carried
+as body in the "403 response" message so we avoid the need to hardcode these
+instructions in the client itself.
+
+The user will manually have to invoke 'ppm repo del' and 'ppm repo add
+activestate' to re-enable the free repository if no desire to renew the
+BE-subscription exists and the desire to continue to keep the perl up-to-date
+does.
+
+ActivePerl and the modules already installed continues to work as before
+regards of subscription status.
+
+c) If the BE-repo is still enabled then the next 'ppm repo sync' will just start
+working again.
+
+If the BE-repo has been manually disabled then it would have to be manually
+enabled again.
+
+d) The free ActiveState repos that the old perl has configured might disappear.
+Running 'ppm repo sync' or module install will get a "404 Not Found" error
+response.  The status line message will be stored and 'ppm repo desc' will show
+that.
