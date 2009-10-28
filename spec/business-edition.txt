@@ -3,7 +3,7 @@ ActivePerl Business Edition
 
 The plan is to only make the latest ActivePerl 8xx and 10xx for Windows, Mac OS
 X and Linux freely available.  Older releases and releases for other platforms
-requires a business edition license (called BE-license) with a valid
+requires a business edition license (called BE-license below) with a valid
 subscription.
 
 An installed BE-license contains enough information to identify the user, but
@@ -11,8 +11,38 @@ not information about over what time period the license is valid.  This
 information is only available server side.  We want users to be able to renew
 their license without having to install anything on their clients.
 
+A BE-license can be shared between multiple machines and the subscription does
+not select specific platforms as supported or not.  You either have a valid BE
+subscription or not.
+
+There will not be speparate builds of ActivePerl for users with a BE-license.
+The ActivePerl package will adapt based on the presence of the license on the
+client machine where it runs.
+
 There will be separate PPM repos for the freee ActivePerl and for those with
 the BE-license.  The free repos will only contain the latest build of each
-distribution.  There will only be free repo for Windows x86-32, Mac OS X and
-Linux x86-32 and x86-64.  There will be free repos for both 8xx and 10xx series
-of releases.
+distribution and support for the latest version of ActivePerl.  There will only
+be free repos for Windows x86-32, Mac OS X and Linux x86-32 and x86-64.  There
+will be free repos for both 8xx and 10xx series of releases.
+
+Scenarios:
+
+  - Free ActivePerl installed on a machine
+      a) user installs BE-license
+      b) BE-license subscription expires
+      c) BE-license subscription renewed
+
+  - Free ActivePerl (old version) installed on a machine
+      d) BE rules introduced
+
+  - Previously free ActivePerl installed on a machine (eg Solaris)
+      e) BE rules introduced
+
+  - BE-license and non-free ActivePerl installed 
+      f) BE-license subscription expires
+      g) BE-license subscription renewed
+
+  - BE-license installed
+      h) ActivePerl installed
+
+
