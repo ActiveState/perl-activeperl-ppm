@@ -1,0 +1,18 @@
+ActivePerl Business Edition
+---------------------------
+
+The plan is to only make the latest ActivePerl 8xx and 10xx for Windows, Mac OS
+X and Linux freely available.  Older releases and releases for other platforms
+requires a business edition license (called BE-license) with a valid
+subscription.
+
+An installed BE-license contains enough information to identify the user, but
+not information about over what time period the license is valid.  This
+information is only available server side.  We want users to be able to renew
+their license without having to install anything on their clients.
+
+There will be separate PPM repos for the freee ActivePerl and for those with
+the BE-license.  The free repos will only contain the latest build of each
+distribution.  There will only be free repo for Windows x86-32, Mac OS X and
+Linux x86-32 and x86-64.  There will be free repos for both 8xx and 10xx series
+of releases.
