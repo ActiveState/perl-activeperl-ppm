@@ -155,9 +155,14 @@ described above:
 	    - ask if it should not be?
 	        yes: set it up and sync
 		no: ask remind me later --> sets 'be-upgrade-refused' flag
+    - all http requests to 'activeperl-be' include credentials from
+      the BE-license.  Requests for other domains don't contain these
+      credentials.
 
 - if any repo has "403" status show the corresponding message
 
 - 'ppm repo sync':
     - store response content if not "200 OK" response from server
     - if status becomes "403" display content message
+
+- GUI version of the messages above
