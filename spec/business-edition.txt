@@ -131,4 +131,33 @@ public repo at all.]
 
 (g) [jand: Same as c) above?]
 
-(h) <jand>Same as a) above?</jand>
+(h) [jand: Same as a) above?]
+
+
+Tasks:
+------
+
+This lists tasks for how to change ActiveState-PPM to support the scenarios
+described above:
+
+- upgrade schema (sqlite database) to store more state:
+    - store body of failed http responses (used to capture the 403
+      text and containing the information about how to renew)
+    - store "be-upgrade-refused" state (boolean).
+
+- determine the presence of a BE-license at startup
+
+- if BE-license present:
+    - add 'activeperl-be' to the 'repo suggest' list (same URL as the
+      standard repo but with "-be" inserted before ".activestate.com"
+    - if not be-upgrade-refused:
+	- if not 'activeperl-be' configured as repo:
+	    - ask if it should not be?
+	        yes: set it up and sync
+		no: ask remind me later --> sets 'be-upgrade-refused' flag
+
+- if any repo has "403" status show the corresponding message
+
+- 'ppm repo sync':
+    - store response content if not "200 OK" response from server
+    - if status becomes "403" display content message
