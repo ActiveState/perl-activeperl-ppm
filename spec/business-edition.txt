@@ -33,6 +33,7 @@ live at http://ppm4-be.activestate.com.  Users will have to log in (using our
 single-signon system) to browse the BE site with a regular browser.  Users
 without a BE-license will not be given access.
 
+
 Scenarios:
 
   - Free ActivePerl installed on a machine
@@ -52,6 +53,7 @@ Scenarios:
 
   - BE-license installed
       (h) ActivePerl installed
+
 
 Discussion:
 
@@ -76,6 +78,7 @@ can add this repo manually at any time if she desires.  This option is only
 available when 'ppm' detects the presence of a BE-license on the system.
 The 'ppm repo suggest' still lists 'activestate' as before.
 
+
 (b) If the subscription expires and the user has configured the BE-repo to be
 current then the next "ppm repo sync" or fetching a package during install will
 fail with "403 Forbidden" status.  The status line message that goes with this
@@ -94,7 +97,7 @@ repo.  To disable this message disable or remove the BE repo.
 For the GUI the reminder is presented in a dialog box each time ppm starts up.
 The GUI dialog will have a "[X] Remind me later" checkbox that can be disabled
 to suppress this message.  [gisle: might just be some option that disabled the
-403 repo].
+403 repo so we don't have to remember a state bit for this].
 
 The user will manually have to invoke 'ppm repo del' and 'ppm repo add
 activestate' to re-enable the free repository if no desire to renew the
@@ -104,34 +107,67 @@ does.
 ActivePerl and the modules already installed continue to work as before
 regardless of subscription status.
 
+
 (c) If the BE-repo is still enabled then the next 'ppm repo sync' will just start
 working again.
 
 If the BE-repo has been manually disabled then it would have to be manually
-enabled again. [jand: Do we want to just "ping" the BE-repo every time we
-sync the regular repo to see if the user renewed their subscription?]
+enabled again.
+
+[jand: Do we want to just "ping" the BE-repo every time we sync the regular
+repo to see if the user renewed their subscription?]
+
+[gisle: something like: if the user has the BE-license and the corresponding
+BE-repo has been disabled and the 'HTTP status' from the last attempt was '403'
+and last attempt was more than 1 day ago: at startup ppm will try a
+HEAD-request on the packlist-URL to determine if '403' is still the case.  The
+response updates the status and timestamp of the last request; but the repo
+remains disabled.  If the status goes from '403' to '200' then a message about
+this fact is presented to the user.]
 
 (d) The free ActiveState repos that the old perl has configured might disappear.
-[jand: I thought the disappearing repo was case e), and case d) would just
-continue to work as always.  This situation is now the same as in case b)
-after the user disabled the activeperl-be repo and switched back to activeperl.]
 
 Running 'ppm repo sync' or module install will get a "404 Not Found" error
 response.  The status line message will be stored and 'ppm repo desc' will show
 that.
 
-(e) [jand: This situation should produce the "404 Not Found" status described
-above.]
+[jand: I thought the disappearing repo was case (e), and case (d) would just
+continue to work as always.  This situation is now the same as in case (b)
+after the user disabled the activeperl-be repo and switched back to activeperl.]
 
-(f) [jand: Is the same situation as b) above, except there is no public repo
-to switch back to.  If we have separate 403 messages per platform, then
-we can message this slightly differently; otherwise the 403 should just
-contain information about buying/renewing BE licenses and not mention the
-public repo at all.]
+[gisle: in case (b) we have an enhanced client that can inform the user about
+how to renew.  This scenario is about how ActivePerl 826 will behave after we
+decide that the free repos will not have 8xx builds in them any more.]
 
-(g) [jand: Same as c) above?]
 
-(h) [jand: Same as a) above?]
+(e) The free ActiveState repos goes away and packlist-URL starts returning 404.
+
+This is the same situation as (d) and the client will behave in the same way.
+It is after all the pre-introduction-of-BE-client we are talking about here.
+
+Only difference is that we should try to make the server produce a different
+error message for these kind of users.  In the (d) case it helps to just upgrade
+to a newer version of ActivePerl to again get module updates. In this case you
+need to buy a BE-license if you want updates for this platform.
+
+
+(f) + (g)  This is basically the same situation as (b) and (c) above, but since
+there is no free repo to fall back on the error messages should be different.
+
+The error message in this case should not say that you might run 'ppm repo add
+activestate' and disable the BE-repo.
+
+
+(h) If a BE-license is found the first time ppm runs it will set up repo 1
+to be the BE-repo instead of the free repo.  This differs from case (a) by
+not asking the user if she wants to upgrade to the BE-repo.
+
+The repo will not be accessed until the first sync.  If ppm at that point
+get a 403 errror we are in the same situation as (b).
+
+The 'ppm repo suggest' still has an entry for the free repo so the user can
+easily downgrade to the free repo if she wants that.
+
 
 
 Tasks:
@@ -145,24 +181,30 @@ described above:
       text and containing the information about how to renew)
     - store "be-upgrade-refused" state (boolean).
 
-- determine the presence of a BE-license at startup
+- additional checks done during startup of the ppm client:
+    - determine the presence of a BE-license
 
-- if BE-license present:
-    - add 'activeperl-be' to the 'repo suggest' list (same URL as the
-      standard repo but with "-be" inserted before ".activestate.com"
-    - if not be-upgrade-refused:
-	- if not 'activeperl-be' configured as repo:
-	    - ask if it should not be?
-	        yes: set it up and sync
-		no: ask remind me later --> sets 'be-upgrade-refused' flag
-    - all http requests to 'activeperl-be' include credentials from
-      the BE-license.  Requests for other domains don't contain these
-      credentials.
+    - if PPM database not initialized yet:
+	- set up initial 'activestate' or 'activestate-be' (selected
+	  by the presence of BE-license or not)
 
-- if any repo has "403" status show the corresponding message
+    - if BE-license present:
+	- add 'activeperl-be' to the 'repo suggest' list (same URL as the
+	  standard repo but with "-be" inserted before ".activestate.com"
+	- if not "be-upgrade-refused":
+	    - if not 'activeperl-be' configured as repo:
+		- ask if it should not be?
+		    yes: set it up and sync
+		    no: ask remind me later --> sets 'be-upgrade-refused' flag
+	- all http requests to 'activeperl-be' include credentials from
+	  the BE-license.  Requests for other domains don't contain these
+	  credentials.
+
+    - if any repo has "403" status show the corresponding message
+
+- GUI version of the messages and dialogs above
 
 - 'ppm repo sync':
-    - store response content if not "200 OK" response from server
+    - store response content if not "200 OK" response from server and
+      content-type is text/plain
     - if status becomes "403" display content message
-
-- GUI version of the messages above
