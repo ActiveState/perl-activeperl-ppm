@@ -24,19 +24,21 @@ There will be separate PPM repos for the free ActivePerl and for those with the
 BE-license.  The free repos will only contain the latest build of each
 distribution and support for the latest version of the 2 newest release series
 of ActivePerl.  There will only be free repos for Windows x86_32 and x86_64,
-Mac OS X and Linux x86_32 and x86_64 (64-bit builds only for Perl 5.10).  There
-will be free repos for both 8xx and 10xx series of releases.  The free repos
-will be a strict subset of the corresponding BE-repos.
+Mac OS X and Linux x86_32 and x86_64 (64-bit builds only for Perl 5.10).  The
+free repos will be a strict subset of the corresponding BE-repos.
 
 The current ppm repo lives under http://ppm4.activestate.com.  The BE repo will
 live at http://ppm4-be.activestate.com.  Users will have to log in (using our
 single-signon system) to browse the BE site with a regular browser.  Users
 without a BE-license will not be given access.
 
+Build logs and ppmx files will also be restricted in the free repo to only
+contain the last build on the freely supported platforms.
+
 
 Scenarios:
 
-  - Free ActivePerl installed on a machine
+  - Free ActivePerl (BE aware) installed on a machine
       (a) user installs BE-license
       (b) BE-license subscription expires
       (c) BE-license subscription renewed
@@ -97,7 +99,7 @@ repo.  To disable this message disable or remove the BE repo.
 For the GUI the reminder is presented in a dialog box each time ppm starts up.
 The GUI dialog will have a "[X] Remind me later" checkbox that can be disabled
 to suppress this message.  [gisle: might just be some option that disabled the
-403 repo so we don't have to remember a state bit for this].
+403 repo so we don't have to store a seperate state bit for this].
 
 The user will manually have to invoke 'ppm repo del' and 'ppm repo add
 activestate' to re-enable the free repository if no desire to renew the
@@ -119,7 +121,7 @@ repo to see if the user renewed their subscription?]
 
 [gisle: something like: if the user has the BE-license and the corresponding
 BE-repo has been disabled and the 'HTTP status' from the last attempt was '403'
-and last attempt was more than 1 day ago: at startup ppm will try a
+and last attempt was more than 1 day ago: at startup ppm will perform a
 HEAD-request on the packlist-URL to determine if '403' is still the case.  The
 response updates the status and timestamp of the last request; but the repo
 remains disabled.  If the status goes from '403' to '200' then a message about
@@ -178,7 +180,7 @@ described above:
 
 - upgrade schema (sqlite database) to store more state:
     - store body of failed http responses (used to capture the 403
-      text and containing the information about how to renew)
+      text containing the information about how to renew)
     - store "be-upgrade-refused" state (boolean).
 
 - additional checks done during startup of the ppm client:
