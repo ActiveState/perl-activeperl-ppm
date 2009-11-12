@@ -1,0 +1,48 @@
+In this document we'll try to describe another approach to how ppm might behave
+after the introduction of the BE-license.  The background information is still
+found in the sibling document 'business-edition-take1.txt'.
+
+In this take the user does not have to care about the difference between the
+'activestate' and the 'activestate-be' repo.  There is only the 'activestate'
+repo and its URL change automatically to give you the BE-repo when you have the
+license installed and you are not denied access.
+
+The "rules" are:
+
+    ppm starts out with 'repo 1' set to http://ppm4.activestate.com/<arch>/...
+    as it does today
+
+    # ppm checks if it should change the URL each time it need to sync the repo:
+    foreach repo (repos) 
+	upgrade_attempt = false
+        if repo.url =~ /ppm4\.activestate\.com/:
+	    if have BE-license:
+	        repo.url =~ s/\.activestate\.com/-be.activestate.com/
+		upgrade_attempt = true
+	loop:
+	    resp = GET(repo.url)
+	    if resp.is_success:
+		if upgrade_attempt:
+		    print "Switching to BE-repo...\n" 
+		process packlist(resp.content)
+		break
+	    elsif resp.code == 403 && repl.url =~ /ppm4-be\.activestate\.com/:
+		repo.url =~ s/ppm4-be\./ppm4\./
+		if not upgrade_attempt:
+		    print "BE-license expired\n" + resp.content
+		upgrade_attemt = false
+		redo
+	    else:
+		print resp.status_line
+		# process as done today
+		break
+
+In the pseaudo-code above assignment to repo.url is considered persistent, so
+if the value change it will start out changed the next time the ppm client is
+invoked.
+
+This approach has the drawback that when the BE-license is installed and the
+BE-subscription has expired then the ppm client will be slowed down by always
+trying to contact the BE-repo first.  If we want we could improve on this by
+storing a time stamp like 'last_be_upgrade_attempt' and only try the upgrade
+again after some time has passed since the last attempt.
