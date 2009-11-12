@@ -135,7 +135,8 @@ that.
 
 [jand: I thought the disappearing repo was case (e), and case (d) would just
 continue to work as always.  This situation is now the same as in case (b)
-after the user disabled the activeperl-be repo and switched back to activeperl.]
+after the user disabled the 'activestate-be' repo and switched back to
+'activestate'.]
 
 [gisle: in case (b) we have an enhanced client that can inform the user about
 how to renew.  This scenario is about how ActivePerl 826 will behave after we
@@ -191,14 +192,14 @@ described above:
 	  by the presence of BE-license or not)
 
     - if BE-license present:
-	- add 'activeperl-be' to the 'repo suggest' list (same URL as the
+	- add 'activestate-be' to the 'repo suggest' list (same URL as the
 	  standard repo but with "-be" inserted before ".activestate.com"
 	- if not "be-upgrade-refused":
-	    - if not 'activeperl-be' configured as repo:
+	    - if not 'activestate-be' configured as repo:
 		- ask if it should not be?
 		    yes: set it up and sync
 		    no: ask remind me later --> sets 'be-upgrade-refused' flag
-	- all http requests to 'activeperl-be' include credentials from
+	- all http requests to 'activestate-be' include credentials from
 	  the BE-license.  Requests for other domains don't contain these
 	  credentials.
 
