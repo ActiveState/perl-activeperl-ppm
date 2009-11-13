@@ -24,20 +24,20 @@ The "rules" are:
 	    if resp.is_success:
 		if upgrade_attempt:
 		    print "Switching to BE-repo...\n" 
-		process packlist(resp.content)
+		process_packlist(resp.content)
 		break
-	    elsif resp.code == 403 && repl.url =~ /ppm4-be\.activestate\.com/:
+	    elsif resp.code == 403 && repo.url =~ /ppm4-be\.activestate\.com/:
 		repo.url =~ s/ppm4-be\./ppm4\./
 		if not upgrade_attempt:
 		    print "BE-license expired\n" + resp.content
-		upgrade_attemt = false
+		upgrade_attempt = false
 		redo
 	    else:
 		print resp.status_line
 		# process as done today
 		break
 
-In the pseaudo-code above assignment to repo.url is considered persistent, so
+In the pseudo-code above assignment to repo.url is considered persistent, so
 if the value change it will start out changed the next time the ppm client is
 invoked.
 
