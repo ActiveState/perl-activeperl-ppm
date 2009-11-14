@@ -6,7 +6,7 @@ after the introduction of the BE-license.  The background information is still
 found in the sibling document [business-edition-take1](business-edition-take1.html).
 See also [business-edition-take3](business-edition-take3.html).
 
-In this take the user does not have to care about the difference between the
+In this version the user does not have to care about the difference between the
 'activestate' and the 'activestate-be' repo.  There is only the 'activestate'
 repo and its URL change automatically to give you the BE-repo when you have the
 license installed and you are not denied access.
