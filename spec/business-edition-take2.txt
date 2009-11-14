@@ -1,3 +1,6 @@
+ActivePerl Business Edition -- take 2
+=====================================
+
 In this document we'll try to describe another approach to how ppm might behave
 after the introduction of the BE-license.  The background information is still
 found in the sibling document 'business-edition-take1.txt'.
@@ -15,30 +18,30 @@ The "rules" are:
 
     # ppm checks if it should change the URL each time it need to sync the repo:
     foreach repo (repos) 
-	upgrade_attempt = false
+        upgrade_attempt = false
         if repo.url =~ /ppm4\.activestate\.com/:
-	    if have BE-license:
-	        repo.url =~ s/\.activestate\.com/-be.activestate.com/
-		upgrade_attempt = true
-	retry:
-	    resp = GET(repo.url)
-	    if resp.is_success:
-		if upgrade_attempt:
-		    print "Switching to BE-repo...\n" 
-		process_packlist(resp.content)
-	    elsif resp.code == 403 && repo.url =~ /ppm4-be\.activestate\.com/:
-		repo.url =~ s/ppm4-be\./ppm4\./
-		if not upgrade_attempt:
-		    print "BE-license expired\n" + resp.content
-		upgrade_attempt = false
-		goto retry
-	    elsif repo.code == 404:
-		print resp.status_line
-		if resp.content_type == 'text/plain':
-		    print resp.content  # upsell
-	    else:
-		print resp.status_line
-		# process as done today
+            if have BE-license:
+                repo.url =~ s/\.activestate\.com/-be.activestate.com/
+                upgrade_attempt = true
+        retry:
+            resp = GET(repo.url)
+            if resp.is_success:
+                if upgrade_attempt:
+                    print "Switching to BE-repo...\n" 
+                process_packlist(resp.content)
+            elsif resp.code == 403 && repo.url =~ /ppm4-be\.activestate\.com/:
+                repo.url =~ s/ppm4-be\./ppm4\./
+                if not upgrade_attempt:
+                    print "BE-license expired\n" + resp.content
+                upgrade_attempt = false
+                goto retry
+            elsif repo.code == 404:
+                print resp.status_line
+                if resp.content_type == 'text/plain':
+                    print resp.content  # upsell
+            else:
+                print resp.status_line
+                # process as done today
 
 In the pseudo-code above assignment to repo.url is considered persistent, so
 if the value change it will start out changed the next time the ppm client is

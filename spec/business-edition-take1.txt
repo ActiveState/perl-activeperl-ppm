@@ -1,5 +1,5 @@
 ActivePerl Business Edition
----------------------------
+===========================
 
 The plan is to only make the latest ActivePerl 8xx and 10xx for Windows, Mac OS
 X and Linux freely available.  Older releases and releases for other platforms
@@ -27,8 +27,8 @@ of ActivePerl.  There will only be free repos for Windows x86_32 and x86_64,
 Mac OS X and Linux x86_32 and x86_64 (64-bit builds only for Perl 5.10).  The
 free repos will be a strict subset of the corresponding BE-repos.
 
-The current ppm repo lives under http://ppm4.activestate.com.  The BE repo will
-live at http://ppm4-be.activestate.com.  Users will have to log in (using our
+The current ppm repo lives under <http://ppm4.activestate.com>.  The BE repo will
+live at <http://ppm4-be.activestate.com>.  Users will have to log in (using our
 single-signon system) to browse the BE site with a regular browser.  Users
 without a BE-license will not be given access.
 
@@ -37,27 +37,29 @@ contain the last build on the freely supported platforms.
 
 
 Scenarios:
+----------
 
-  - Free ActivePerl (BE aware) installed on a machine
-      (a) user installs BE-license
-      (b) BE-license subscription expires
-      (c) BE-license subscription renewed
+- Free ActivePerl (BE aware) installed on a machine
+    - (a) user installs BE-license
+    - (b) BE-license subscription expires
+    - (c) BE-license subscription renewed
 
-  - Free ActivePerl (old version) installed on a machine
-      (d) BE rules introduced
+- Free ActivePerl (old version) installed on a machine
+    - (d) BE rules introduced
 
-  - Previously free ActivePerl installed on a machine (eg Solaris)
-      (e) BE rules introduced
+- Previously free ActivePerl installed on a machine (eg Solaris)
+    - (e) BE rules introduced
 
-  - BE-license and non-free ActivePerl installed 
-      (f) BE-license subscription expires
-      (g) BE-license subscription renewed
+- BE-license and non-free ActivePerl installed 
+    - (f) BE-license subscription expires
+    - (g) BE-license subscription renewed
 
-  - BE-license installed
-      (h) ActivePerl installed
+- BE-license installed
+    - (h) ActivePerl installed
 
 
 Discussion:
+-----------
 
 (a) In this case 'ppm repo 1' will initially be the standard "ActiveState Package
 Repository" pointing to http://ppm4.activestate.com/darwin/5.10/1006/package.xml
