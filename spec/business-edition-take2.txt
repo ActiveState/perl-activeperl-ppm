@@ -10,7 +10,8 @@ license installed and you are not denied access.
 The "rules" are:
 
     ppm starts out with 'repo 1' set to http://ppm4.activestate.com/<arch>/...
-    as it does today
+    as it does today (even for builds without a free repo where the above URL
+    would be a 404).
 
     # ppm checks if it should change the URL each time it need to sync the repo:
     foreach repo (repos) 
@@ -19,23 +20,25 @@ The "rules" are:
 	    if have BE-license:
 	        repo.url =~ s/\.activestate\.com/-be.activestate.com/
 		upgrade_attempt = true
-	loop:
+	retry:
 	    resp = GET(repo.url)
 	    if resp.is_success:
 		if upgrade_attempt:
 		    print "Switching to BE-repo...\n" 
 		process_packlist(resp.content)
-		break
 	    elsif resp.code == 403 && repo.url =~ /ppm4-be\.activestate\.com/:
 		repo.url =~ s/ppm4-be\./ppm4\./
 		if not upgrade_attempt:
 		    print "BE-license expired\n" + resp.content
 		upgrade_attempt = false
-		redo
+		goto retry
+	    elsif repo.code == 404:
+		print resp.status_line
+		if resp.content_type == 'text/plain':
+		    print resp.content  # upsell
 	    else:
 		print resp.status_line
 		# process as done today
-		break
 
 In the pseudo-code above assignment to repo.url is considered persistent, so
 if the value change it will start out changed the next time the ppm client is
