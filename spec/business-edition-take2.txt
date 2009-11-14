@@ -1,9 +1,10 @@
-ActivePerl Business Edition -- take 2
+ActivePerl Business Edition — take 2
 =====================================
 
 In this document we'll try to describe another approach to how ppm might behave
 after the introduction of the BE-license.  The background information is still
-found in the sibling document 'business-edition-take1.txt'.
+found in the sibling document [business-edition-take1](business-edition-take1.html).
+See also [business-edition-take3](business-edition-take3.html).
 
 In this take the user does not have to care about the difference between the
 'activestate' and the 'activestate-be' repo.  There is only the 'activestate'

@@ -179,7 +179,9 @@ Tasks:
 ------
 
 This lists tasks for how to change ActiveState-PPM to support the scenarios
-described above:
+described above (but see also
+[business-edition-take2](business-edition-take2.html) and
+[business-edition-take3](business-edition-take3.html)):
 
 - upgrade schema (sqlite database) to store more state:
     - store body of failed http responses (used to capture the 403

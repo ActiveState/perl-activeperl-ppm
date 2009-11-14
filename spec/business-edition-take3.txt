@@ -1,16 +1,17 @@
-ActivePerl Business Edition -- take 3
+ActivePerl Business Edition — take 3
 =====================================
 
 In this document we'll try to describe yet another approach to how ppm might
 behave after the introduction of the BE-license.  The background information is
-still found in the sibling document "business-edition-take1.txt".
+still found in the sibling document [business-edition-take1](business-edition-take1.html).
+See also [business-edition-take2](business-edition-take2.html).
 
 In this take there is only one repository for each architecture/build
-combination and the packlist is available without restrictions.  Some (or all)
-of the packages in the list might only be available to users with a valid
-BE-subscription.  The link to the ppd/ppmx file will for those packages go to
-the BE-repo; same URL as now just with "ppm4-be.activestate.com" instead of
-"ppm4.activestate.com".
+combination and the `packlist.xml` files are available without restrictions.
+Some (or all) of the packages in the list might only be available to users with
+a valid BE-subscription.  The link to the `ppd/ppmx` file will for those packages
+go to the BE-repo; same URL as now just with `ppm4-be.activestate.com` instead
+of `ppm4.activestate.com`.
 
 The root REPOSITORY element (of package.xml files) already support the BASE
 attribute so its easy to set this up so that all packages are linked to the
@@ -21,7 +22,7 @@ example).
 Legacy clients
 --------------
 
-Old ppm clients will deal with these URLs just fine but might not give the best
+Old ppm4 clients will deal with these URLs just fine but might not give the best
 UX as you will see something like this when you try to install a restricted
 package:
 
@@ -34,19 +35,90 @@ server, so we should be able to substitute it with something like "ActivePerl
 Business Edition subscription required".  The actual URL that failed will not be
 displayed; but you can see it with 'ppm log'.
 
+[gisle: I just noticed that HTTP have a "402 Payment required" status code that
+might actually be quite appropriate; but perhaps it's a bit on the offensive
+side. There might also be other ways to obtain a BE-subscription than paying
+money.]
+
+The legacy GUI will display all packages alike and fail will messages like the
+one above after the "Run marked actions" button is pressed.
+
 
 BE-aware clients
 ----------------
 
-BE-aware ppm clients will be able to provide the credentials for users that
-have the BE-license installed and if the subscription is valid too they will
-just download and install as they have always done.
+First of all BE-aware ppm clients will be able to provide the credentials for
+users that have the BE-license installed and if the subscription is valid too
+they will just download and install as they have always done.  Everything just
+works as if all the packages had been free.
 
 If the BE-license is missing (or the subscription has expired) then the
-BE-aware client can try to improve the UX so that we try to upsell and explain
-the situation with the restricted packages better.  The BE-aware ppm client
-will also assume that if one URL fails with 403 for ppm4-be.activestate.com
-then all other URLs to that domain will fail in the same way.
+BE-aware client can improve the UX so that we try to upsell and explain
+the situation with the restricted packages better.
 
-[gisle: I just noticed that HTTP have a "402 Payment required" status code that
-might actually be appropriate; but perhaps it's a bit on the offensive side.]
+This is easier to implement by making a few assumptions:
+
+- packages can be classified as restricted or not by just testing if the
+  pkg.ppd_uri.host is `ppm4-be.activestate.com`.
+
+- if one `ppm4-be.activestate.com` URL fails with a 403 status all others to
+  the same domain will as well.
+
+- if any `ppm4-be.activestate.com` URL fails with a 403 status then the
+  BE-subscription has expired.
+
+The client wants to be able to know the BE-subscription status; one of
+"invalid", "valid", "expired", "unknown".  This is determined by:
+
+- invalid: no BE-license found on the host
+
+- unknown: BE-license present and last 200 or 403 response from
+  `ppm4-be.activestate.com` was more than _n_-days ago.
+
+- valid: BE-license present and last 200 or 403 response from
+  `ppm4-be.activestate.com` was 200 and less than _n_-days ago.
+
+- expired: otherwise (implies that response was 403)
+
+When the ppm client starts up and the BE-subscription status is "unknown" then
+it checks if there are any restricted packages in the enabled repos.  If so it
+will try to access `http://ppm4-be.activestate.com/status`.  If this gives a
+200 or 403 response then the BE-subscription status is set to either "valid" or
+"expired" accordingly.  Any other response produce an error for the user to see
+but does not abort further action and the status continues to be "unknown".
+
+If the BE-subscription status is not "valid" then the GUI will gray out all the
+restricted packages (or they will have a _lock_ or something like that done to
+their icon).  If the users tries to select one of these then a dialog will
+display telling her about why she can't install this package.  The messaging
+will be different in the "invalid" and "expired" state.  In the "invalid" state
+ask the user to install their "Business Edition license" and if they don't have
+it provide a URL where they can go read about it and buy it.  In the "expired"
+state urge them to renew their subscription.  In the "unknown" state just say
+something comforting and allow the package to be selected regardless.
+
+The command line client will in a similar way mark the `ppm search` and `ppm
+describe` output so that it is clear what packages are restricted and can't be
+installed.  If the users tries to run `ppm install _pkg_` and the package is
+restricted then a message similar to the one described for the GUI above is
+displayed and the install is aborted.
+
+
+Server side considerations
+--------------------------
+
+The simplest setup on the server would be to serve both `ppm4.activestate.com`
+and `ppm4-be.activestate.com` from the same files system tree.  There might not
+be a need to actually deny access for non-free `ppd/ppmx` files if all the links
+found in the package.xml files just goes to the correct BE-repo for these.  Few
+users would bother to try to rewrite these links.  If we later actually find
+considerable downloads of the non-free packages from free repo we could
+implement restrictions then.
+
+Access to the `ppm4-be.activestate.com` repo without the correct credentials is
+expected to give "403 Forbidden" error.  We would like to override the status
+line message and the content-type and content of these errors.
+
+[gisle: How is regular client access different?  Should make the behaviour
+depend on User-Agent sniffing? Will there be any reason to browse the BE-repo
+using a regular browser?]
