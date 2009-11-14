@@ -1,0 +1,41 @@
+In this document we'll try to describe yet another approach to how ppm might
+behave after the introduction of the BE-license.  The background information is
+still found in the sibling document "business-edition-take1.txt".
+
+In this take there is only one repository for each architecture/build
+combination and the packlist is available without restrictions.  Some (or all)
+of the packages in the list might only be available to users with a valid
+BE-subscription.  The link to the ppd/ppmx file will for those packages go to
+the BE-repo; same URL as now just with "ppm4-be.activestate.com" instead of
+"ppm4.activestate.com".
+
+The root REPOSITORY element (of package.xml files) already support the BASE
+attribute so its easy to set this up so that all packages are linked to the
+non-free repo, which would be what we want for the Solaris repos (as an
+example).
+
+Old ppm clients will deal with these URLs just fine but might not give the best
+UX as you will see something like this when you try to install a restricted
+package:
+
+   $ ppm install ACH
+   Downloading ACH-0.01...failed 403 Forbidden
+   ppm install failed: 403 Forbidden
+
+The text "Forbidden" is actually provided in the HTTP status line from the
+server, so we should be able to substitute it with something like "ActivePerl
+Business Edition subscription required".  The actual URL that failed will not be
+displayed; but you can see it with 'ppm log'.
+
+BE-aware ppm clients will be able to provide the credentials for users that
+have the BE-license installed and if the subscription is valid too they will
+just download and install as they have always done.
+
+If the BE-license is missing (or the subscription has expired) then the
+BE-aware client can try to improve the UX so that we try to upsell and explain
+the situation with the restricted packages better.  The BE-aware ppm client
+will also assume that if one URL fails with 403 for ppm4-be.activestate.com
+then all other URLs to that domain will fail in the same way.
+
+[gisle: I just noticed that HTTP have a "402 Payment required" status code that
+might actually be appropriate; but perhaps it's a bit on the offensive side.]
