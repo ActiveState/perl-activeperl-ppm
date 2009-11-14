@@ -9,7 +9,7 @@ HTML = $(BE)-take1.html $(BE)-take2.html $(BE)-take3.html
 .PHONY: install_modules clean
 
 .txt.html:
-	$(PERL) -M$(T_M)=markdown -MActiveState::Handy=file_content -e 'file_content(qq($@), markdown(file_content(qq($<))))'
+	$(PERL) -M$(T_M)=markdown -MActiveState::Handy=file_content -e 'file_content(qq($@), file_content(qq(tmpl/header.html)) . markdown(file_content(qq($<)) . file_content(qq(tmpl/footer.html))))'
 
 all: install_modules $(HTML)
 

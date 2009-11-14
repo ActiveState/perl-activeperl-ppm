@@ -1,0 +1,11 @@
+body {
+    font-family: "Helvetica", "sans-serif";
+    margin: 20px 60px;
+    max-width: 60em;
+}
+
+pre {
+    padding: 0.5em 2em;
+    border-top: 1px solid #DDD;
+    border-bottom: 1px solid #DDD;
+}
