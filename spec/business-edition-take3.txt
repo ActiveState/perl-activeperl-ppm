@@ -133,6 +133,14 @@ Access to the `ppm4-be.activestate.com` repo without the correct credentials is
 expected to give "403 Forbidden" error.  We would like to override the status
 line message and the content-type and content of these errors.
 
+The credentials are passed in the "BE" header containing the license serial
+number and the APIPassword separated by '#'.
+
+[gisle: The client is flexible in terms of how the server wants the
+BE-credentials to be passed on.  The "BE" header stuff was just some default
+arrangement I came up with as a placeholder for whatever becomes the real
+thing.]
+
 [gisle: Will there be any reason to browse the BE-repo using a regular browser?
 How is regular client access different?  Should make the behaviour depend on
 User-Agent sniffing, or the way the credentials are provided.]
