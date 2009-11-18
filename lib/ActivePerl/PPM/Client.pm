@@ -1044,6 +1044,7 @@ sub package_set_abs_ppd_uri {
     my($self, @pkgs) = @_;
     my %repo_cache;
     for my $pkg (@pkgs) {
+	next if $pkg->{ppd_uri} && $pkg->{ppd_uri} =~ /^[a-zA-Z]\w+:/; # already absolute
 	if (defined(my $repo_id = $pkg->{repo_id})) {
 	    my($uri, $etag, $lastmod) = @{$repo_cache{$repo_id} ||= [$self->dbh->selectrow_array("SELECT packlist_uri, packlist_etag, packlist_lastmod FROM repo WHERE id = ?", undef, $repo_id)]};
 	    if ($pkg->{ppd_uri}) {
