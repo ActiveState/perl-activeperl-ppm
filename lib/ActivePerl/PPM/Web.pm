@@ -18,6 +18,40 @@ sub web_ua {
 	    keep_alive => 1,
         );
 	$ua->default_header("Accept-Encoding" => "gzip, deflate");
+
+	# pick up BE username/password from license
+	my $licfile = $ENV{ACTIVESTATE_LICENSE};
+	unless (defined $licfile) {
+	    $licfile = $ENV{ACTIVESTATE_HOME};
+	    unless (defined $licfile) {
+		$licfile = $^O eq "MSWin32" ? $ENV{APPDATA} : $ENV{HOME};
+	    }
+	    $licfile .= "/Library/Application Support" if $^O eq "darwin";
+	    $licfile .= "/";
+	    $licfile .= "." unless $^O eq "MSWin32" or $^O eq "darwin";
+	    $licfile .= "ActiveState/ActiveState.lic";
+	}
+	my($be_username, $be_password);
+	if (open(my $fh, "<", $licfile)) {
+	    while (<$fh>) {
+		next unless /^.{32}\|ActivePerl BE\|/;
+		($be_username) = /\|SerialNo#(.*?)\|/;
+		($be_password) = /\|APIPassword#(.*?)\|/;
+		last;
+	    }
+	}
+
+	# set up handler to pass the BE credentials to the server
+	if ($be_username) {
+	    $ua->{be_credentials} = [$be_username, $be_password];
+	    $ua->add_handler(request_prepare => sub {
+		    my($request, $ua, $h) = @_;
+		    $request->header("BE", scalar($ua->be_credentials));
+		    return;
+		},
+		m_host => "ppm4-be.activestate.com",
+	    );
+	}
     }
     return $ua;
 }
@@ -62,6 +96,14 @@ sub simple_request {
     }
     ppm_log("INFO", sprintf("%s %s ==> %s (${bytes}in $used$speed)", $req->method, $req->uri, $res->status_line));
     return $res;
+}
+
+sub be_credentials {
+    my $self = shift;
+    my $cred = $self->{be_credentials};
+    return unless $cred;
+    return @$cred if wantarray;
+    return join("#", @$cred);
 }
 
 sub progress {
