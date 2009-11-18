@@ -364,6 +364,19 @@ sub be_state {
     return $state;
 }
 
+sub cannot_install {
+    my($self, $pkg) = @_;
+    $self->package_set_abs_ppd_uri($pkg);  # ensure ppd_uri is set
+    my $codebase = $pkg->codebase_abs;
+    return "missing codebase" unless $codebase;
+    if ($codebase->host eq "ppm4-be.activestate.com") {
+	my $be_state = $self->be_state;
+	return "needs business edition license installed" if $be_state eq "invalid";
+	return "business edition subscription expired" if $be_state eq "expired";
+    }
+    return "";  # no restrictions
+}
+
 sub activestate_repo {
     my $arch = ActivePerl::PPM::Arch::short_arch(shift);
     $arch =~ s,-(5.\d+)$,/$1,;
@@ -1091,9 +1104,8 @@ sub install {
 	# determine codebase_file
 	for my $pkg (@pkgs) {
 	    my $name = $pkg->name_version;
-	    my $codebase = $pkg->{codebase};
+	    my $codebase = $pkg->codebase_abs;
 	    die "No codebase for $name" unless $codebase;
-	    $codebase = URI->new_abs($codebase, $pkg->{ppd_uri});
 
 	    if ($codebase =~ /\.(tgz|zip)$/) {
 		$pkg->{codebase_type} = $1;

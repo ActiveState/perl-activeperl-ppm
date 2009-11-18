@@ -912,7 +912,11 @@ sub do_describe {
     my $pkg = $ppm->search_lookup($num) ||
 	die "*** no package #$num, do a '$PROGNAME search' first ***\n";
     my $pad = " " x (length($num) + 2);
-    print "$num: $pkg->{name}\n";
+    print "$num: $pkg->{name}";
+    if (my $why = $ppm->cannot_install($pkg)) {
+	print " *** can't install: $why ***";
+    }
+    print "\n";
     print "${pad}$pkg->{abstract}\n" if $pkg->{abstract};
     print "${pad}Version: $pkg->{version}\n";
     if (my $date = $pkg->{release_date}) {

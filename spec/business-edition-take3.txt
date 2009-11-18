@@ -59,7 +59,7 @@ explain the situation with the restricted packages better.
 This is easier to implement by making a few assumptions:
 
 - packages can be classified as restricted or not by testing if the
-  pkg.ppd_uri starts with `"http://ppm4-be.activestate.com/"`.
+  pkg.codebase starts with `"http://ppm4-be.activestate.com/"`.
 
 - if one `ppm4-be.activestate.com` URL fails with a 403 status all requests
   to this domain will fail with 403.
