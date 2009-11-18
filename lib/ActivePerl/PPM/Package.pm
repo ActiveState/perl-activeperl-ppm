@@ -89,6 +89,12 @@ sub features_declared {
     return keys(%$p) > 1 || $p->{$self->{name}};
 }
 
+sub codebase_abs {
+    my $self = shift;
+    return unless $self->{codebase};
+    return URI->new_abs($self->{codebase}, $self->{ppd_uri});
+}
+
 #
 # comparators
 #
@@ -521,6 +527,10 @@ PPD last time.
 
 Returns the URL to implementation; a blib tarball.
 Interpret this URL relative to I<ppd_uri>.
+
+=item $url = $pkg->codebase_abs
+
+Returns the absolute URL to the 'codebase'
 
 =item %features = $pkg->provides
 
