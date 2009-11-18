@@ -843,6 +843,10 @@ sub do_repo {
     }
 }
 
+sub do_be {
+    print $ppm->be_state, "\n";
+}
+
 sub do_search {
     $USAGE = "search <pattern>";
     my $sync = 1;

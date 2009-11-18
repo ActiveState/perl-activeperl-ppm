@@ -342,6 +342,28 @@ sub config_save {
     $dbh->commit;
 }
 
+sub be_state {
+    my $self = shift;
+    my $state = $self->{be_state};
+    return $state if $state;
+
+    my $ua = web_ua();
+    if ($ua->be_credentials) {
+	my $status_url = "http://ppm4-be.activestate.com/status";
+	my $resp = web_ua()->get($status_url);
+	$state = {
+	    200 => "valid",
+	    403 => "expired",
+	}->{$resp->code} || "unknown";
+    }
+    else {
+	$state = "invalid";
+    }
+
+    $self->{be_state} = $state;
+    return $state;
+}
+
 sub activestate_repo {
     my $arch = ActivePerl::PPM::Arch::short_arch(shift);
     $arch =~ s,-(5.\d+)$,/$1,;
