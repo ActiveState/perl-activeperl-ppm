@@ -35,10 +35,10 @@ server, so we should be able to substitute it with something like "ActivePerl
 Business Edition subscription required".  The actual URL that failed will not be
 displayed; but you can see it with `ppm log`.
 
-[gisle: I noticed that HTTP have a "402 Payment required" status code that
-might actually be quite appropriate; but perhaps it's a bit on the offensive
-side. There might be other ways to obtain a BE-subscription than paying
-money.]
+> [gisle: I noticed that HTTP have a "402 Payment required" status code that
+> might actually be quite appropriate; but perhaps it's a bit on the offensive
+> side. There might be other ways to obtain a BE-subscription than paying
+> money.]
 
 The legacy GUI will display all packages alike and fail will messages like those
 shown above after the "Run marked actions" button is pressed.
@@ -136,11 +136,11 @@ line message and the content-type and content of these errors.
 The credentials are passed in the "BE" header containing the license serial
 number and the APIPassword separated by '#'.
 
-[gisle: The client is flexible in terms of how the server wants the
-BE-credentials to be passed on.  The "BE" header stuff was just some default
-arrangement I came up with as a placeholder for whatever becomes the real
-thing.]
-
-[gisle: Will there be any reason to browse the BE-repo using a regular browser?
-How is regular client access different?  Should make the behaviour depend on
-User-Agent sniffing, or the way the credentials are provided.]
+> [gisle: The client is flexible in terms of how the server wants the
+> BE-credentials to be passed on.  The "BE" header stuff was just some default
+> arrangement I came up with as a placeholder for whatever becomes the real
+> thing.]
+>
+> [gisle: Will there be any reason to browse the BE-repo using a regular browser?
+> How is regular client access different?  Should make the behaviour depend on
+> User-Agent sniffing, or the way the credentials are provided.]

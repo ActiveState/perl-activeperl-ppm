@@ -4,6 +4,11 @@ body {
     max-width: 60em;
 }
 
+blockquote {
+    font-size: smaller;
+    font-style: oblique;
+}
+
 pre {
     padding: 0.5em 2em;
     border-top: 1px solid #DDD;
