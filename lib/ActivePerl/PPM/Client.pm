@@ -20,6 +20,8 @@ use File::Basename;
 
 use base 'ActivePerl::PPM::DBH';
 
+my $BE_REPO_HOST = "ppm4-be.activestate.com";
+
 # for HTTP::Response::freshness_lifetime
 my $DAY = 24*60*60;
 my %EXPIRY_DEFAULTS = (
@@ -349,7 +351,7 @@ sub be_state {
 
     my $ua = web_ua();
     if ($ua->be_credentials) {
-	my $status_url = "http://ppm4-be.activestate.com/status";
+	my $status_url = "http://$BE_REPO_HOST/status";
 	my $resp = web_ua()->get($status_url);
 	$state = {
 	    200 => "valid",
@@ -369,7 +371,7 @@ sub cannot_install {
     $self->package_set_abs_ppd_uri($pkg);  # ensure ppd_uri is set
     my $codebase = $pkg->codebase_abs;
     return "missing codebase" unless $codebase;
-    if ($codebase->host eq "ppm4-be.activestate.com") {
+    if ($codebase->host eq $BE_REPO_HOST) {
 	my $be_state = $self->be_state;
 	return "needs business edition license installed" if $be_state eq "invalid";
 	return "business edition subscription expired" if $be_state eq "expired";
@@ -758,6 +760,21 @@ sub search {
 
     @fields = ("name") unless @fields;
 
+    for my $f (@fields) {
+	if ($f eq "cannot_install") {
+	    my $be_state = $self->be_state;
+	    if ($be_state eq "invalid" || $be_state eq "expired") {
+		$f = qq(like("http://$BE_REPO_HOST/%", package.codebase));
+	    }
+	    else {
+		$f = "0";
+	    }
+	}
+	else {
+	    $f = "package.$f";
+	}
+    }
+
     my $dbh = $self->dbh;
 
     $dbh->do("DELETE FROM search");
@@ -786,7 +803,7 @@ sub search {
     }
     $dbh->commit;
 
-    my $fields = join(", ", map "package.$_", @fields);
+    my $fields = join(", ", @fields);
     my $select_arrayref = @fields > 1 ? "selectall_arrayref" : "selectcol_arrayref";
     return @{$dbh->$select_arrayref("SELECT $fields FROM package,search WHERE package.id = search.id ORDER by search.rowid")};
 }
