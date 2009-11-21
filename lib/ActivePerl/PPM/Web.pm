@@ -106,6 +106,12 @@ sub be_credentials {
     return join("#", @$cred);
 }
 
+sub be_serial {
+    my $self = shift;
+    my($serial) = $self->be_credentials;
+    return $serial;
+}
+
 sub progress {
     my($self, $status, $response) = @_;
     return unless $self->{progress_what};

@@ -852,6 +852,7 @@ sub do_info {
     }
 
     $info{be_state} = $ppm->be_state;
+    $info{be_serial} = web_ua()->be_serial || "<none>";
     $info{box_chars} = $BOX_CHARS || "ascii";
     $info{http_proxy} = $ENV{http_proxy} || "<none>";
     $info{log_file} = ActivePerl::PPM::Logger::ppm_logger()->logfile;
