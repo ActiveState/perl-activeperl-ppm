@@ -857,7 +857,7 @@ sub do_search {
     usage() unless @ARGV == 1;
     my $pattern = shift(@ARGV);
     $ppm->repo_sync if $sync;
-    my @fields = ("name", "version", "release_date", "abstract", "repo_id");
+    my @fields = ("name", "version", "release_date", "abstract", "repo_id", "cannot_install");
     my @res = $ppm->search($pattern, @fields);
     if (@res) {
 	if (@res == 1) {
@@ -875,10 +875,11 @@ sub do_search {
 	if (@res < 10) {
 	    my $count = 0;
 	    for (@res) {
-		my($name, $version, $date, $abstract, $repo_id) = @$_;
+		my($name, $version, $date, $abstract, $repo_id, $cannot_install) = @$_;
 		$count++;
+		my($A, $Z) = $cannot_install ? ("(", ")") : ("", "");
 		print "\n" unless $count == 1;
-		print "$count: $name\n";
+		print "$count: $A$name$Z\n";
 		print "   $abstract\n" if $abstract;
 		print "   Version: $version\n";
 		if ($date) {
@@ -894,7 +895,8 @@ sub do_search {
 	    my $count_width = length(@res);
 	    for (@res) {
 		$count++;
-		printf "%*d: %s %s\n", $count_width, $count, $_->[0], $_->[1];
+		my($A, $Z) = $_->[5] ? ("(", ")") : ("", "");
+		printf "%*d: $A%s %s$Z\n", $count_width, $count, $_->[0], $_->[1];
 	    }
 	}
     }
