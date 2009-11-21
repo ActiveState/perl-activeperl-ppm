@@ -263,6 +263,7 @@ sub _init_db {
 	die "Unrecognized database schema $v for $db_file";
     }
 
+    $self->{db_file} = $db_file;
     $self->{dbh} = $dbh;
 }
 

@@ -843,8 +843,46 @@ sub do_repo {
     }
 }
 
-sub do_be {
-    print $ppm->be_state, "\n";
+sub do_info {
+    my %info;
+
+    $ppm->dbh;  # so we can pick up db_file
+    for (qw(arch etc db_file)) {
+	$info{$_} = $ppm->{$_};
+    }
+
+    $info{be_state} = $ppm->be_state;
+    $info{box_chars} = $BOX_CHARS || "ascii";
+    $info{http_proxy} = $ENV{http_proxy} || "<none>";
+    $info{log_file} = ActivePerl::PPM::Logger::ppm_logger()->logfile;
+
+    {
+	no warnings 'once';
+	require FindBin;
+	$info{ppm_path} = "$FindBin::Bin/$FindBin::Script";
+    }
+    require ActivePerl::PPM;
+    $info{ppm_version} = $ActivePerl::PPM::VERSION;
+    if (defined &ActivePerl::PRODUCT) {
+	require ActivePerl;
+	$info{perl} = ActivePerl::PRODUCT() . "-" . ActivePerl::perl_version();
+    }
+    else {
+	$info{perl} = "perl-$^V";
+    }
+    $info{perl_version} = $];
+    $info{perl_path} = $^X;
+
+    if (@ARGV) {
+	for my $k (@ARGV) {
+	    print "$info{$k}\n";
+	}
+    }
+    else {
+	for my $k (sort keys %info) {
+	    print "$k = $info{$k}\n";
+	}
+    }
 }
 
 sub do_search {
@@ -1518,6 +1556,11 @@ one line per file.
 =item B<ppm help> [ I<subcommand> ]
 
 Prints the documentation for ppm (this file).
+
+=item B<ppm info> [ I<name> ]
+
+List information about ppm and its environment.  With argument print the
+value of the given variable.  See also L<ppm config list>.
 
 =item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
 
