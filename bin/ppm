@@ -1220,6 +1220,17 @@ sub _install {
 	return;
     }
 
+    unless ($force) {
+	my $stop;
+	for my $pkg (@_) {
+	    if (my $why = $ppm->cannot_install($pkg)) {
+		print "Can't install ", $pkg->name_version, ": ", $why, "\n";
+		$stop++;
+	    }
+	}
+	return if $stop;
+    }
+
     unless ($area) {
 	$area = $ppm->default_install_area;
 	unless ($area) {
