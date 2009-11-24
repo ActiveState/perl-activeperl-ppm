@@ -1,4 +1,5 @@
 package ActivePerl::PPM::GUI;
+use utf8;
 
 BEGIN {
     # Don't allow these env vars to disrupt ppm Tkx usage unless we are
@@ -704,12 +705,13 @@ sub merge_area_items {
 }
 
 sub merge_repo_items {
-    my @fields = ("id", "name", "version", "abstract", "author", "repo_id");
+    my @fields = ("id", "name", "version", "abstract", "author", "repo_id", "cannot_install");
     my @res = $ppm->packages(@fields);
     my $count = @res;
     for (@res) {
 	for (@$_) { $_ = "" unless defined }  # avoid "Use of uninitialized value" warnings
-	my ($id, $name, $version, $abstract, $author, $repo_id) = @$_;
+	my ($id, $name, $version, $abstract, $author, $repo_id, $cannot_install) = @$_;
+	$version = "($version)" if $cannot_install;
 	$pkglist->add($name,
             repo_pkg_id => $id,
             repo => $REPOS{$repo_id}->{name} || $repo_id,
@@ -1209,6 +1211,9 @@ sub select_item {
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
     $details->insert('end', "$pkg->{abstract}\n", 'abstract') if $pkg->{abstract};
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
+    if (my $why = $ppm->cannot_install($pkg)) {
+	$details->insert('end -2 char', " — can't install: $why", 'abstract');
+    }
     if (my $date = $pkg->{release_date}) {
 	$date =~ s/ .*//;  # drop time
 	$details->insert('end', "${pad}Released:\t$date\n");
