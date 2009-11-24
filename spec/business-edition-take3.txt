@@ -88,16 +88,16 @@ will try to access `http://ppm4-be.activestate.com/status`.  If this gives a
 "expired" accordingly.  Any other response produce an error for the user to see
 but does not abort further action and the state continues to be "unknown".
 
-If the BE-subscription state is not "valid" then the GUI will gray out all the
-restricted packages (or they will have a _lock_ or something like that
-superimposed on their icon).  If the user tries to select one of these then a
-dialog will display telling why they can't install this package.  The
-messaging will be different in the "invalid" and "expired" state.  In the
-"invalid" state ask the user to install their "Business Edition license" and if
-they don't have it say it's good value and provide a URL where they can go read
-about it and buy it.  In the "expired" state urge them to renew their
-subscription.  In the "unknown" state just say something comforting and allow
-the package to be selected regardless.
+If the BE-subscription state is "invalid" or "expired" then the GUI will gray
+out the version number in the _available_ colum of all the restricted packages;
+and the "Make for install [+]" button will be disabled when such a package is
+selected.  The "Details" pane at the bottom of the screen will explain why
+install is disabled.  There will be a link from the "Details" pane to a
+web-page where the user can read about the Business Edition and buy it.
+
+A restricted package could already be installed; and the GUI should still allow
+the user to uninstall the package.  This means restricted packages must still be
+selectable.
 
 The command line client will in a similar way mark the `ppm search`, `ppm tree`
 and `ppm describe` output so that it is clear what packages are restricted and
