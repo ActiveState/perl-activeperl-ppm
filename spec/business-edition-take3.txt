@@ -90,7 +90,7 @@ but does not abort further action and the state continues to be "unknown".
 
 If the BE-subscription state is "invalid" or "expired" then the GUI will gray
 out the version number in the _available_ colum of all the restricted packages;
-and the "Make for install [+]" button will be disabled when such a package is
+and the "Mark for install [+]" button will be disabled when such a package is
 selected.  The "Details" pane at the bottom of the screen will explain why
 install is disabled.  There will be a link from the "Details" pane to a
 web-page where the user can read about the Business Edition and buy it.
