@@ -1638,6 +1638,25 @@ Without further arguments this will return a list of package names.
 With $field arguments it will return a list of array references, each
 one filled in with the corresponding values for maching packages.
 
+The supported field names are:
+
+    id
+    name
+    version
+    release_date
+    author
+    abstract
+    ppd_uri
+    ppd_etag
+    ppd_fresh_until
+    codebase
+    repo_id
+    cannot_install
+
+See L<ActivePerl::PPM::RepoPackage> (and L<ActivePerl::PPM::Package>) for a
+description of these fields.  The C<cannot_install> field is a boolean that
+is TRUE for packages that can't be installed for some reason.
+
 =item $client->search_lookup( $num )
 
 Will look up the given package from the last search() result, where
@@ -1653,8 +1672,8 @@ context returns the number of packages.
 
 With arguments return a list of array references each one representing
 one package.  The elements of each array are the fields requested.
-See L<ActivePerl::PPM::RepoPackage> for what field names are
-available.
+For the list of field names that can be used see the description of
+the L</"search"> method above.
 
 =item $client->package( $id )
 
