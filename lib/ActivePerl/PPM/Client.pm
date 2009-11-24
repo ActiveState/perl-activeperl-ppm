@@ -731,12 +731,40 @@ sub _check_ppd {
     }
 }
 
+sub _package_fields {
+    my($self, %opt) = @_;
+
+    my @fields = @{$opt{fields}};
+    my $prefix = $opt{prefixed} ? "package." : "";
+
+    for my $f (@fields) {
+	if ($f eq "cannot_install") {
+	    my $be_state = $self->be_state;
+	    if ($be_state eq "invalid" || $be_state eq "expired") {
+
+		$f = qq(like("http://$BE_REPO_HOST/%", ${prefix}codebase));
+	    }
+	    else {
+		$f = "0";
+	    }
+	}
+	else {
+	    $f = $prefix . $f;
+	}
+    }
+
+    return @fields if wantarray;
+    return join(",", @fields);
+}
+
 sub packages {
     my $self = shift;
     my $dbh = $self->dbh;
     if (@_) {
-	my $aref = $dbh->selectall_arrayref("SELECT " . join(",", @_) .
-					    " FROM package");
+	my $aref = $dbh->selectall_arrayref(
+	    "SELECT " . $self->_package_fields(fields => \@_) .
+	    " FROM package"
+	);
 	my $i = 0;
 	for my $f (@_) {
 	    if ($f eq "abstract" || $f eq "author") {
@@ -758,23 +786,7 @@ sub packages {
 
 sub search {
     my($self, $pattern, @fields) = @_;
-
     @fields = ("name") unless @fields;
-
-    for my $f (@fields) {
-	if ($f eq "cannot_install") {
-	    my $be_state = $self->be_state;
-	    if ($be_state eq "invalid" || $be_state eq "expired") {
-		$f = qq(like("http://$BE_REPO_HOST/%", package.codebase));
-	    }
-	    else {
-		$f = "0";
-	    }
-	}
-	else {
-	    $f = "package.$f";
-	}
-    }
 
     my $dbh = $self->dbh;
 
@@ -804,7 +816,7 @@ sub search {
     }
     $dbh->commit;
 
-    my $fields = join(", ", @fields);
+    my $fields = $self->_package_fields(fields => \@fields, prefixed => 1);
     my $select_arrayref = @fields > 1 ? "selectall_arrayref" : "selectcol_arrayref";
     return @{$dbh->$select_arrayref("SELECT $fields FROM package,search WHERE package.id = search.id ORDER by search.rowid")};
 }
