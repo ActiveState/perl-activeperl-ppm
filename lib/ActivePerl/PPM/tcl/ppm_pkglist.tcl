@@ -243,7 +243,7 @@ snit::widgetadaptor pkglist {
 	    foreach {item} [$tree item children root] {
 		set vis 1
 		if {$opts(type) ne "all"} {
-		    set s [$tree item state forcolumn $item name]
+		    set s [$tree item state get $item]
 		    if {$opts(type) eq "installed"} {
 			set vis [expr {[lsearch -exact $s "installed"] > -1}]
 		    } elseif {$opts(type) eq "upgradable"} {
@@ -271,7 +271,7 @@ snit::widgetadaptor pkglist {
 	    foreach {item} [$tree item children root] {
 		set vis 1
 		if {$opts(type) ne "all"} {
-		    set s [$tree item state forcolumn $item name]
+		    set s [$tree item state get $item]
 		    if {$opts(type) eq "installed"} {
 			set vis [expr {[lsearch -exact $s "installed"] > -1}]
 		    } elseif {$opts(type) eq "upgradable"} {
