@@ -259,6 +259,7 @@ sub do_config {
 	    }
 	    while (@kv) {
 		my($k, $v) = splice(@kv, 0, 2);
+		next if $k =~ /^_/ && !$ENV{ACTIVEPERL_PPM_DEBUG}; # private stuff
 		$v = "<undef>" unless defined $v;
 		printf "$k = $v\n";
 	    }

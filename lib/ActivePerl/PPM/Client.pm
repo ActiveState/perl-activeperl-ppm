@@ -352,12 +352,19 @@ sub be_state {
 
     my $ua = web_ua();
     if ($ua->be_credentials) {
-	my $status_url = "http://$BE_REPO_HOST/status";
-	my $resp = web_ua()->get($status_url);
-	$state = {
-	    200 => "valid",
-	    403 => "expired",
-	}->{$resp->code} || "unknown";
+	if (my $last_state = $self->config_get("_be_state")) {
+	    ($state, my $expiry) = split(" ", $last_state);
+	    undef $state if !$expiry || $expiry < time;
+	}
+	unless ($state) {
+	    my $status_url = "http://$BE_REPO_HOST/status";
+	    my $resp = web_ua()->get($status_url);
+	    $state = {
+		200 => "valid",
+		403 => "expired",
+	    }->{$resp->code} || "unknown";
+	    $self->config_save("_be_state", join(" ", $state, time + 60));
+	}
     }
     else {
 	$state = "invalid";
