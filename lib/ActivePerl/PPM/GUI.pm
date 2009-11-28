@@ -1206,6 +1206,8 @@ sub select_item {
     }
     return unless $pkg;
 
+    my $installable = $data{'available'};
+
     my $pad = "\t";
     $details->configure(-state => "normal");
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
@@ -1213,6 +1215,7 @@ sub select_item {
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
     if (my $why = $ppm->cannot_install($pkg)) {
 	$details->insert('end -2 char', " — can't install: $why", 'abstract');
+	$installable = 0;
     }
     if (my $date = $pkg->{release_date}) {
 	$date =~ s/ .*//;  # drop time
@@ -1291,8 +1294,7 @@ sub select_item {
             );
 	}
     }
-    if ($data{'available'}) {
-	# available items are installable
+    if ($installable) {
 	if ($data{'available'} eq $data{'installed'}) {
 	    $txt = "Reinstall $name $data{'available'}";
 	}
