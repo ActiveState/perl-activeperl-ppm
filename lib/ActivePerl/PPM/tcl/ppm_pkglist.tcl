@@ -416,9 +416,9 @@ snit::widgetadaptor pkglist {
 	# See vpage.tcl for examples
 	$tree element create elemImg image
 	$tree element create elemText text -lines 1 \
-	    -fill [list $selfg {selected focus} gray {!installed !installable}]
+	    -fill [list $selfg {selected focus} white {selected !focus} gray {!installed !installable}]
 	$tree element create elemTextAvail text -lines 1 \
-	    -fill [list $selfg {selected focus} gray {!installable}]
+	    -fill [list $selfg {selected focus} white {selected !focus} gray {!installable}]
 	$tree element create selRect rect \
 	    -fill [list $selbg {selected focus} gray {selected !focus}]
 
