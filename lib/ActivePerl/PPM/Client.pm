@@ -347,7 +347,7 @@ sub config_save {
 
 sub be_state {
     my $self = shift;
-    my $state = $self->{be_state};
+    my $state = $self->{be_state} || $ENV{ACTIVEPERL_PPM_BE_STATE};
     return $state if $state;
 
     my $ua = web_ua();
