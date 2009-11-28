@@ -1954,15 +1954,24 @@ sub on_exit {
 sub about {
     require ActivePerl::PPM;
     require ActivePerl;
+    my $activeperl = ActivePerl::PRODUCT();
     my $perl_version = ActivePerl::perl_version;
+
+    my $msg = "PPM version $ActivePerl::PPM::VERSION
+$activeperl version $perl_version
+\xA9 2009 ActiveState Software Inc.";
+
+    if (my $be_serial = ActivePerl::PPM::Web::web_ua()->be_serial) {
+	$msg .= "\n\nBusiness Edition $be_serial";
+	my $state = $ppm->be_state;
+	$msg .= " ($state)" if $state ne "valid";
+    };
 
     Tkx::tk___messageBox(
         -title => "About Perl Package Manager",
 	-icon => "info",
         -type => "ok",
-	-message => "PPM version $ActivePerl::PPM::VERSION
-ActivePerl version $perl_version
-\xA9 2009 ActiveState Software Inc.",
+	-message => $msg,
     );
 }
 
