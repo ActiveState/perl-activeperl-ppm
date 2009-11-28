@@ -143,12 +143,15 @@ snit::widgetadaptor pkglist {
 	# determine appropriate state (adjusts icon)
 	set state ""
 	set repo_pkg_id [$tree item text $item repo_pkg_id]
+	set available [$tree item text $item available]
+	set installable [expr {$repo_pkg_id ne "" && [string range $available 0 0] ne "("}]
 	# installed means having an area, not necessarily an installed version
 	set area      [$tree item text $item area]
 	lappend state [expr {$area eq "" ? "!installed" : "installed"}]
 	lappend state [expr {$repo_pkg_id eq "" ? "!available" : "available"}]
+	lappend state [expr {$installable ? "installable" : "!installable"}]
 	lappend state [expr {(($area eq "")
-			      || ($repo_pkg_id eq "")
+			      || !$installable
 			      || ![pkg_upgradable $name $area $repo_pkg_id]) ?
 			     "!upgradable" : "upgradable"}]
 	$self state $item $state
@@ -178,10 +181,10 @@ snit::widgetadaptor pkglist {
 	# This should return the current item state
 	#if {[info exists NAMES($item)]} { set item $NAMES($item) }
 	if {$state ne ""} {
-	    $tree item state forcolumn $item name $state
+	    $tree item state set $item $state
 	}
 	# get state into array
-	set state [$tree item state forcolumn $item name]
+	set state [$tree item state get $item]
 	foreach s $state  { set S($s) {} }
 
 	set img ""; # make sure to get base image name before modifiers
@@ -403,8 +406,9 @@ snit::widgetadaptor pkglist {
 	set selfg $::style::as::highlightfg
 
 	$tree state define available
+	$tree state define installable
 	$tree state define installed
-	# upgradable == (available && installed) && (available != installed)
+	# upgradable == (installable && installed) && (available != installed)
 	$tree state define upgradable
 	$tree state define install
 	$tree state define remove
@@ -412,7 +416,7 @@ snit::widgetadaptor pkglist {
 	# See vpage.tcl for examples
 	$tree element create elemImg image
 	$tree element create elemText text -lines 1 \
-	    -fill [list $selfg {selected focus}]
+	    -fill [list $selfg {selected focus} gray {!installed !installable}]
 	$tree element create selRect rect \
 	    -fill [list $selbg {selected focus} gray {selected !focus}]
 
