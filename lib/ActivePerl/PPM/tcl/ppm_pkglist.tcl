@@ -134,7 +134,7 @@ snit::widgetadaptor pkglist {
 		installed styText \
 		repo_pkg_id styText \
                 repo styText \
-		available styText \
+		available styAvail \
 		abstract styText \
 		author styText
 	}
@@ -417,6 +417,8 @@ snit::widgetadaptor pkglist {
 	$tree element create elemImg image
 	$tree element create elemText text -lines 1 \
 	    -fill [list $selfg {selected focus} gray {!installed !installable}]
+	$tree element create elemTextAvail text -lines 1 \
+	    -fill [list $selfg {selected focus} gray {!installable}]
 	$tree element create selRect rect \
 	    -fill [list $selbg {selected focus} gray {selected !focus}]
 
@@ -426,6 +428,12 @@ snit::widgetadaptor pkglist {
 	$tree style layout $S selRect -union {elemImg elemText} -iexpand news
 	$tree style layout $S elemImg -expand ns -padx 2
 	$tree style layout $S elemText -squeeze x -expand ns -padx 2
+
+	# text style (available column)
+	set S [$tree style create styAvail]
+	$tree style elements $S {selRect elemTextAvail}
+	$tree style layout $S selRect -union {elemTextAvail} -iexpand news
+	$tree style layout $S elemTextAvail -squeeze x -expand ns -padx 2
 
 	# text style (other columns)
 	set S [$tree style create styText]
