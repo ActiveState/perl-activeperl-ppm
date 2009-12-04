@@ -88,6 +88,9 @@ sub simple_request {
 	    $speed = sprintf " - %.0f KB/s", ($len/1024) / $used;
 	}
     }
+    elsif ($res->code == 200) {
+	$bytes = "0 bytes ";
+    }
     if ($used < 3) {
 	$used = sprintf "%.2f sec", $used;
     }
