@@ -746,7 +746,6 @@ sub _package_fields {
 	if ($f eq "cannot_install") {
 	    my $be_state = $self->be_state;
 	    if ($be_state eq "invalid" || $be_state eq "expired") {
-
 		$f = qq(like("http://$BE_REPO_HOST/%", ${prefix}codebase));
 	    }
 	    else {
