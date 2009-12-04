@@ -2,7 +2,9 @@ package ActivePerl::PPM::Web;
 
 use strict;
 use base qw(Exporter);
-our @EXPORT_OK = qw(web_ua);
+our @EXPORT_OK = qw(web_ua $BE_REPO_HOST);
+
+our $BE_REPO_HOST = "be-repo.activestate.com";  # "ppm4-be.activestate.com";
 
 use ActivePerl::PPM ();
 use ActivePerl ();
@@ -43,13 +45,14 @@ sub web_ua {
 
 	# set up handler to pass the BE credentials to the server
 	if ($be_username) {
+	    ($be_username, $be_password) = ("ap-be", "ap-be");  # XXX testing be-repo.activestate.com
 	    $ua->{be_credentials} = [$be_username, $be_password];
 	    $ua->add_handler(request_prepare => sub {
 		    my($request, $ua, $h) = @_;
-		    $request->header("BE", scalar($ua->be_credentials));
+		    $request->authorization_basic($ua->be_credentials);
 		    return;
 		},
-		m_host => "ppm4-be.activestate.com",
+		m_host => $BE_REPO_HOST,
 	    );
 	}
     }

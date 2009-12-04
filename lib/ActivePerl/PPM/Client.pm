@@ -10,7 +10,7 @@ use ActivePerl::PPM::Package ();
 use ActivePerl::PPM::RepoPackage ();
 use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
-use ActivePerl::PPM::Web qw(web_ua);
+use ActivePerl::PPM::Web qw(web_ua $BE_REPO_HOST);
 use ActivePerl::PPM::Arch ();
 use ActivePerl::PPM::Util qw(join_with update_html_toc);
 
@@ -19,8 +19,6 @@ use ActiveState::Handy qw(xml_esc);
 use File::Basename;
 
 use base 'ActivePerl::PPM::DBH';
-
-my $BE_REPO_HOST = "ppm4-be.activestate.com";
 
 # for HTTP::Response::freshness_lifetime
 my $DAY = 24*60*60;
