@@ -4,7 +4,7 @@ use strict;
 use base qw(Exporter);
 our @EXPORT_OK = qw(web_ua $BE_REPO_HOST);
 
-our $BE_REPO_HOST = "be-repo.activestate.com";  # "ppm4-be.activestate.com";
+our $BE_REPO_HOST = "ppm4-be.activestate.com";
 
 use ActivePerl::PPM ();
 use ActivePerl ();
