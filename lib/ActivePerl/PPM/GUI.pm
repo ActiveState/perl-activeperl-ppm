@@ -1213,7 +1213,7 @@ sub select_item {
     $details->insert('1.0', "$pkg->{name}\n", 'h1');
     $details->insert('end', "$pkg->{abstract}\n", 'abstract') if $pkg->{abstract};
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
-    if (my $why = $ppm->cannot_install($pkg)) {
+    if (my $why = $repo_pkg && $ppm->cannot_install($repo_pkg)) {
 	$details->insert('end -2 char', " — can't install: $why", 'abstract');
 	$installable = 0;
     }
