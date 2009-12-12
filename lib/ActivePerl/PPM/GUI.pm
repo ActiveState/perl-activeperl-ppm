@@ -1959,7 +1959,7 @@ sub about {
 
     my $msg = "PPM version $ActivePerl::PPM::VERSION
 $activeperl version $perl_version
-\xA9 2009 ActiveState Software Inc.";
+\xA9 2010 ActiveState Software Inc.";
 
     if (my $be_serial = ActivePerl::PPM::Web::web_ua()->be_serial) {
 	$msg .= "\n\nBusiness Edition $be_serial";

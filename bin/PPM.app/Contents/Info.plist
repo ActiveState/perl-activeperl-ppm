@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>PPM</string>
 	<key>CFBundleGetInfoString</key>
-	<string>PPM <ppm-ver> Copyright 2006 ActiveState Software Inc.</string>
+	<string>PPM <ppm-ver> Copyright 2010 ActiveState Software Inc.</string>
 	<key>CFBundleIconFile</key>
 	<string>gecko.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -25,6 +25,6 @@
 	<key>CFBundleVersion</key>
 	<string><ppm-ver></string>
 	<key>NSHumanReadableCopyright</key>
-	<string>PPM <ppm-ver> Copyright 2006 ActiveState Software Inc.</string>
+	<string>PPM <ppm-ver> Copyright 2010 ActiveState Software Inc.</string>
 </dict>
 </plist>
