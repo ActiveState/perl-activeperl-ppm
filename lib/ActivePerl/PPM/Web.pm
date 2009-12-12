@@ -45,7 +45,6 @@ sub web_ua {
 
 	# set up handler to pass the BE credentials to the server
 	if ($be_username) {
-	    ($be_username, $be_password) = ("ap-be", "ap-be");  # XXX testing be-repo.activestate.com
 	    $ua->{be_credentials} = [$be_username, $be_password];
 	    $ua->add_handler(request_prepare => sub {
 		    my($request, $ua, $h) = @_;
