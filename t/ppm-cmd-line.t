@@ -82,7 +82,12 @@ $live_repo = 0 if $Config{archname} =~ /(IA64.ARCHREV|PA-RISC)/;
 $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bsolaris(-\w+)*-64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bx86-solaris\b/;
+
+# AIX and Solaris repos now require a Business Edition license
+$live_repo = 0 if $Config{archname} =~ /\b(aix|solaris)\b/i;
+
 $live_repo = 0 if ActivePerl::PRODUCT() =~ /enterprise/i;
+
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
     ok($?, 0);
