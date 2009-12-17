@@ -359,6 +359,7 @@ sub be_state {
 	    my $resp = web_ua()->get($status_url);
 	    $state = {
 		200 => "valid",
+		401 => "expired",
 		403 => "expired",
 	    }->{$resp->code} || "unknown";
 	    $self->config_save("_be_state", join(" ", $state, time + 60));
