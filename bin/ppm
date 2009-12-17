@@ -912,14 +912,39 @@ sub do_search {
 	    $repo_name{$id} = $o->{name} || $id;
 	}
 
+	my $cannot_install_count = 0;
+	for (@res) {
+	    $cannot_install_count++ if $_->[5];
+	}
+
+	if ($cannot_install_count) {
+	    if ($cannot_install_count == @res) {
+		print "*** Warning: None of the matched packages can be installed.\n";
+	    }
+	    else {
+		print "*** Warning: Some of the matched package require a valid Business\n";
+		print "*** Edition subscription to be installed.  These are marked with [BE].\n";
+	    }
+	    if ($ppm->be_state eq "expired") {
+		print "*** You ActivePerl Business Edition subscription seems to have expired.\n";
+		print "*** Please visit your account at http://store.activestate.com/XXX to\n";
+		print "*** renew your subscription.\n\n";
+	    }
+	    else {
+		print "*** Please visit http://www.activestate.com/ActivePerl-BE to learn more\n";
+		print "*** about the ActivePerl Business Edition offer.\n\n";
+	    }
+	}
+
 	if (@res < 10) {
 	    my $count = 0;
 	    for (@res) {
 		my($name, $version, $date, $abstract, $repo_id, $cannot_install) = @$_;
 		$count++;
-		my($A, $Z) = $cannot_install ? ("(", ")") : ("", "");
 		print "\n" unless $count == 1;
-		print "$count: $A$name$Z\n";
+		print "$count: $name";
+		print " [BE]" if $cannot_install && $cannot_install_count != @res;
+		print "\n";
 		print "   $abstract\n" if $abstract;
 		print "   Version: $version\n";
 		if ($date) {
@@ -935,8 +960,9 @@ sub do_search {
 	    my $count_width = length(@res);
 	    for (@res) {
 		$count++;
-		my($A, $Z) = $_->[5] ? ("(", ")") : ("", "");
-		printf "%*d: $A%s %s$Z\n", $count_width, $count, $_->[0], $_->[1];
+		printf "%*d: %s %s", $count_width, $count, $_->[0], $_->[1];
+		print " [BE]" if $_->[5] && $cannot_install_count != @res;
+		print "\n";
 	    }
 	}
     }
