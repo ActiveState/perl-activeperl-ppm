@@ -1226,7 +1226,18 @@ sub select_item {
     $details->insert('end', "$pkg->{abstract}\n", 'abstract') if $pkg->{abstract};
     $details->insert('end', "${pad}Version:\t$pkg->{version}\n");
     if (my $why = $repo_pkg && $ppm->cannot_install($repo_pkg)) {
-	$details->insert('end -2 char', " — can't install: $why", 'abstract');
+	if ($why =~ /business edition/) {
+	    my @why = split(/((?:activeperl )?business edition)/, $why, 2);
+	    $details->insert("end -2 char", " - can't install: $why[0]", "abstract");
+	    $details->insert("end -2 char", "$why[1]", "abstract link be-link");
+	    $details->insert("end -2 char", "$why[2]", "abstract");
+	    $details->tag_bind('be-link', "<ButtonRelease-1>", [
+	        \&ActiveState::Browser::open, "http://www.activestate.com/ActivePerl-BE",
+	    ]);
+	}
+	else {
+	    $details->insert('end -2 char', " — can't install: $why", 'abstract');
+	}
 	$installable = 0;
     }
     if (my $date = $pkg->{release_date}) {
@@ -1243,8 +1254,8 @@ sub select_item {
 	}
 	$details->insert('end', "${pad}CPAN:\t");
 	if (ActiveState::Browser::can_open($cpan_url)) {
-	    $details->insert('end', $cpan_url, "link");
-	    $details->tag_bind('link', "<ButtonRelease-1>", [
+	    $details->insert('end', $cpan_url, "link cpan-link");
+	    $details->tag_bind('cpan-link', "<ButtonRelease-1>", [
 	        \&ActiveState::Browser::open, $cpan_url
 	    ]);
 	}
