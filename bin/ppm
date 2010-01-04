@@ -887,6 +887,20 @@ sub do_info {
     }
 }
 
+sub print_be_info {
+    my %opt = @_;
+    $opt{prefix} = "*** " unless defined $opt{prefix};
+    if ($ppm->be_state eq "expired") {
+	print "$opt{prefix}You ActivePerl Business Edition subscription seems to have expired.\n";
+	print "$opt{prefix}Please visit your account at http://store.activestate.com/XXX to\n";
+	print "$opt{prefix}renew your subscription.\n";
+    }
+    else {
+	print "$opt{prefix}Please visit http://www.activestate.com/ActivePerl-BE to learn more\n";
+	print "$opt{prefix}about the ActivePerl Business Edition offer.\n";
+    }
+}
+
 sub do_search {
     $USAGE = "search <pattern>";
     my $sync = 1;
@@ -925,15 +939,8 @@ sub do_search {
 		print "*** Warning: Some of the matched package require a valid Business\n";
 		print "*** Edition subscription to be installed.  These are marked with [BE].\n";
 	    }
-	    if ($ppm->be_state eq "expired") {
-		print "*** You ActivePerl Business Edition subscription seems to have expired.\n";
-		print "*** Please visit your account at http://store.activestate.com/XXX to\n";
-		print "*** renew your subscription.\n\n";
-	    }
-	    else {
-		print "*** Please visit http://www.activestate.com/ActivePerl-BE to learn more\n";
-		print "*** about the ActivePerl Business Edition offer.\n\n";
-	    }
+	    print_be_info();
+	    print "\n";
 	}
 
 	if (@res < 10) {
@@ -1288,13 +1295,21 @@ sub _install {
 
     unless ($force) {
 	my $stop;
+	my $stop_be;
 	for my $pkg (@_) {
 	    if (my $why = $ppm->cannot_install($pkg)) {
 		print "Can't install ", $pkg->name_version, ": ", $why, "\n";
 		$stop++;
+		$stop_be++ if $why =~ /business edition/i;
 	    }
 	}
-	return if $stop;
+	if ($stop) {
+	    if ($stop_be) {
+		print "\n";
+		print_be_info();
+	    }
+	    return;
+	}
     }
 
     unless ($area) {
