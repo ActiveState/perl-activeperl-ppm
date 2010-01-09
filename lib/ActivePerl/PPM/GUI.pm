@@ -1153,13 +1153,13 @@ sub menus {
 	$web->add_command(
 	    -label => "ActivePerl Business Edition",
 	    -command => [\&ActiveState::Browser::open,
-		         "http://www.activestate.com/ActivePerl-BE"],
+		         "http://www.activestate.com/business_edition/"],
 	);
 	if ($ppm->be_state eq "expired") {
 	    $web->add_command(
 		-label => "Renew ActivePerl Business Edition subscription",
 		-command => [\&ActiveState::Browser::open,
-			     "http://account.activestate.com"],
+			     "http://account.activestate.com/"],
 	    );
 	}
         $web->add_command(

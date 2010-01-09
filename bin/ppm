@@ -896,8 +896,8 @@ sub print_be_info {
 	print "$opt{prefix}renew your subscription.\n";
     }
     else {
-	print "$opt{prefix}Please visit http://www.activestate.com/ActivePerl-BE to learn more\n";
-	print "$opt{prefix}about the ActivePerl Business Edition offer.\n";
+	print "$opt{prefix}Please visit http://www.activestate.com/business_edition to learn more\n";
+	print "$opt{prefix}about the ActivePerl Business Edition offering.\n";
     }
 }
 
