@@ -1159,7 +1159,7 @@ sub menus {
 	    $web->add_command(
 		-label => "Renew ActivePerl Business Edition subscription",
 		-command => [\&ActiveState::Browser::open,
-			     "http://store.activestate.com/XXX"],
+			     "http://account.activestate.com"],
 	    );
 	}
         $web->add_command(
