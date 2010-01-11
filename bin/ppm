@@ -892,7 +892,7 @@ sub print_be_info {
     $opt{prefix} = "*** " unless defined $opt{prefix};
     if ($ppm->be_state eq "expired") {
 	print "$opt{prefix}Your ActivePerl Business Edition subscription seems to have expired.\n";
-	print "$opt{prefix}Please visit your account at http://account.activestate.com to\n";
+	print "$opt{prefix}Please visit your account at https://account.activestate.com to\n";
 	print "$opt{prefix}renew your subscription.\n";
     }
     else {
