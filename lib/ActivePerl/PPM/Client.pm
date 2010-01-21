@@ -455,7 +455,7 @@ sub repo_add {
 	         $attr{name}, $attr{packlist_uri}, ($attr{prio} || 0)))
     {
 	my $id = $dbh->func('last_insert_rowid');
-	$self->repo_sync;
+	$self->repo_sync unless defined $attr{enabled} && !$attr{enabled};
 	return $id;
     }
     my $err = $DBI::errstr;
@@ -1378,6 +1378,7 @@ sub profile_xml_restore {
             my $id = $self->repo_add(
                 name => $_->{name},
                 packlist_uri => $_->{href},
+		enabled => $_->{enabled},
             );
 
             $self->repo_enable($id, 0) unless $_->{enabled};
