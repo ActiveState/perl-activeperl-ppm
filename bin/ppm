@@ -2046,7 +2046,7 @@ Underlying modules moved to the C<ActivePerl::PPM::> namespace.
 
 =head1 SEE ALSO
 
-L<activeperl>
+L<ActivePerl>
 
 L<http://search.cpan.org/dist/PPM-Repositories/>
 
