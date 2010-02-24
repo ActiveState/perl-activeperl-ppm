@@ -88,6 +88,9 @@ $live_repo = 0 if $Config{archname} =~ /\b(aix|solaris)\b/i;
 
 $live_repo = 0 if ActivePerl::PRODUCT() =~ /enterprise/i;
 
+# We don't yet have 5.12 repos
+$live_repo = 0 if $] >= 5.012;
+
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
     ok($?, 0);
