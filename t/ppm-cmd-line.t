@@ -88,8 +88,8 @@ $live_repo = 0 if $Config{archname} =~ /\b(aix|solaris)\b/i;
 
 $live_repo = 0 if ActivePerl::PRODUCT() =~ /enterprise/i;
 
-# We don't yet have 5.12 repos
-$live_repo = 0 if $] >= 5.012;
+# The only 5.12 repo right now is for 32-bit Linux
+$live_repo = 0 if $] >= 5.012 && ($^O ne "linux" || $Config{ptrsize} != 4);
 
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
