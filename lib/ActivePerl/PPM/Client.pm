@@ -143,6 +143,7 @@ sub _user_area {
             "$ENV{HOME}/Library/ActivePerl",
             "$ENV{HOME}/Library/ActivePerl-5.8",
             "$ENV{HOME}/Library/ActivePerl-5.10",
+            "$ENV{HOME}/Library/ActivePerl-5.12",
         );
     }
     return 0;
