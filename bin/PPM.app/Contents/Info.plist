@@ -21,7 +21,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string><ppm-ver></string>
 	<key>CFBundleSignature</key>
-	<string>PPM4</string>
+	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string><ppm-ver></string>
 	<key>NSHumanReadableCopyright</key>
