@@ -80,6 +80,7 @@ sub new {
 	$^O eq "darwin"           ? "$ENV{HOME}/Library/Logs/ppm4.log" :
         do { mkdir("$ENV{HOME}/.ActivePerl", 0755); "$ENV{HOME}/.ActivePerl/ppm4.log" };
     my $fh;
+    my $existed = -f $logfile;
     if ($ENV{HARNESS_ACTIVE}) {
 	# suppress logging when running under Test::Harness
 	$opt{level} ||= 1;
@@ -87,6 +88,7 @@ sub new {
     elsif (open($fh, ">>", $logfile)) {
 	require IO::Handle;  # adds methods to $fh
 	$fh->autoflush;
+	chown($ENV{SUDO_UID}, $ENV{SUDO_GID}, $fh) if !$existed && exists $ENV{SUDO_UID};
     }
     else {
 	warn "Can't log to '$logfile': $!";
