@@ -191,7 +191,7 @@ sub do_version {
     if (defined &ActivePerl::PRODUCT) {
 	print " (" . ActivePerl::PRODUCT() . " " . ActivePerl::BUILD() . ")";
     }
-    print "\nCopyright (C) 2010 ActiveState Software Inc.  All rights reserved.\n";
+    print "\nCopyright (C) 2011 ActiveState Software Inc.  All rights reserved.\n";
 }
 
 sub do_help {
