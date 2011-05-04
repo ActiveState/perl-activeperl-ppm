@@ -78,7 +78,7 @@ if ($AQUA) {
     Tkx::catch("console hide");
     eval {
 	Tkx::package_require('tclCarbonProcesses');
-	Tkx::carbon__setProcessName('PPM');
+	Tkx::carbon__setProcessName(Tkx::carbon__getCurrentProcess(), 'PPM');
     };
 }
 
@@ -823,9 +823,23 @@ sub verify {
 sub menus {
     Tkx::option_add("*Menu.tearOff", 0);
     my $menu = $mw->new_menu();
-    $mw->configure(-menu => $menu);
 
     my ($sm, $ssm);
+
+    # Special menu on OS X.  For Cocoa the .apple menu must be the first
+    # and must exist prior to attaching the menu to a toplevel.
+    if ($AQUA) {
+	$sm = $menu->new_menu(-name => 'apple'); # must be named "apple"
+	$menu->add_cascade(-label => "PPM", -menu => $sm);
+	$sm->add_command(
+	    -label => "About PPM",
+	    -command => sub { about(); },
+        );
+	$sm->add_separator();
+	# OS X enables the Preferences item when you create this proc
+	Tkx::proc("tk::mac::ShowPreferences", "args", [\&show_prefs_dialog]);
+	Tkx::bind(all => "<Command-comma>", "tk::mac::ShowPreferences");
+    }
 
     # File menu
     $sm = $file_menu = $menu->new_menu(-name => "file");
@@ -1177,20 +1191,7 @@ sub menus {
         );
     }
 
-    # Special menu on OS X
-    if ($AQUA) {
-	$sm = $menu->new_menu(-name => 'apple'); # must be named "apple"
-	$menu->add_cascade(-label => "PPM", -menu => $sm);
-	$sm->add_command(
-	    -label => "About PPM",
-	    -command => sub { about(); },
-        );
-	$sm->add_separator();
-	# OS X enables the Preferences item when you create this proc
-	Tkx::proc("tk::mac::ShowPreferences", "args", [\&show_prefs_dialog]);
-	Tkx::bind(all => "<Command-comma>", "tk::mac::ShowPreferences");
-    }
-
+    $mw->configure(-menu => $menu);
     return $menu;
 }
 
