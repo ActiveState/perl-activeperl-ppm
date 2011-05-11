@@ -78,7 +78,8 @@ if ($AQUA) {
     Tkx::catch("console hide");
     eval {
 	Tkx::package_require('tclCarbonProcesses');
-	Tkx::carbon__setProcessName(Tkx::carbon__getCurrentProcess(), 'PPM');
+	my $psn = Tkx::carbon__getCurrentProcess();
+	Tkx::carbon__setProcessName("$psn", 'PPM');
     };
 }
 
