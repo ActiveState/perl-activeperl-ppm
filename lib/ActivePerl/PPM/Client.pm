@@ -139,12 +139,10 @@ sub _known_area {
 sub _user_area {
     my $path = shift;
     if ($^O eq "darwin") {
-        return _path_eq($path,
-            "$ENV{HOME}/Library/ActivePerl",
-            "$ENV{HOME}/Library/ActivePerl-5.8",
-            "$ENV{HOME}/Library/ActivePerl-5.10",
-            "$ENV{HOME}/Library/ActivePerl-5.12",
-        );
+	my @paths = ("$ENV{HOME}/Library/ActivePerl");
+	# Add ActivePerl-5.8 etc to the list (and never mind the bogus 5.9 etc entries)
+	push @paths, "$paths[0]-5.$_" for 8 .. $Config{PERL_VERSION};
+        return _path_eq($path, @paths);
     }
     return 0;
 }
