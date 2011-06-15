@@ -75,10 +75,11 @@ sub new {
     my($class, %opt) = shift;
 
     my $logfile = $opt{file} || $ENV{ACTIVEPERL_PPM_LOG_FILE} ||
-	$ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
-	$^O eq "MSWin32"          ? "$ENV{TEMP}\\ppm4.log" :
-	$^O eq "darwin"           ? "$ENV{HOME}/Library/Logs/ppm4.log" :
-        do { mkdir("$ENV{HOME}/.ActivePerl", 0755); "$ENV{HOME}/.ActivePerl/ppm4.log" };
+	( $ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
+	  $^O eq "MSWin32"          ? "$ENV{TEMP}\\ppm4.log" :
+	  $^O eq "darwin"           ? "$ENV{HOME}/Library/Logs/ppm4.log" :
+          do { mkdir("$ENV{HOME}/.ActivePerl", 0755); "$ENV{HOME}/.ActivePerl/ppm4.log" }
+        );
     my $fh;
     my $existed = -f $logfile;
     if ($ENV{HARNESS_ACTIVE}) {
