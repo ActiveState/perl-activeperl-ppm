@@ -27,11 +27,11 @@ sub web_ua {
 	    $licfile = $ENV{ACTIVESTATE_HOME};
 	    unless (defined $licfile) {
 		if ($^O eq "MSWin32") {
-		    $file = $ENV{APPDATA};
+		    $licfile = $ENV{APPDATA};
 		}
 		else {
 		    # sudo may not update $HOME
-		    $file = (getpwuid($<))[7] || $ENV{HOME};
+		    $licfile = (getpwuid($<))[7] || $ENV{HOME};
 		}
 	    }
 	    $licfile .= "/Library/Application Support" if $^O eq "darwin";
