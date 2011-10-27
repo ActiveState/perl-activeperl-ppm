@@ -1198,9 +1198,21 @@ sub install {
 			$pkg->{provide}{$mod} = ActiveState::Version::vnumify(ActiveState::ModInfo::parse_version($to));
 		    }
 		}
+		1;
 	    };
 
-	    if ($pkg->{codebase_type} eq "tgz") {
+	    if (eval { require Archive::Extract::Libarchive; 1 }) {
+		my $ae = Archive::Extract::Libarchive->new(archive => $codebase_file);
+		$ae->extract(to => "$tmpdir/$pname")
+		    || die "Can't extract files from $codebase_file using libarchive";
+		# Since Archive::Extract::Libarchive can't list the files until
+		# after it has extracted them, we call &$extract_file with a dummy
+		# extractor and delete those files we don't care about.
+		for my $f (@{$ae->files}) {
+		    $extract_file->($f, sub { 1 }) or unlink("$tmpdir/$pname/$f");
+		}
+            }
+	    elsif ($pkg->{codebase_type} eq "tgz") {
 		require Archive::Tar;
 		my $tar = Archive::Tar->new($codebase_file, 1)
 		    || die "Can't extract files from $codebase_file";
