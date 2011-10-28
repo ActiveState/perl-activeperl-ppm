@@ -761,14 +761,18 @@ sub do_repo {
 	$ppm->repo_set_name($repo->{id}, join(" ", @ARGV));
     }
     elsif ($cmd eq "location") {
-	$USAGE = "repo location <num> <url>";
-	warn "[@ARGV]";
+	$USAGE = "repo location [--no-sync] <num> <url>";
+	my $sync = 1;
+	require Getopt::Long;
+	Getopt::Long::GetOptions(
+	    'sync!' => \$sync,
+	) || usage();
 	usage() if @ARGV != 2;
 	my($id, $uri) = @ARGV;
 	my $repo = $ppm->repo($id);
 	die "No such repo; 'ppm repo list' will print what's available" unless $repo;
 	$ppm->repo_set_packlist_uri($repo->{id}, $uri);
-	$ppm->repo_sync(repo => $repo->{id});
+	$ppm->repo_sync(repo => $repo->{id}) if $sync;
     }
     elsif ($cmd =~ /^\d+$/) {
 	@ARGV = ("describe") unless @ARGV;
