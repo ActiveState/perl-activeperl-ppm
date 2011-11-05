@@ -1017,6 +1017,13 @@ sub do_describe {
     }
     my $repo = $ppm->repo($pkg->{repo_id});
     print "${pad}Repo: $repo->{name}\n";
+    if ((my $ppmx = $pkg->codebase_abs) =~ /ppm4(?:-be)?\.activestate.com/) {
+	$ppmx =~ s/\.tar.gz$/.ppmx/;
+	print "${pad}Link: $ppmx\n";
+    }
+    elsif ((my $ppd = $pkg->{ppd_uri}) =~ /\.ppd$/) {
+	print "${pad}Link: $ppd\n";
+    }
     if (my $name = is_cpan_package($pkg->{name})) {
 	print "${pad}CPAN: http://search.cpan.org/dist/$name-$pkg->{version}/\n";
     }
