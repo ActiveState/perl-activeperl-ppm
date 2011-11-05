@@ -1017,8 +1017,8 @@ sub do_describe {
     }
     my $repo = $ppm->repo($pkg->{repo_id});
     print "${pad}Repo: $repo->{name}\n";
-    if ((my $ppmx = $pkg->codebase_abs) =~ /ppm4(?:-be)?\.activestate.com/) {
-	$ppmx =~ s/\.tar.gz$/.ppmx/;
+    if ((my $ppmx = $pkg->codebase_abs) =~ m,^https?://ppm4(?:-be)?\.activestate.com/,) {
+	$ppmx =~ s/\.tar\.gz$/.ppmx/;
 	print "${pad}Link: $ppmx\n";
     }
     elsif ((my $ppd = $pkg->{ppd_uri}) =~ /\.ppd$/) {
