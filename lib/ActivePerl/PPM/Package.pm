@@ -197,6 +197,8 @@ sub sql_create_tables {
      name text not null,
      version double not null
 )",
+"CREATE INDEX IF NOT EXISTS feature_package_id ON feature(package_id)",
+"CREATE INDEX IF NOT EXISTS feature_name_role ON feature(name,role)",
 "CREATE TABLE IF NOT EXISTS script (
      package_id integer not null,
      role text not null, /* 'install' or 'uninstall' */
