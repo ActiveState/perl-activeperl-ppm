@@ -622,6 +622,15 @@ sub repo_sync {
                     #my $t = time;
 		    my $status = ppm_status();
 		    $status->begin("Updating $repo->{name} database");
+
+		    # It's faster to insert lots of rows in the database if the engine doesn't
+		    # have to update the indexes as it goes.  We'll recreate these indexes again
+		    # before this routine returns.  This "trick" reduce the time spent updating
+		    # the database by 15%.  Not having these indexes at all makes it 30% faster
+		    # to update, but then it's really slow to look up stuff.
+		    $dbh->do("DROP INDEX IF EXISTS feature_package_id");
+		    $dbh->do("DROP INDEX IF EXISTS feature_name_role");
+
                     my %have;
                     if ($opt{force}) {
                         _repo_delete_packages($dbh, $repo->{id});
@@ -684,6 +693,11 @@ sub repo_sync {
 	    if %delete_package;
 
 	$dbh->commit;
+    }
+
+    # Recreate indexes that we might have dropped during the update
+    for (ActivePerl::PPM::RepoPackage->sql_create_tables(indexes_only => 1)) {
+	$dbh->do($_);
     }
     return;
 }

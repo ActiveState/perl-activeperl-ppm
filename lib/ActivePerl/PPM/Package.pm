@@ -186,7 +186,7 @@ sub sql_create_tables {
 	my($name) = grep $_->[0] eq "name", @fields;
 	$name->[1] .= " unique";
     }
-    return
+    my @sql = (
 "CREATE TABLE IF NOT EXISTS package (\n    " .
     join(",\n    ", map join(" ", @$_), @fields) .
 "
@@ -206,6 +206,10 @@ sub sql_create_tables {
      uri text,
      text text
 )",
+    );
+    @sql = grep /^CREATE INDEX/, @sql
+	if $opt{indexes_only};
+    return @sql;
 }
 
 my %ROLE = (
