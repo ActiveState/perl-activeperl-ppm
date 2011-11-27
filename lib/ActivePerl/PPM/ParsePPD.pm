@@ -16,6 +16,11 @@ my %TEXT_TAG = (
    AUTHOR => 1,
 );
 
+my %INSTALL_TAG = (
+   INSTALL => 1,
+   UNINSTALL => 1,
+);
+
 my %IGNORE_TAG = (
    TITLE => 1,
    OS => 1,
@@ -81,7 +86,7 @@ sub new {
 		my %attr = @_;
 		$p->{ctx}{lc $tag} = $attr{HREF};
 	    }
-	    elsif ($tag eq "INSTALL" || $tag eq "UNINSTALL") {
+	    elsif ($INSTALL_TAG{$tag}) {
 		my %attr = @_;
 		my $h = $p->{ctx}{script}{lc $tag} = {};
 		$h->{exec} = $attr{EXEC} if exists $attr{EXEC};
@@ -119,7 +124,7 @@ sub new {
 		$p->{ctx}{architecture} ||= $p->{arch} || "noarch";
 		$p->{ctx} = $p->{softpkg};
 	    }
-	    elsif ($tag =~ /^(UN)?INSTALL$/) {
+	    elsif ($INSTALL_TAG{$tag}) {
 		my $h = $p->{ctx}{script}{lc $tag};
 		$h->{text} = $p->{txt}
 		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
