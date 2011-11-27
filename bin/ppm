@@ -1113,16 +1113,16 @@ sub _tree {
 sub do_install {
     $USAGE = "install [--force] [--nodeps] [--nohtml] [--area <area>] <module> | <url> | <file> | <num>";
     my $force;
-    my $nodeps;
-    my $nohtml;
     my $area;
+    my $nodeps;
+    my $install_html = 1;
     my $sync = 1;
     require Getopt::Long;
     Getopt::Long::GetOptions(
         force => \$force,
 	'area=s' => \$area,
 	nodeps => \$nodeps,
-        nohtml => \$nohtml,
+        'html!' => \$install_html,
         'sync!' => \$sync,
      ) || usage();
     usage() unless @ARGV >= 1;
@@ -1136,19 +1136,19 @@ sub do_install {
 	    usage() if @ARGV;
 	    # looks like an absolute URL
             require URI;
-	    _install_uri($area, $force, $nohtml, URI->new($feature), @args);
+	    _install_uri($area, $force, $install_html, URI->new($feature), @args);
 	}
 	elsif ($feature =~ /\.(?:ppd|ppmx)$/) {
 	    usage() if @ARGV;
 	    require URI::file;
-	    _install_uri($area, $force, $nohtml, URI::file->new_abs($feature), @args);
+	    _install_uri($area, $force, $install_html, URI::file->new_abs($feature), @args);
 	}
 	elsif ($feature =~ /^\d+$/) {
 	    usage() if @ARGV;
 	    my $pkg = $ppm->search_lookup($feature) ||
 		die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	    my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
-	    _install($area, $force, $nohtml, $pkg, @deps);
+	    _install($area, $force, $install_html, $pkg, @deps);
 	}
 	else {
 	    # search for feature in repos
@@ -1185,7 +1185,7 @@ sub do_install {
 		    push(@features, $ppm->feature_fixup_case($_));
 		}
 	    }
-	    _install($area, $force, $nohtml, $ppm->packages_missing(want => \@features, @args));
+	    _install($area, $force, $install_html, $ppm->packages_missing(want => \@features, @args));
 	}
     };
     if ($@) {
@@ -1216,7 +1216,7 @@ sub do_upgrade {
     if (@ARGV && $ARGV[0] =~ /::/) {
 	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install(undef, 0, 0, $ppm->packages_missing(want => [[$mod, undef]]));
+	return _install(undef, 0, 1, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
@@ -1246,7 +1246,7 @@ sub do_upgrade {
 				    die "No writable install area for the upgrade";
 				}
 			    }
-			    _install($install_area, 0, 0, $best);
+			    _install($install_area, 0, 1, $best);
 			}
 		    }
 		}
@@ -1267,7 +1267,7 @@ sub do_upgrade {
 }
 
 sub _install_uri {
-    my($area, $force, $nohtml, $uri, @args) = @_;
+    my($area, $force, $install_html, $uri, @args) = @_;
 
     my $res = web_ua->get($uri);
     unless ($res->is_success) {
@@ -1329,13 +1329,13 @@ sub _install_uri {
     # first repo to look for additional packages.  This only works for
     # package features.
 
-    _install($area, $force, $nohtml, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
+    _install($area, $force, $install_html, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
 }
 
 sub _install {
     my $area = shift;
     my $force = shift;
-    my $nohtml = shift;
+    my $install_html = shift;
     unless (@_) {
 	print "No missing packages to install\n";
 	return;
@@ -1377,7 +1377,7 @@ Run 'ppm help area' to learn how to set up private areas.";
 
     $| = 1;
 
-    my $summary = $ppm->install(packages => \@_, area => $area, force => $force, install_html => !$nohtml);
+    my $summary = $ppm->install(packages => \@_, area => $area, force => $force, install_html => $install_html);
     if (my $count = $summary->{count}) {
 	for my $what (sort keys %$count) {
 	    my $n = $count->{$what} || 0;
