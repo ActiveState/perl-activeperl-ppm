@@ -104,18 +104,8 @@ sub new {
 	},
 	End => sub {
 	    my($p, $tag) = @_;
-	    if ($tag eq "IMPLEMENTATION") {
-		$p->{ctx}{architecture} ||= $p->{arch} || "noarch";
-		$p->{ctx} = $p->{softpkg};
-	    }
-	    elsif ($TEXT_TAG{$tag}) {
+	    if ($TEXT_TAG{$tag}) {
 		$p->{ctx}{lc $tag} = $p->{txt};
-                $p->setHandlers(Char => undef);
-	    }
-	    elsif ($tag =~ /^(UN)?INSTALL$/) {
-		my $h = $p->{ctx}{script}{lc $tag};
-		$h->{text} = $p->{txt}
-		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
                 $p->setHandlers(Char => undef);
 	    }
 	    elsif ($tag eq "SOFTPKG") {
@@ -124,7 +114,16 @@ sub new {
 		    $pkg->{architecture} ||= $p->{arch} || "noarch";
 		}
 		$handler->($pkg);
-		return;
+	    }
+	    elsif ($tag eq "IMPLEMENTATION") {
+		$p->{ctx}{architecture} ||= $p->{arch} || "noarch";
+		$p->{ctx} = $p->{softpkg};
+	    }
+	    elsif ($tag =~ /^(UN)?INSTALL$/) {
+		my $h = $p->{ctx}{script}{lc $tag};
+		$h->{text} = $p->{txt}
+		    unless defined($h->{uri}); # SCRIPT/HREF is preferred
+                $p->setHandlers(Char => undef);
 	    }
 	},
     );
