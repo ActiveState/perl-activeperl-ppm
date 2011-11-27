@@ -275,16 +275,17 @@ sub dbi_store {
 	$dbh->do("DELETE FROM script WHERE package_id = ?", undef, $id);
     }
     else {
-	$dbh->do("INSERT INTO package (" . join(", ", @fields) . ") VALUES(" . join(", ", map "?", @fields) . ")",
-		 undef, @{$self}{@fields}) || return undef;
+	my $sth = $dbh->prepare_cached("INSERT INTO package (" . join(", ", @fields) . ") " .
+				           "VALUES(" . join(", ", map "?", @fields) . ")");
+	$sth->execute(@{$self}{@fields}) || return undef;
 	$id = $dbh->func('last_insert_rowid');
     }
 
+    my $sth_feature_insert = $dbh->prepare_cached("INSERT INTO feature (package_id, role, name, version) VALUES(?, ?, ?, ?)");
     for my $role (values %ROLE) {
 	my $hash = $self->{$role} || next;
 	while (my($feature, $version) = each %$hash) {
-	    $dbh->do("INSERT INTO feature (package_id, role, name, version) VALUES(?, ?, ?, ?)", undef,
-		     $id, substr($role, 0, 1), $feature, $version)
+	    $sth_feature_insert->execute($id, substr($role, 0, 1), $feature, $version);
 	}
     }
 
