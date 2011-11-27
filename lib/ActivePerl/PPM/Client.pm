@@ -859,10 +859,8 @@ sub feature_have {
 	my $area = $self->area($area_name);
 	next if !@_ && !$area->initialized;
 	if (defined(my $have = $area->feature_have($feature))) {
-	    ppm_debug("Feature $feature found in $area_name");
 	    return $have;
 	}
-	ppm_debug("Feature $feature not found in $area_name");
     }
 
     if (!@_ && $feature =~ /::/) {
@@ -871,7 +869,6 @@ sub feature_have {
 	if (my $path = ActiveState::ModInfo::find_module($feature, $self->{inc})) {
 	    return ActiveState::Version::vnumify(ActiveState::ModInfo::parse_version($path));
 	}
-	ppm_debug("Module $feature not found in \@INC");
     }
 
     return undef;
@@ -988,7 +985,6 @@ sub packages_missing {
     my @pkg_missing;
     while (@todo) {
         my($feature, $want, $needed_by) = @{shift @todo};
-	ppm_debug("Want $feature >= $want");
 
         my $have;
 	for my $pkg (@pkg_have, @pkg_missing) {
@@ -1005,7 +1001,7 @@ sub packages_missing {
 	    }
 	}
 	$have = $self->feature_have($feature, @area_have) unless defined($have);
-	ppm_debug("Have $feature $have") if defined($have);
+	ppm_debug("Want $feature" . ($want ? " $want" : "") . (defined($have) ? ", have $feature $have" : " (missing)"));
 
         if ((!$needed_by && $force) ||
 	    ($needed_by && $follow_deps eq "all") ||
