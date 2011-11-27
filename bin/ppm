@@ -1125,7 +1125,7 @@ sub do_install {
         nohtml => \$nohtml,
         'sync!' => \$sync,
      ) || usage();
-    usage() unless @ARGV == 1;
+    usage() unless @ARGV >= 1;
     my @args;
     push(@args, force => 1) if $force;
     push(@args, follow_deps => "none") if $nodeps;
@@ -1133,15 +1133,18 @@ sub do_install {
     my $feature = shift(@ARGV);
     eval {
 	if ($feature =~ m,^[a-z][+\w]+:[^:],) {
+	    usage() if @ARGV;
 	    # looks like an absolute URL
             require URI;
 	    _install_uri($area, $force, $nohtml, URI->new($feature), @args);
 	}
 	elsif ($feature =~ /\.(?:ppd|ppmx)$/) {
+	    usage() if @ARGV;
 	    require URI::file;
 	    _install_uri($area, $force, $nohtml, URI::file->new_abs($feature), @args);
 	}
 	elsif ($feature =~ /^\d+$/) {
+	    usage() if @ARGV;
 	    my $pkg = $ppm->search_lookup($feature) ||
 		die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	    my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
@@ -1150,8 +1153,39 @@ sub do_install {
 	else {
 	    # search for feature in repos
             $ppm->repo_sync if $sync;
-	    $feature = $ppm->feature_fixup_case($feature);
-	    _install($area, $force, $nohtml, $ppm->packages_missing(want => [$feature], @args));
+	    my @features;
+	    for ($feature, @ARGV) {
+		if (/\brequirements\.txt$/) {
+		    my $file = $_;
+		    open(my $fh, "<", $file) || die "Can't read '$file': $!";
+		    my @warn;
+		    while (<$fh>) {
+			s/\#.*//;
+			next if /^\s*$/;
+			chomp;
+			if (/^\s*([a-zA-Z][\w:]*)\s*(.*)/) {
+			    if ($2) {
+				push(@warn, "Unrecongized $1 specifier '$2' at line $.");
+			    }
+			    push(@features, $1);
+			}
+			else {
+			    push(@warn, "Unrecognized '$_' at line $.");
+			}
+		    }
+		    close($fh);
+		    if (@warn) {
+			print "$file:\n";
+			print " - $_\n" for @warn;
+			print "\n";
+			ppm_log("WARN", "$file: $_") for @warn;
+		    }
+		}
+		else {
+		    push(@features, $ppm->feature_fixup_case($_));
+		}
+	    }
+	    _install($area, $force, $nohtml, $ppm->packages_missing(want => \@features, @args));
 	}
     };
     if ($@) {
@@ -1493,11 +1527,12 @@ Invoke the graphical user interface:
 
 Install, upgrade and remove packages:
 
-    ppm install [--area <area>] [--force] <pkg>
-    ppm install [--area <area>] [--force] <module>
+    ppm install [--area <area>] [--force] <pkg> ...
+    ppm install [--area <area>] [--force] <module> ...
     ppm install [--area <area>] <url>
     ppm install [--area <area>] <file>.ppmx
     ppm install [--area <area>] <file>.ppd
+    ppm install [--area <area>] requirements.txt
     ppm install [--area <area>] <num>
     ppm upgrade [--install]
     ppm upgrade <pkg>
@@ -1619,9 +1654,11 @@ Prints the documentation for ppm (this file).
 List information about ppm and its environment.  With argument print the
 value of the given variable.  See also L<ppm config list>.
 
-=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
+=item B<ppm install> I<pkg> ... [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
+=item B<ppm install> I<module> ... [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
+
+=item B<ppm install> requirements.txt [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
 =item B<ppm install> I<file>.ppmx [ B<--area> I<area> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
@@ -1637,6 +1674,10 @@ The argument to B<ppm install> can be the name of a package, the name of
 a module provided by the package, the file name or the URL of a PPMX or PPD file,
 or the associated number for the package returned by the last C<ppm
 search> command.
+
+Package or module names can be repeated to install multiple modules in one go.
+These forms can also be intermixed and you can also specify the path to one or
+more F<requirements.txt> files which are read to provide the package list.
 
 If the package or module requested is already installed, PPM installs
 nothing.  The B<--force> option can be used to make PPM install a
@@ -1954,6 +1995,18 @@ the state of the repository.
 
 Same as F<package.xml> but PPM 3 compatible.  PPM will use this file
 if F<package.xml> is not available.
+
+=item F<requirements.txt>
+
+Plain text file where you might specifiy the packages and modules
+required for a project.  To ensure that you have the required modules
+installed just run:
+
+  ppm install requirements.txt
+
+The format of the file is one package or module per line.  The
+'#' character introduce comments which are ignored with the
+rest of that line.
 
 =back
 
