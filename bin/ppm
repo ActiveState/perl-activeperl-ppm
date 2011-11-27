@@ -1111,9 +1111,10 @@ sub _tree {
 }
 
 sub do_install {
-    $USAGE = "install [--force] [--nodeps] [--area <area>] <module> | <url> | <file> | <num>";
+    $USAGE = "install [--force] [--nodeps] [--nohtml] [--area <area>] <module> | <url> | <file> | <num>";
     my $force;
     my $nodeps;
+    my $nohtml;
     my $area;
     my $sync = 1;
     require Getopt::Long;
@@ -1121,6 +1122,7 @@ sub do_install {
         force => \$force,
 	'area=s' => \$area,
 	nodeps => \$nodeps,
+        nohtml => \$nohtml,
         'sync!' => \$sync,
      ) || usage();
     usage() unless @ARGV == 1;
@@ -1133,23 +1135,23 @@ sub do_install {
 	if ($feature =~ m,^[a-z][+\w]+:[^:],) {
 	    # looks like an absolute URL
             require URI;
-	    _install_uri($area, $force, URI->new($feature), @args);
+	    _install_uri($area, $force, $nohtml, URI->new($feature), @args);
 	}
 	elsif ($feature =~ /\.(?:ppd|ppmx)$/) {
 	    require URI::file;
-	    _install_uri($area, $force, URI::file->new_abs($feature), @args);
+	    _install_uri($area, $force, $nohtml, URI::file->new_abs($feature), @args);
 	}
 	elsif ($feature =~ /^\d+$/) {
 	    my $pkg = $ppm->search_lookup($feature) ||
 		die "*** no package #$feature, do a '$PROGNAME search' first ***\n";
 	    my @deps = $ppm->packages_missing(want_deps => [$pkg], @args);
-	    _install($area, $force, $pkg, @deps);
+	    _install($area, $force, $nohtml, $pkg, @deps);
 	}
 	else {
 	    # search for feature in repos
             $ppm->repo_sync if $sync;
 	    $feature = $ppm->feature_fixup_case($feature);
-	    _install($area, $force, $ppm->packages_missing(want => [$feature], @args));
+	    _install($area, $force, $nohtml, $ppm->packages_missing(want => [$feature], @args));
 	}
     };
     if ($@) {
@@ -1180,7 +1182,7 @@ sub do_upgrade {
     if (@ARGV && $ARGV[0] =~ /::/) {
 	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install(undef, 0, $ppm->packages_missing(want => [[$mod, undef]]));
+	return _install(undef, 0, 0, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
@@ -1210,7 +1212,7 @@ sub do_upgrade {
 				    die "No writable install area for the upgrade";
 				}
 			    }
-			    _install($install_area, 0, $best);
+			    _install($install_area, 0, 0, $best);
 			}
 		    }
 		}
@@ -1231,7 +1233,7 @@ sub do_upgrade {
 }
 
 sub _install_uri {
-    my($area, $force, $uri, @args) = @_;
+    my($area, $force, $nohtml, $uri, @args) = @_;
 
     my $res = web_ua->get($uri);
     unless ($res->is_success) {
@@ -1293,12 +1295,13 @@ sub _install_uri {
     # first repo to look for additional packages.  This only works for
     # package features.
 
-    _install($area, $force, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
+    _install($area, $force, $nohtml, $pkg, $ppm->packages_missing(want_deps => [$pkg], @args));
 }
 
 sub _install {
     my $area = shift;
     my $force = shift;
+    my $nohtml = shift;
     unless (@_) {
 	print "No missing packages to install\n";
 	return;
@@ -1340,7 +1343,7 @@ Run 'ppm help area' to learn how to set up private areas.";
 
     $| = 1;
 
-    my $summary = $ppm->install(packages => \@_, area => $area, force => $force);
+    my $summary = $ppm->install(packages => \@_, area => $area, force => $force, install_html => !$nohtml);
     if (my $count = $summary->{count}) {
 	for my $what (sort keys %$count) {
 	    my $n = $count->{$what} || 0;
@@ -1616,17 +1619,17 @@ Prints the documentation for ppm (this file).
 List information about ppm and its environment.  With argument print the
 value of the given variable.  See also L<ppm config list>.
 
-=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
+=item B<ppm install> I<pkg> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ]
+=item B<ppm install> I<module> [ B<--area> I<area> ] [ B<--force> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<file>.ppmx [ B<--area> I<area> ] [ B<--nodeps> ]
+=item B<ppm install> I<file>.ppmx [ B<--area> I<area> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<file>.ppd [ B<--area> I<area> ] [ B<--nodeps> ]
+=item B<ppm install> I<file>.ppd [ B<--area> I<area> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<url> [ B<--area> I<area> ] [ B<--nodeps> ]
+=item B<ppm install> I<url> [ B<--area> I<area> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
-=item B<ppm install> I<num> [ B<--area> I<area> ] [ B<--nodeps> ]
+=item B<ppm install> I<num> [ B<--area> I<area> ] [ B<--nodeps> ] [ B<--nohtml> ]
 
 Install a package and its dependencies.
 
@@ -1650,6 +1653,9 @@ B<--area> option to install the package into an alternative location.
 
 The B<--nodeps> option makes PPM attempt to install the package
 without resolving any dependencies the package might have.
+
+The B<--nohtml> option makes PPM not generate HTML documentation
+for the package during installation.
 
 =item B<ppm list> [ I<area> ] [ B<--matching> I<pattern> ]  [ B<--csv> [ I<sep> ] ] [ B<--no-header> ] [ ---fields B<fieldlist> ]
 
