@@ -447,7 +447,7 @@ Because it's inefficient to transfer lots of small PPD files
 repositories usually collect them together in a F<package.xml> file
 and the ppm client know to look for this file when a new repository is
 added.  The F<package.xml> has the <REPOSITORYSUMMARY> element as root
-and it's kids are the <SOFTPKG> elements of the PPD files it
+and its kids are the <SOFTPKG> elements of the PPD files it
 contains.
 
 For historic reasons the tagname <REPOSITORY> can be used as an

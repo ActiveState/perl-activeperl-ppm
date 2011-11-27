@@ -971,7 +971,7 @@ sub packages_missing {
     return unless @todo;
 
     # We might end up making lots of calls to 'feature_have' for the same
-    # features while processing this call.  Enable memoizing of it's values to
+    # features while processing this call.  Enable memoizing of its values to
     # make it cheaper.
     local $self->{feature_have_memoize} = {};
 
