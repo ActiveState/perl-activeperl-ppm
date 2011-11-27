@@ -853,6 +853,13 @@ sub package_best {
 }
 
 sub feature_have {
+    if (my $memo = $_[0]->{feature_have_memoize}) {
+	return $memo->{join("\0", @_[1..$#_])} ||= &_feature_have;
+    }
+    goto &_feature_have;
+}
+
+sub _feature_have {
     my $self = shift;
     my $feature = shift;
     for my $area_name (@_ ? @_ : $self->areas) {
@@ -962,6 +969,11 @@ sub packages_missing {
     }
 
     return unless @todo;
+
+    # We might end up making lots of calls to 'feature_have' for the same
+    # features while processing this call.  Enable memoizing of it's values to
+    # make it cheaper.
+    local $self->{feature_have_memoize} = {};
 
     my @err;
     my @missing_upgrade;
