@@ -1148,8 +1148,9 @@ sub install {
     my $relocate = $^O ne "MSWin32";
     $relocate = $args{relocate} if exists $args{relocate};
 
-    my $install_html = (!exists $args{install_html} || $args{install_html})
-                       && eval { require ActivePerl::DocTools; };
+    my $install_html = $self->config_get('install_html');
+    $install_html = 1 unless defined $install_html;
+    $install_html &&= eval { require ActivePerl::DocTools; };
 
     my $ua = web_ua();
     my $status = ppm_status();
@@ -1456,7 +1457,6 @@ sub profile_xml_restore {
         $self->install(
             packages => \@pkgs,
             area => $area,
-            install_html => 0,
             relocate => 0,
         ) if @pkgs;
         ppm_log("INFO", "$skipped packages already installed") if $skipped && $opt{verbose};
