@@ -1213,7 +1213,17 @@ sub do_upgrade {
 				    die "No writable install area for the upgrade";
 				}
 			    }
-			    _install($install_area, 0, $best);
+
+			    # There might be new dependencies that also need to
+			    # be installed.
+			    my %requires = $best->requires;
+			    my @want = map [$_ => $requires{$_}], keys %requires;
+			    my @extra = $ppm->packages_missing(
+				have => [$best],
+				want => [map [$_ => $requires{$_}], keys %requires],
+			    );
+
+			    _install($install_area, 0, $best, @extra);
 			}
 		    }
 		}
