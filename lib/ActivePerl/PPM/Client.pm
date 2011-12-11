@@ -12,7 +12,7 @@ use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua $BE_REPO_HOST);
 use ActivePerl::PPM::Arch ();
-use ActivePerl::PPM::Util qw(join_with update_html_toc);
+use ActivePerl::PPM::Util qw(join_with update_html_toc gunzip);
 
 use ActiveState::Path qw(is_abs_path join_path);
 use ActiveState::Handy qw(xml_esc);
@@ -503,7 +503,6 @@ sub repo_sync {
 
     my @repos;
     my $dbh = $self->dbh;
-    local $dbh->{AutoCommit} = 0;
     my $sth = $dbh->prepare("SELECT * FROM repo WHERE enabled == 1" .
 			    ($opt{repo} ? " AND id = $opt{repo}" : "") .
 			    " ORDER BY id");
@@ -519,6 +518,14 @@ sub repo_sync {
 	    die "Repo $opt{repo} does not exist";
 	}
     }
+
+    if (@repos == 1 && (!$repos[0]->{packlist_last_status_code} || $repos[0]->{packlist_uri} =~ /\.db\.gz$/)) {
+	if ($dbh->selectrow_array("SELECT count(*) FROM repo") == 1) {
+	    return if $self->_repo_sync_dbimage($repos[0], $dbh, %opt)
+	}
+    }
+
+    local $dbh->{AutoCommit} = 0;
 
     for my $repo (@repos) {
 	my @check_ppd;
@@ -747,6 +754,119 @@ sub _check_ppd {
 	    $ppd->dbi_store($dbh);
 	    delete $delete_package->{$row->{id}} if $delete_package && $row;
 	}
+    }
+}
+
+
+sub _repo_sync_dbimage {
+    my($self, $repo, $dbh, %opt) = @_;
+
+    if (!$opt{validate} && $repo->{packlist_fresh_until} && $repo->{packlist_fresh_until} >= time) {
+	ppm_log("DEBUG", "$repo->{packlist_uri} is still fresh");
+	return 1;
+    }
+
+    my $db_file = $self->{db_file};
+    my $db_file_old = "$db_file.old";
+    my $db_file_gz = "$db_file.gz";
+
+    my $ua = web_ua();
+    local $ua->{progress_what} = "Downloading $repo->{name} dbimage";
+    my $res;
+
+    if ($repo->{packlist_last_status_code}) {
+	# if we continue to get errors from repo, only hit it occasionally
+	if (!$opt{validate} &&
+	    HTTP::Status::is_error($repo->{packlist_last_status_code}) &&
+	    (time - $repo->{packlist_last_access} < 5 * 60))
+	{
+	    ppm_log("WARN", "$repo->{packlist_uri} is known to err, skipping sync");
+	    return 1;
+	}
+    }
+    else {
+	# first time
+	my $uri = $repo->{packlist_uri};
+	return 0 unless $self->config_get('repo_dbimage');
+	my $v = $dbh->selectrow_array("PRAGMA user_version");
+	return 0 unless $uri =~ s,/package\.xml$,/ppm-$self->{arch}-v$v.db.gz,;
+	$res = $ua->get($uri, ':content_file' => $db_file_gz);
+	return 0 unless $res->is_success;
+	$repo->{packlist_uri} = $uri;
+	$dbh->do("UPDATE repo SET packlist_uri = ? WHERE id = ?", undef, $repo->{packlist_uri}, $repo->{id});
+    }
+
+    unless ($res) {
+	my @h;
+	if (!$opt{force}) {
+	    push(@h, "If-None-Match", $repo->{packlist_etag}) if $repo->{packlist_etag};
+	    push(@h, "If-Modified-Since", $repo->{packlist_lastmod}) if $repo->{packlist_lastmod};
+	}
+	$res = $ua->get($repo->{packlist_uri}, @h, ':content_file' => $db_file_gz);
+    }
+    $dbh->do("UPDATE repo SET packlist_last_status_code = ?, packlist_last_access = ? WHERE id = ?", undef, $res->code, time, $repo->{id});
+    if ($res->code == 304) {  # not modified
+	$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, $res->fresh_until(%EXPIRY_DEFAULTS), $repo->{id});
+	return 1;
+    }
+
+    unless ($res->is_success) {
+	$dbh->do("UPDATE repo SET packlist_fresh_until=? WHERE id=?", undef, 0, $repo->{id});
+	return 1;
+    }
+
+    $dbh->do("UPDATE repo SET packlist_etag=?, packlist_lastmod=?, packlist_size=?, packlist_fresh_until=? WHERE id=?", undef,
+	     scalar($res->header("ETag")),
+	     scalar($res->header("Last-Modified")),
+	     scalar($res->header("Content-Length")),
+	     $res->fresh_until(%EXPIRY_DEFAULTS),
+	     $repo->{id});
+
+
+
+    # process file
+    undef($dbh);
+    $self->dbh_disconnect;
+
+    rename($db_file, $db_file_old) || die "Can't rename $db_file: $!";
+    gunzip($db_file_gz);
+
+    # Fixup stuff
+    $dbh = $self->dbh;  # reconnect to new database
+
+    # Copy some tables over from the old database
+    $dbh->do("ATTACH DATABASE ? AS old", undef, $db_file_old);
+    for my $table ("config", "repo") {
+	$dbh->do("REPLACE INTO $table SELECT * from old.$table");
+    }
+    $dbh->do("DETACH DATABASE old");
+
+    # Final fixup
+    $dbh->do("DELETE FROM search");
+    for (ActivePerl::PPM::RepoPackage->sql_create_tables(indexes_only => 1)) {
+	$dbh->do($_);
+    }
+
+    return 1;
+}
+
+
+sub repo_dbimage_disable {
+    my $self = shift;
+
+    my @fixup;
+
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare("SELECT id, packlist_uri FROM repo");
+    $sth->execute;
+    while (my($id, $uri) = $sth->fetchrow_array) {
+	if ($uri =~ s,/ppm-[^/]+\.db\.gz$,/package.xml,) {
+	    push(@fixup, [$id, $uri]);
+	}
+    }
+    for (@fixup) {
+	my($id, $uri) = @$_;
+	$dbh->do("UPDATE repo SET packlist_uri = ?, packlist_last_status_code=NULL, packlist_last_access=NULL, packlist_etag=NULL, packlist_size=NULL, packlist_lastmod=NULL WHERE id = ?", undef, $uri, $id);
     }
 }
 

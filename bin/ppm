@@ -746,6 +746,7 @@ sub do_repo {
 		$_ = $_->as_string;
 	    }
 	}
+	$ppm->repo_dbimage_disable;
 	my $id = $ppm->repo_add(name => $name, packlist_uri => $url);
 	print "Repo $id added.\n";
 	if ($url_noarch) {

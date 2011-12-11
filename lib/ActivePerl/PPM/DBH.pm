@@ -14,11 +14,16 @@ sub dbh {
     };
 }
 
-sub DESTROY {
+sub dbh_disconnect {
     my $self = shift;
     if (my $dbh = delete $self->{dbh}) {
 	$dbh->disconnect;
     }
+}
+
+sub DESTROY {
+    my $self = shift;
+    $self->dbh_disconnect;
 }
 
 1;
