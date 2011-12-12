@@ -706,6 +706,8 @@ sub repo_sync {
     for (ActivePerl::PPM::RepoPackage->sql_create_tables(indexes_only => 1)) {
 	$dbh->do($_);
     }
+    $dbh->commit;
+
     return;
 }
 
