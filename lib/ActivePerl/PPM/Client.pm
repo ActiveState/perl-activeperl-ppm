@@ -790,8 +790,7 @@ sub _repo_sync_dbimage {
 	# first time
 	my $uri = $repo->{packlist_uri};
 	return 0 unless $self->config_get('repo_dbimage');
-	my $v = $dbh->selectrow_array("PRAGMA user_version");
-	return 0 unless $uri =~ s,/package\.xml$,/ppm-$self->{arch}-v$v.db.gz,;
+	return 0 unless $uri =~ s,/(package)\.xml$,/$1.db.gz,;
 	$res = $ua->get($uri, ':content_file' => $db_file_gz);
 	return 0 unless $res->is_success;
 	$repo->{packlist_uri} = $uri;
@@ -824,9 +823,9 @@ sub _repo_sync_dbimage {
 	     $res->fresh_until(%EXPIRY_DEFAULTS),
 	     $repo->{id});
 
+    my $user_version = $dbh->selectrow_array("PRAGMA user_version");
 
-
-    # process file
+    # process new dbimage file
     undef($dbh);
     $self->dbh_disconnect;
 
@@ -835,6 +834,10 @@ sub _repo_sync_dbimage {
 
     # Fixup stuff
     $dbh = $self->dbh;  # reconnect to new database
+
+    # Don't continue if these for some reason don't match the old values
+    die "Mismatched arch in dbimage" unless $self->config_get('arch') eq $self->{arch};
+    die "Mismatched schema version in dbimage" unless $dbh->selectrow_array("PRAGMA user_version") eq $user_version;
 
     # Copy some tables over from the old database
     $dbh->do("ATTACH DATABASE ? AS old", undef, $db_file_old);
