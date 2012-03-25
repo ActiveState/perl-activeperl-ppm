@@ -969,7 +969,7 @@ sub do_search {
 	}
 	else {
 	    my $count = 0;
-	    my $count_width = length(@res);
+	    my $count_width = length(scalar(@res));
 	    for (@res) {
 		$count++;
 		printf "%*d: %s %s", $count_width, $count, $_->[0], $_->[1];
