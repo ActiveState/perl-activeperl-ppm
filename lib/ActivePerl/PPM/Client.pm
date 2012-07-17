@@ -54,6 +54,7 @@ sub new {
     my $config = $opt{perl_config} || \%Config;
 
     my $arch = $opt{arch} || ActivePerl::PPM::Arch::arch();
+    my $ppmarch = ActivePerl::PPM::Arch::versioned_arch($opt{ppmarch} || $Config{ppmarch}, $]) || $arch;
 
     my $etc = $dir; # XXX or "$dir/etc";
     my @inc = $opt{inc} ? @{$opt{inc}} : (@main::INC_ORIG ? @main::INC_ORIG : @INC);
@@ -117,6 +118,7 @@ sub new {
 	dir => $dir,
 	etc => $etc,
         arch => $arch,
+	ppmarch => $ppmarch,
         activeperl_build => $build,
         perl_version => $opt{perl_version} || $config->{version},
         perl_config => $config,
@@ -252,7 +254,7 @@ sub _init_db {
     die "Assert" unless defined $v;
     if ($v == 0) {
 	ppm_log("WARN", "Setting up schema for $db_file");
-	_init_ppm_schema($dbh, $self->{arch}, $self->{activeperl_build});
+	_init_ppm_schema($dbh, $self->{arch}, $self->{ppmarch}, $self->{activeperl_build});
 	$dbh->do("PRAGMA user_version = 1");
 	$dbh->commit;
     }
@@ -265,7 +267,7 @@ sub _init_db {
 }
 
 sub _init_ppm_schema {
-    my($dbh, $arch, $build) = @_;
+    my($dbh, $arch, $ppmarch, $build) = @_;
     $dbh->do(<<'EOT');
 CREATE TABLE config (
     key text primary key,
@@ -297,7 +299,7 @@ EOT
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
     unless (ActivePerl::PRODUCT() =~ /enterprise/i) {
-	if (my @repo = activestate_repo($arch, $build)) {
+	if (my @repo = activestate_repo($ppmarch, $build)) {
 	    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
 	}
     }
@@ -1528,7 +1530,7 @@ sub profile_xml_restore {
                 next;
             }
             if ($_->{href} =~ m,^http://ppm4.activestate.com/,) {
-                $_->{href} = activestate_repo($self->{arch}, $self->{activeperl_build});
+                $_->{href} = activestate_repo($self->{ppmarch}, $self->{activeperl_build});
                 if (exists $REPO{$_->{href}}) {
                     ppm_log("INFO", "Repo $_->{href} already configured (arch)") if $opt{verbose};
                     next;

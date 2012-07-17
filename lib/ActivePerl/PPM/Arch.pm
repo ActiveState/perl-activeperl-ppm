@@ -3,18 +3,21 @@ package ActivePerl::PPM::Arch;
 use strict;
 use base 'Exporter';
 
-our @EXPORT_OK = qw(arch short_arch full_arch pretty_arch osname @archs);
+our @EXPORT_OK = qw(arch short_arch full_arch pretty_arch versioned_arch osname @archs);
 
 use Config qw(%Config);
 
-sub arch {
-    my $arch = $Config{archname};
-    if ($] >= 5.008) {
-        my $vstring = sprintf "%vd", $^V;
-        $vstring =~ s/\.\d+$//;
-        $arch .= "-$vstring";
+sub versioned_arch {
+    my($arch,$version) = @_;
+    return undef unless $arch;
+    if ($version >= 5.008) {
+	$arch .= sprintf "-%d.%d", int($version), int(($version-int($version))*1000);
     }
     return $arch;
+}
+
+sub arch {
+    return versioned_arch($Config{archname}, $]);
 }
 
 sub short_arch {
@@ -152,6 +155,11 @@ string is already full it's returned unchanged.
 Returns a more human readable form of arch().  Will be a string on the form:
 
    "ActivePerl 5.10 for Windows 64"
+
+=item versioned_arch( $arch, $version )
+
+Returns $arch, potentially suffixed with a version if $version is at least 5.010.
+Version 5.010 would be suffixed as "-5.10".  Returns undef if $arch is not defined.
 
 =back
 
