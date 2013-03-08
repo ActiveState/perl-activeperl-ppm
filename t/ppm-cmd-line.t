@@ -88,8 +88,11 @@ $live_repo = 0 if $Config{archname} =~ /\b(aix|solaris)\b/i;
 
 $live_repo = 0 if ActivePerl::PRODUCT() =~ /enterprise/i;
 
+# PPM repos for 5.12 and earlier require a BE username/password
+$live_repo = 0 if $] < 5.014;
+
 # The only 5.14 repo right now is for 32-bit Linux
-$live_repo = 0 if $] >= 5.014; # && ($^O ne "linux" || $Config{ptrsize} != 4);
+# $live_repo = 0 if $] >= 5.014; # && ($^O ne "linux" || $Config{ptrsize} != 4);
 
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
