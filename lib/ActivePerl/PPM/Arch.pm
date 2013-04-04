@@ -11,7 +11,7 @@ sub versioned_arch {
     my($arch,$version) = @_;
     return undef unless $arch;
     if ($version >= 5.008) {
-	$arch .= sprintf "-%d.%d", int($version), int(($version-int($version))*1000);
+	$arch .= sprintf "-%d.%d", int($version), int(($version-int($version))*1000 + 0.5);
     }
     return $arch;
 }
