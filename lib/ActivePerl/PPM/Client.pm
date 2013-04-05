@@ -298,6 +298,8 @@ EOT
 
     # initial values
     $dbh->do("INSERT INTO config(key, value) VALUES ('arch', ?)", undef, $arch);
+    $dbh->do("INSERT INTO config(key, value) VALUES ('repo_dbimage', 1)")
+	if $ActivePerl::VERSION >= 1800;
     unless (ActivePerl::PRODUCT() =~ /enterprise/i) {
 	if (my @repo = activestate_repo($ppmarch, $build)) {
 	    $dbh->do(qq(INSERT INTO repo(name,packlist_uri) VALUES (?, ?)), undef, @repo);
