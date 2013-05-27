@@ -83,6 +83,9 @@ $live_repo = 0 if $Config{archname} =~ /\b(ia|x|x86_)64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bsolaris(-\w+)*-64\b/;
 $live_repo = 0 if $Config{archname} =~ /\bx86-solaris\b/;
 
+# XXX No repo for MinGW-5.18 yet
+$live_repo = 0 if $Config{archname} =~ /\bMSWin32-x86-multi-thread-64int\b/;
+
 # AIX and Solaris repos now require a Business Edition license
 $live_repo = 0 if $Config{archname} =~ /\b(aix|solaris)\b/i;
 
