@@ -1277,7 +1277,8 @@ sub install {
     my $relocate = $^O ne "MSWin32";
     $relocate = $args{relocate} if exists $args{relocate};
 
-    my $install_html = $self->config_get('install_html');
+    my $install_html = $args{install_html};
+    $install_html = $self->config_get('install_html') unless defined $install_html;
     $install_html = 1 unless defined $install_html;
     $install_html &&= eval { require ActivePerl::DocTools; };
 
