@@ -1920,8 +1920,14 @@ B<--install> option install the upgrades as well.
 Upgrades the specified package or module if an upgrade is available in
 one of the currently enabled repositories.
 
-If I<area> is given; install the upgrade to the given area instead of
-the default.
+If I<area> is given; install the upgrade to the given area instead of the
+default.  You are responsible for making sure that the given area isn't
+shadowed by another that contains an older version of the upgraded module.  If
+so the upgrade would be not effective.
+
+If no I<area> is given, then ppm tries to apply the upgrade to the same area
+that the module was previously installed in.  If the module was installed in
+a read-only area or not installed, then the default install location is used.
 
 =item B<ppm verify> [ I<pkg> ]
 
