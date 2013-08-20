@@ -723,16 +723,16 @@ sub do_repo {
 		if $url =~ m,\?urn:/,;
 	}
 	else {
-	    if (-d $url) {
-		require URI::file;
-		$url = URI::file->new_abs($url);
-	    }
-	    elsif ($url eq "activestate") {
+	    if ($url eq "activestate") {
 		($name, $url) = ActivePerl::PPM::Client::activestate_repo(
 		    $ppm->{ppmarch},
 		    $ppm->{activestate_build}
 		);
 		die "No ActiveState repo for this platform" unless $url;
+	    }
+	    elsif (-d $url) {
+		require URI::file;
+		$url = URI::file->new_abs($url);
 	    }
 	    elsif (($name,$url,$url_noarch) = repo_by_name($url)) {
 		# empty
