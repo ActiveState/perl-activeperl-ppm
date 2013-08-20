@@ -1187,7 +1187,23 @@ sub do_upgrade {
     if (@ARGV && $ARGV[0] =~ /::/) {
 	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install($opt_area, 0, $ppm->packages_missing(want => [[$mod, undef]]));
+	my $area = $opt_area;
+	unless ($area) {
+	    # try to locate the area where the package was previously installed (if any)
+	    for my $area_name ($ppm->areas) {
+		my $a = $ppm->area($area_name);
+		if (defined($a->feature_have($mod))) {
+		    if ($area_name eq "perl" || $a->readonly) {
+			$area = $ppm->default_install_area;
+		    }
+		    else {
+			$area = $area_name;
+		    }
+		    last;
+		}
+	    }
+	}
+	return _install($area, 0, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
