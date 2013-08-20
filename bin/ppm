@@ -2048,60 +2048,6 @@ See L<LWP::UserAgent/env_proxy> for more.
 
 =back
 
-=head1 WHAT'S NEW IN VERSION 4
-
-PPM version 4 is a complete rewrite.  The main changes since PPM version 3 are:
-
-=over
-
-=item *
-
-The command line shell has been replaced with a graphical user interface.
-
-=item *
-
-Support for *.ppmx files (since PPM version 4.3)
-
-=item *
-
-PPM can now manage different installation areas.
-
-=item *
-
-No more 'precious' packages.  PPM can upgrade itself as well other
-bundled and core modules.
-
-=item *
-
-Installation of packages and their dependencies happen as atomic
-transactions.
-
-=item *
-
-PPM tracks what files it has installed and can notice if files have been
-modified or deleted.  The command 'ppm verify' will report on
-mismatches.
-
-=item *
-
-State is kept in local SQLite databases.  All repository state is kept
-local which makes searching much faster.
-
-=item *
-
-PPM will pick up and manage packages installed by other means (e.g.
-manually or with the CPAN shell).
-
-=item *
-
-No more SOAP.
-
-=item *
-
-Underlying modules moved to the C<ActivePerl::PPM::> namespace.
-
-=back
-
 =head1 SEE ALSO
 
 L<ActivePerl>
