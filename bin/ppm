@@ -1172,19 +1172,22 @@ sub do_install {
 sub do_upgrade {
     $USAGE = "upgrade [<pkg> | --install]";
     my $install;
+    my $opt_area;
     my $sync = 1;
     if (@ARGV) {
 	require Getopt::Long;
 	Getopt::Long::GetOptions(
 	    'install' => \$install,
+	    'area=s' => \$opt_area,
             'sync!' => \$sync,
 	) || usage();
 	usage() if @ARGV > 1;
     }
+    $ppm->area($opt_area) if $opt_area;  # croaks if it doesn't exist
     if (@ARGV && $ARGV[0] =~ /::/) {
 	$ppm->repo_sync if $sync;
 	my $mod = $ppm->feature_fixup_case($ARGV[0]);
-	return _install(undef, 0, $ppm->packages_missing(want => [[$mod, undef]]));
+	return _install($opt_area, 0, $ppm->packages_missing(want => [[$mod, undef]]));
     }
 
     $install++ if @ARGV;
@@ -1207,11 +1210,14 @@ sub do_upgrade {
 			print "$pkg_name $best->{version} (have $pkg_version)\n";
 			$upgrade_count++;
 			if ($install) {
-			    my $install_area = $area_name;
-			    if ($install_area eq "perl" || $area->readonly) {
-				$install_area = $ppm->default_install_area;
-				unless ($install_area) {
-				    die "No writable install area for the upgrade";
+			    my $install_area = $opt_area;
+			    unless ($install_area) {
+			        $install_area = $area_name;
+				if ($install_area eq "perl" || $area->readonly) {
+				    $install_area = $ppm->default_install_area;
+				    unless ($install_area) {
+					die "No writable install area for the upgrade";
+				    }
 				}
 			    }
 
@@ -1510,8 +1516,8 @@ Install, upgrade and remove packages:
     ppm install [--area <area>] <file>.ppd
     ppm install [--area <area>] <num>
     ppm upgrade [--install]
-    ppm upgrade <pkg>
-    ppm upgrade <module>
+    ppm upgrade [--area <area>] <pkg>
+    ppm upgrade [--area <area>] <module>
     ppm remove [--area <area>] [--force] <pkg>
 
 Manage and search install areas:
@@ -1886,17 +1892,20 @@ Alias for B<ppm remove>.
 
 Alias for B<ppm upgrade>.
 
-=item B<ppm upgrade> [ B<--install> ]
+=item B<ppm upgrade> [ B<--install> ] [ B<--area> I<area> ]
 
 List packages that there are upgrades available for.  With
 B<--install> option install the upgrades as well.
 
-=item B<ppm upgrade> I<pkg>
+=item B<ppm upgrade> [ B<--area> I<area> ] I<pkg>
 
-=item B<ppm upgrade> I<module>
+=item B<ppm upgrade> [ B<--area> I<area> ] I<module>
 
 Upgrades the specified package or module if an upgrade is available in
 one of the currently enabled repositories.
+
+If I<area> is given; install the upgrade to the given area instead of
+the default.
 
 =item B<ppm verify> [ I<pkg> ]
 
