@@ -1222,37 +1222,37 @@ sub do_upgrade {
 	    $pkg_count++;
 	    next if $shaddow{$pkg_name}++;
 	    eval {
-	    if (my $best = $ppm->package_best($pkg_name, 0)) {
-		if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
-		    my $pkg = $area->package($pkg_id);
-		    if ($best->better_than($pkg)) {
-			print "$pkg_name $best->{version} (have $pkg_version)\n";
-			$upgrade_count++;
-			if ($install) {
-			    my $install_area = $opt_area;
-			    unless ($install_area) {
-			        $install_area = $area_name;
-				if ($install_area eq "perl" || $area->readonly) {
-				    $install_area = $ppm->default_install_area;
-				    unless ($install_area) {
-					die "No writable install area for the upgrade";
+		if (my $best = $ppm->package_best($pkg_name, 0)) {
+		    if ($best->{name} eq $pkg_name && $best->{version} ne $pkg_version) {
+			my $pkg = $area->package($pkg_id);
+			if ($best->better_than($pkg)) {
+			    print "$pkg_name $best->{version} (have $pkg_version)\n";
+			    $upgrade_count++;
+			    if ($install) {
+				my $install_area = $opt_area;
+				unless ($install_area) {
+				    $install_area = $area_name;
+				    if ($install_area eq "perl" || $area->readonly) {
+					$install_area = $ppm->default_install_area;
+					unless ($install_area) {
+					    die "No writable install area for the upgrade";
+					}
 				    }
-				}
+				
+
+				# There might be new dependencies that also need to
+				# be installed.
+				my %requires = $best->requires;
+				my @extra = $ppm->packages_missing(
+				    have => [$best],
+				    want => [map [$_ => $requires{$_}], keys %requires],
+				);
+
+				_install($install_area, 0, $best, @extra);
 			    }
-
-			    # There might be new dependencies that also need to
-			    # be installed.
-			    my %requires = $best->requires;
-			    my @extra = $ppm->packages_missing(
-				have => [$best],
-				want => [map [$_ => $requires{$_}], keys %requires],
-			    );
-
-			    _install($install_area, 0, $best, @extra);
 			}
 		    }
 		}
-	    }
 	    };
 	    if ($@) {
 		ppm_log("ERR", $@);
