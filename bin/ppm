@@ -1260,7 +1260,7 @@ sub do_upgrade {
 	}
     }
     if (@ARGV && !$pkg_count) {
-	print STDERR "*** package $ARGV[0] not installed ***\n";
+	return _install($opt_area, 0, $ppm->packages_missing(want => [[$ARGV[0], undef]]));
     }
     elsif (!$upgrade_count) {
 	my $for = @ARGV ? " for $ARGV[0]" : "";
