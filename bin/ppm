@@ -1999,6 +1999,16 @@ the state of the repository.
 Same as F<package.xml> but PPM 3 compatible.  PPM will use this file
 if F<package.xml> is not available.
 
+=item F<package.db.gz>
+
+The same information as found in F<package.xml> as a compressed SQLite database
+image using PPM's internal database schema.  Repositories that provide this image
+should also provide an F<package.xml> with the same information.
+
+When only one repo is used it's faster for the client to just download and use
+this database image, instead of parsing the F<package.xml> and build the
+database from it locally.
+
 =back
 
 =head1 ENVIRONMENT
