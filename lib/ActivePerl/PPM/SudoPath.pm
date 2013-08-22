@@ -3,7 +3,7 @@ package ActivePerl::PPM::SudoPath;
 # When running under sudo you might want to make sure that created files belong
 # to the user that invoked sudo instead of root.  If you register paths you are
 # about to create by creating objects of this class you can chown them back to
-# the original user.  Only files that did not exist originally is affected.
+# the original user.  Only files that did not exist originally are affected.
 #
 # Race conditions are not handled.  The paths sampled when objects are created
 # might not be the same when chown is invoked.
