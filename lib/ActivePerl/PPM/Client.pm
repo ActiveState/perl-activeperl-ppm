@@ -12,6 +12,7 @@ use ActivePerl::PPM::PPD ();
 use ActivePerl::PPM::Logger qw(ppm_log ppm_debug ppm_status);
 use ActivePerl::PPM::Web qw(web_ua $BE_REPO_HOST);
 use ActivePerl::PPM::Arch ();
+use ActivePerl::PPM::SudoPath;
 use ActivePerl::PPM::Util qw(join_with update_html_toc gunzip);
 
 use ActiveState::Path qw(is_abs_path join_path);
@@ -235,19 +236,21 @@ sub default_install_area {
 sub _init_db {
     my $self = shift;
     my $etc = $self->{etc};
+    my $file_arch = $self->{arch};
+    $file_arch =~ s/\./_/g;  # don't confuse version number dots with file extension
+    my $db_file = "$etc/ppm-$file_arch.db";
+    my $sudo = ActivePerl::PPM::SudoPath->new($db_file);
     unless (-d $etc) {
 	require File::Path;
 	File::Path::mkpath($etc) || die "Can't mkpath($etc): $!";
     }
     require DBI;
-    my $file_arch = $self->{arch};
-    $file_arch =~ s/\./_/g;  # don't confuse version number dots with file extension
-    my $db_file = "$etc/ppm-$file_arch.db";
     my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
         AutoCommit => 1,
         RaiseError => 1,
     });
     die "$db_file: $DBI::errstr" unless $dbh;
+    $sudo->chown;
 
     local $dbh->{AutoCommit} = 0;
     my $v = $dbh->selectrow_array("PRAGMA user_version");

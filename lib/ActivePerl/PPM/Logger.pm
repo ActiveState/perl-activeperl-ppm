@@ -10,7 +10,9 @@ our @EXPORT_OK = qw();
 
 use Carp qw(croak);
 use HTTP::Date qw(time2iso);
-use File::Basename qw(basename);
+use File::Basename qw(dirname basename);
+use File::Path qw(mkpath);
+use ActivePerl::PPM::SudoPath;
 
 # syslog inspired constants
 sub LOG_EMERG   () { 0 }
@@ -78,23 +80,26 @@ sub new {
 	( $ENV{ACTIVEPERL_PPM_HOME} ? "$ENV{ACTIVEPERL_PPM_HOME}/ppm4.log" :
 	  $^O eq "MSWin32"          ? "$ENV{TEMP}\\ppm4.log" :
 	  $^O eq "darwin"           ? "$ENV{HOME}/Library/Logs/ppm4.log" :
-          do { mkdir("$ENV{HOME}/.ActivePerl", 0755); "$ENV{HOME}/.ActivePerl/ppm4.log" }
+                                      "$ENV{HOME}/.ActivePerl/ppm4.log"
         );
     my $fh;
-    my $existed = -f $logfile;
     if ($ENV{HARNESS_ACTIVE}) {
 	# suppress logging when running under Test::Harness
 	$opt{level} ||= 1;
     }
-    elsif (open($fh, ">>", $logfile)) {
-	require IO::Handle;  # adds methods to $fh
-	$fh->autoflush;
-	chown($ENV{SUDO_UID}, $ENV{SUDO_GID}, $fh) if !$existed && exists $ENV{SUDO_UID};
-    }
     else {
-	warn "Can't log to '$logfile': $!";
-	$opt{cons}++;
-	undef($fh);
+	my $sudo = ActivePerl::PPM::SudoPath->new($logfile);
+	mkpath(dirname($logfile));
+	if (open($fh, ">>", $logfile)) {
+	    require IO::Handle;  # adds methods to $fh
+	    $fh->autoflush;
+	}
+	else {
+	    warn "Can't log to '$logfile': $!";
+	    $opt{cons}++;
+	    undef($fh);
+	}
+	$sudo->chown;
     }
 
     return bless {
