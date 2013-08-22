@@ -1631,6 +1631,30 @@ are synced.
 
 Get or set various PPM configuration values.
 
+The following configuration options might be of interest:
+
+=over
+
+=item arch
+
+The architecture of the current database.  For internal use.  Don't change this.
+
+=item repo_dbimage
+
+If set to '1' look for F<package.db.gz> indexes in repositories before looking
+for the F<package.xml> file.
+
+=item install_html
+
+If set to '0' don't generate and install the HTML version of the documentation
+for the modules installed.  This makes installation considerably faster.
+
+=item gui.*
+
+Various settings for the graphical user interface.
+
+=back
+
 =item B<ppm config list>
 
 List all configuration options currently set.
