@@ -94,8 +94,9 @@ $live_repo = 0 if ActivePerl::PRODUCT() =~ /enterprise/i;
 # PPM repos for 5.12 and earlier require a BE username/password
 $live_repo = 0 if $] < 5.014;
 
-# The only 5.14 repo right now is for 32-bit Linux
-# $live_repo = 0 if $] >= 5.014; # && ($^O ne "linux" || $Config{ptrsize} != 4);
+# Not yet any repos for 5.20; time limit to ensure that we don't forget
+# about this disabling this after we have repos available
+$live_repo = 0 if $] >= 5.020 && time < 1.402e9 # 2014-06-05;
 
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
