@@ -96,7 +96,7 @@ $live_repo = 0 if $] < 5.014;
 
 # Not yet any repos for 5.20; time limit to ensure that we don't forget
 # about this disabling this after we have repos available
-$live_repo = 0 if $] >= 5.020 && time < 1.402e9 # 2014-06-05;
+$live_repo = 0 if $] >= 5.020 && time < 1.402e9; # 2014-06-05
 
 if ($live_repo) {
     ppm("install", "File-Slurp", "--area", $prefix_base, "--force");
