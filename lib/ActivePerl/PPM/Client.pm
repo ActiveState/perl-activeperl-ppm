@@ -248,6 +248,7 @@ sub _init_db {
     my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file", "", "", {
         AutoCommit => 1,
         RaiseError => 1,
+        sqlite_use_immediate_transaction => 0,
     });
     die "$db_file: $DBI::errstr" unless $dbh;
     $sudo->chown;
