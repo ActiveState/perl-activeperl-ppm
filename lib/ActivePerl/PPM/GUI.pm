@@ -7,6 +7,10 @@ BEGIN {
     unless ($ENV{ACTIVEPERL_PPM_DEBUG}) {
         delete $ENV{$_} for qw(PERL_TCL_DLL PERL_TCL_DL_PATH);
     }
+    return unless $^O eq "MSWin32";
+    # Make sure we run in a STA in case the GUI pulls in shell extension code (bug 106246)
+    require Win32::OLE;
+    Win32::OLE->Initialize(Win32::OLE::COINIT_OLEINITIALIZE);
 }
 
 use strict;
