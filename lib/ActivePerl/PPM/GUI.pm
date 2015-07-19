@@ -1977,7 +1977,7 @@ sub on_exit {
 
     $ppm->config_save(map { ("gui.view.$_" => $VIEW{$_}) } keys %VIEW);
 
-    exit;
+    $mw->g_destroy;
 }
 
 sub about {
