@@ -684,6 +684,7 @@ sub do_repo {
 		require HTTP::Date;
 		print "Last-Modified: ", ActiveState::Duration::ago_eng(time - HTTP::Date::str2time($lastmod)), "\n";
 	    }
+            print "Package-Count: $repo->{pkgs}\n" if $repo->{enabled};
 	}
 	else {
 	    $ppm->repo_enable($repo->{id}, $cmd eq "on");
