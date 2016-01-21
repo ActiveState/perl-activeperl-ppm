@@ -447,6 +447,10 @@ sub repo_enable {
 	    $self->repo_sync;
 	}
 	else {
+            my $uri = $dbh->selectrow_array("SELECT packlist_uri FROM repo WHERE id = ?", undef, $id);
+            if ($uri =~ s/\.db\.gz$/.xml/) {
+                $dbh->do("UPDATE repo SET packlist_uri = ?, packlist_last_status_code = NULL, packlist_last_access = NULL WHERE id = ?", undef, $uri, $id);
+            }
 	    local $dbh->{AutoCommit} = 0;
 	    _repo_delete_packages($dbh, $id);
 	    $dbh->commit;
