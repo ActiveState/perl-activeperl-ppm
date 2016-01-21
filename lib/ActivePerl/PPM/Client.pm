@@ -442,7 +442,7 @@ sub repo_enable {
     my $enabled = @_ ? (shift(@_) ? 1 : 0) : 1;
 
     my $dbh = $self->dbh;
-    if ($self->dbh->do("UPDATE repo SET enabled = ?, packlist_etag = NULL, packlist_lastmod = NULL, packlist_size = NULL, packlist_fresh_until = NULL WHERE id = ?", undef, $enabled, $id)) {
+    if ($dbh->do("UPDATE repo SET enabled = ?, packlist_etag = NULL, packlist_lastmod = NULL, packlist_size = NULL, packlist_fresh_until = NULL WHERE id = ?", undef, $enabled, $id)) {
 	if ($enabled) {
 	    $self->repo_sync;
 	}
